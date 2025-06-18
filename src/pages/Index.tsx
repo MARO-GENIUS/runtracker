@@ -38,14 +38,16 @@ const Index = () => {
         onSignOut={signOut}
       />
       
+      {/* Bouton Strava intégré discrètement */}
+      {currentView === 'dashboard' && (
+        <div className="max-w-6xl mx-auto px-6 -mt-4 mb-8 flex justify-end">
+          <StravaConnect />
+        </div>
+      )}
+      
       <main className="max-w-6xl mx-auto p-6 space-y-8">
         {currentView === 'dashboard' && (
           <>
-            {/* Subtle Strava connection in the top right corner */}
-            <div className="flex justify-end mb-4">
-              <StravaConnect />
-            </div>
-
             <WeeklySummary />
             <RecordsSlider />
             <MonthlyStats />

@@ -13,9 +13,10 @@ interface HeaderProps {
 
 const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => {
   return (
-    <header className="bg-gradient-running text-white p-6 animate-fade-in">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-4">
+    <header className="bg-gradient-running text-white animate-fade-in">
+      <div className="max-w-6xl mx-auto p-6">
+        {/* Ligne supérieure alignée */}
+        <div className="flex items-center justify-between mb-6">
           {(currentView === 'records' || currentView === 'activities') ? (
             <button 
               onClick={() => onViewChange('dashboard')}
@@ -27,11 +28,10 @@ const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => 
           ) : (
             <div className="flex items-center gap-3">
               <div className="bg-white/20 p-2 rounded-lg">
-                <Calendar size={24} />
+                <Calendar size={20} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">RunTracker Pro</h1>
-                <p className="text-white/80">Semaine du 10-16 Juin 2024</p>
+                <p className="text-white/90 text-sm font-medium">Semaine du 10-16 Juin 2024</p>
               </div>
             </div>
           )}
@@ -73,6 +73,14 @@ const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => 
           </div>
         </div>
         
+        {/* Titre principal pour les vues spécifiques */}
+        {currentView === 'dashboard' && (
+          <div>
+            <h1 className="text-3xl font-bold mb-2">RunTracker Pro</h1>
+            <p className="text-white/80">Votre compagnon de course personnalisé</p>
+          </div>
+        )}
+
         {currentView === 'records' && (
           <div>
             <h1 className="text-3xl font-bold mb-2">Mes Records Personnels</h1>
