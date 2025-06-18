@@ -71,20 +71,54 @@ export const useStravaData = (): UseStravaDataReturn => {
 
       if (functionError) {
         console.error('Function error:', functionError);
+        
+        // Handle specific error cases
+        if (functionError.message?.includes('non-2xx status code')) {
+          throw new Error('Erreur de synchronisation Strava. Veuillez réessayer dans quelques minutes.');
+        }
+        
         throw new Error(functionError.message || 'Erreur lors de la synchronisation');
       }
 
       if (data?.error) {
+        // Handle rate limiting specifically
+        if (data.type === 'rate_limit' || data.error.includes('rate limit')) {
+          toast.error('Limite de taux Strava atteinte. Veuillez attendre quelques minutes avant de réessayer.');
+          setError('Limite de taux Strava atteinte');
+          return;
+        }
+        
         throw new Error(data.error);
       }
 
       if (data?.stats) {
         setStats(data.stats);
-        toast.success(`${data.activities_synced || 0} activités synchronisées`);
+        
+        // Show appropriate success message
+        if (data.message) {
+          toast.success(data.message);
+        } else {
+          toast.success(`${data.activities_synced || 0} activités synchronisées`);
+        }
+        
+        // Show additional info if there were issues with best efforts
+        if (data.best_efforts_status && !data.best_efforts_status.success) {
+          toast.info('Synchronisation partielle - certains détails seront récupérés lors de la prochaine synchronisation');
+        }
       }
     } catch (error: any) {
       console.error('Error syncing activities:', error);
-      const errorMessage = error.message || 'Erreur lors de la synchronisation des activités';
+      let errorMessage = 'Erreur lors de la synchronisation des activités';
+      
+      // Handle specific error types
+      if (error.message?.include('rate limit') || error.message?.includes('429')) {
+        errorMessage = 'Limite de taux Strava atteinte. Veuillez attendre quelques minutes.';
+      } else if (error.message?.includes('token')) {
+        errorMessage = 'Problème d\'authentification Strava. Veuillez reconnecter votre compte.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {

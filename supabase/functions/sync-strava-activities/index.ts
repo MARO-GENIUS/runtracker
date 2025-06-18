@@ -6,6 +6,49 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Rate limiting helpers
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+const makeStravaRequest = async (url: string, accessToken: string, retries = 3): Promise<Response> => {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      })
+
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After')
+        const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : Math.pow(2, attempt) * 1000
+        
+        console.log(`Rate limit hit (429). Waiting ${waitTime}ms before retry ${attempt}/${retries}`)
+        
+        if (attempt < retries) {
+          await wait(waitTime)
+          continue
+        } else {
+          throw new Error(`Rate limit exceeded after ${retries} attempts. Please try again later.`)
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(`Strava API error: ${response.status} ${response.statusText}`)
+      }
+
+      return response
+    } catch (error) {
+      if (attempt === retries) {
+        throw error
+      }
+      console.log(`Request failed (attempt ${attempt}/${retries}):`, error.message)
+      await wait(Math.pow(2, attempt) * 1000)
+    }
+  }
+  
+  throw new Error('Max retries exceeded')
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -50,94 +93,130 @@ serve(async (req) => {
 
     if (profile.strava_expires_at && profile.strava_expires_at < now) {
       console.log('Token expired, refreshing...')
-      // Refresh token
-      const refreshResponse = await fetch('https://www.strava.com/oauth/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          client_id: Deno.env.get('STRAVA_CLIENT_ID'),
-          client_secret: Deno.env.get('STRAVA_CLIENT_SECRET'),
-          refresh_token: profile.strava_refresh_token,
-          grant_type: 'refresh_token',
-        }),
-      })
+      try {
+        const refreshResponse = await fetch('https://www.strava.com/oauth/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            client_id: Deno.env.get('STRAVA_CLIENT_ID'),
+            client_secret: Deno.env.get('STRAVA_CLIENT_SECRET'),
+            refresh_token: profile.strava_refresh_token,
+            grant_type: 'refresh_token',
+          }),
+        })
 
-      const refreshData = await refreshResponse.json()
-      if (refreshData.access_token) {
-        accessToken = refreshData.access_token
-        
-        // Update tokens in database
-        await supabaseClient
-          .from('profiles')
-          .update({
-            strava_access_token: refreshData.access_token,
-            strava_refresh_token: refreshData.refresh_token,
-            strava_expires_at: refreshData.expires_at,
-          })
-          .eq('id', user.id)
-        
-        console.log('Token refreshed successfully')
+        const refreshData = await refreshResponse.json()
+        if (refreshData.access_token) {
+          accessToken = refreshData.access_token
+          
+          await supabaseClient
+            .from('profiles')
+            .update({
+              strava_access_token: refreshData.access_token,
+              strava_refresh_token: refreshData.refresh_token,
+              strava_expires_at: refreshData.expires_at,
+            })
+            .eq('id', user.id)
+          
+          console.log('Token refreshed successfully')
+        }
+      } catch (error) {
+        console.error('Token refresh failed:', error)
+        return new Response(
+          JSON.stringify({ 
+            error: 'Failed to refresh Strava token. Please reconnect your Strava account.' 
+          }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
       }
     }
 
-    // Fetch activities from Strava
+    // Fetch activities from Strava with rate limiting
     console.log('Fetching activities from Strava...')
-    const activitiesResponse = await fetch(
-      'https://www.strava.com/api/v3/athlete/activities?per_page=200',
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
+    let activities = []
+    
+    try {
+      const activitiesResponse = await makeStravaRequest(
+        'https://www.strava.com/api/v3/athlete/activities?per_page=100',
+        accessToken
+      )
+      activities = await activitiesResponse.json()
+      console.log(`Fetched ${activities.length} activities from Strava`)
+    } catch (error) {
+      console.error('Failed to fetch activities:', error.message)
+      
+      if (error.message.includes('Rate limit exceeded')) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Strava rate limit exceeded. Please wait a few minutes before trying again.',
+            type: 'rate_limit'
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
       }
-    )
-
-    if (!activitiesResponse.ok) {
-      console.error('Strava API error:', activitiesResponse.status, activitiesResponse.statusText)
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch activities from Strava' }),
+        JSON.stringify({ error: `Failed to fetch activities: ${error.message}` }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-
-    const activities = await activitiesResponse.json()
-    console.log(`Fetched ${activities.length} activities from Strava`)
     
     // Filter for running activities
     const runningActivities = activities.filter((activity: any) => 
       activity.type === 'Run' || activity.type === 'VirtualRun'
     )
 
+    let syncedCount = 0
+    let skippedCount = 0
+
     // Insert or update activities
     for (const activity of runningActivities) {
-      await supabaseClient
-        .from('strava_activities')
-        .upsert({
-          id: activity.id,
-          user_id: user.id,
-          name: activity.name,
-          type: activity.type,
-          distance: activity.distance,
-          moving_time: activity.moving_time,
-          elapsed_time: activity.elapsed_time,
-          total_elevation_gain: activity.total_elevation_gain,
-          start_date: activity.start_date,
-          start_date_local: activity.start_date_local,
-          location_city: activity.location_city,
-          location_state: activity.location_state,
-          location_country: activity.location_country,
-          average_speed: activity.average_speed,
-          max_speed: activity.max_speed,
-          average_heartrate: activity.average_heartrate,
-          max_heartrate: activity.max_heartrate,
-          suffer_score: activity.suffer_score,
-          calories: activity.kilojoules ? activity.kilojoules * 0.239006 : null,
-        })
+      try {
+        await supabaseClient
+          .from('strava_activities')
+          .upsert({
+            id: activity.id,
+            user_id: user.id,
+            name: activity.name,
+            type: activity.type,
+            distance: activity.distance,
+            moving_time: activity.moving_time,
+            elapsed_time: activity.elapsed_time,
+            total_elevation_gain: activity.total_elevation_gain,
+            start_date: activity.start_date,
+            start_date_local: activity.start_date_local,
+            location_city: activity.location_city,
+            location_state: activity.location_state,
+            location_country: activity.location_country,
+            average_speed: activity.average_speed,
+            max_speed: activity.max_speed,
+            average_heartrate: activity.average_heartrate,
+            max_heartrate: activity.max_heartrate,
+            suffer_score: activity.suffer_score,
+            calories: activity.kilojoules ? activity.kilojoules * 0.239006 : null,
+          })
+        syncedCount++
+      } catch (error) {
+        console.error(`Failed to sync activity ${activity.id}:`, error)
+        skippedCount++
+      }
     }
 
-    // Fetch detailed data for activities to get best_efforts
-    await fetchBestEfforts(supabaseClient, user.id, runningActivities, accessToken)
+    // Fetch best efforts with improved error handling
+    let bestEffortsResult
+    try {
+      bestEffortsResult = await fetchBestEfforts(supabaseClient, user.id, runningActivities, accessToken)
+    } catch (error) {
+      console.error('Best efforts sync partially failed:', error.message)
+      bestEffortsResult = { 
+        success: false, 
+        message: error.message.includes('Rate limit') ? 
+          'Rate limit reached during best efforts sync' : 
+          'Partial sync completed'
+      }
+    }
 
     // Calculate statistics
     const stats = await calculateStatistics(supabaseClient, user.id)
@@ -145,12 +224,18 @@ serve(async (req) => {
     // Calculate and update personal records from best efforts
     await calculatePersonalRecordsFromBestEfforts(supabaseClient, user.id)
 
+    const responseMessage = bestEffortsResult?.success === false ? 
+      `${syncedCount} activités synchronisées. ${bestEffortsResult.message}` :
+      `${syncedCount} activités synchronisées avec succès`
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        activities_synced: runningActivities.length,
+        activities_synced: syncedCount,
+        activities_skipped: skippedCount,
         stats: stats,
-        message: `${runningActivities.length} activités synchronisées avec succès`
+        message: responseMessage,
+        best_efforts_status: bestEffortsResult
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
@@ -158,7 +243,11 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message.includes('Rate limit') ? 
+          'Strava rate limit exceeded. Please try again in a few minutes.' :
+          'An error occurred during synchronization'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
@@ -178,32 +267,36 @@ async function fetchBestEfforts(supabaseClient: any, userId: string, activities:
 
   console.log(`Need to fetch details for ${activitiesNeedingDetails.length} activities`)
 
-  // Fetch detailed data for each activity (with rate limiting)
-  for (let i = 0; i < activitiesNeedingDetails.length; i++) {
-    const activity = activitiesNeedingDetails[i]
+  // Limit the number of activities processed per sync to avoid rate limits
+  const maxActivitiesPerSync = 20
+  const activitiesToProcess = activitiesNeedingDetails.slice(0, maxActivitiesPerSync)
+  
+  if (activitiesNeedingDetails.length > maxActivitiesPerSync) {
+    console.log(`Processing ${maxActivitiesPerSync} activities out of ${activitiesNeedingDetails.length} to respect rate limits`)
+  }
+
+  let processedCount = 0
+  let failedCount = 0
+
+  // Fetch detailed data for each activity with enhanced rate limiting
+  for (let i = 0; i < activitiesToProcess.length; i++) {
+    const activity = activitiesToProcess[i]
     
     try {
-      // Rate limiting: wait between requests
-      if (i > 0 && i % 10 === 0) {
-        console.log(`Processed ${i} activities, waiting to respect rate limits...`)
-        await new Promise(resolve => setTimeout(resolve, 1000))
+      // Enhanced rate limiting: longer waits between requests
+      if (i > 0) {
+        const waitTime = i % 5 === 0 ? 2000 : 1000 // 2s every 5 requests, 1s otherwise
+        console.log(`Waiting ${waitTime}ms before next request...`)
+        await wait(waitTime)
       }
 
-      console.log(`Fetching details for activity ${activity.id}: ${activity.name}`)
+      console.log(`Fetching details for activity ${activity.id}: ${activity.name} (${i + 1}/${activitiesToProcess.length})`)
       
-      const detailResponse = await fetch(
+      const detailResponse = await makeStravaRequest(
         `https://www.strava.com/api/v3/activities/${activity.id}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-          },
-        }
+        accessToken,
+        2 // Fewer retries for individual activities
       )
-
-      if (!detailResponse.ok) {
-        console.error(`Failed to fetch details for activity ${activity.id}:`, detailResponse.status)
-        continue
-      }
 
       const detailData = await detailResponse.json()
       
@@ -212,25 +305,42 @@ async function fetchBestEfforts(supabaseClient: any, userId: string, activities:
         console.log(`Found ${detailData.best_efforts.length} best efforts for activity ${activity.id}`)
         
         for (const effort of detailData.best_efforts) {
-          await supabaseClient
-            .from('strava_best_efforts')
-            .upsert({
-              user_id: userId,
-              activity_id: activity.id,
-              name: effort.name,
-              distance: effort.distance,
-              moving_time: effort.moving_time,
-              elapsed_time: effort.elapsed_time,
-              start_date_local: activity.start_date_local,
-            })
+          try {
+            await supabaseClient
+              .from('strava_best_efforts')
+              .upsert({
+                user_id: userId,
+                activity_id: activity.id,
+                name: effort.name,
+                distance: effort.distance,
+                moving_time: effort.moving_time,
+                elapsed_time: effort.elapsed_time,
+                start_date_local: activity.start_date_local,
+              })
+          } catch (dbError) {
+            console.error(`Failed to store best effort for activity ${activity.id}:`, dbError)
+          }
         }
+        processedCount++
       }
     } catch (error) {
-      console.error(`Error processing activity ${activity.id}:`, error)
+      console.error(`Error processing activity ${activity.id}:`, error.message)
+      failedCount++
+      
+      if (error.message.includes('Rate limit exceeded')) {
+        // If we hit rate limit, stop processing and return partial success
+        throw new Error(`Rate limit reached after processing ${processedCount} activities`)
+      }
     }
   }
   
-  console.log('Best efforts fetching completed')
+  console.log(`Best efforts sync completed: ${processedCount} processed, ${failedCount} failed`)
+  return { 
+    success: true, 
+    processed: processedCount, 
+    failed: failedCount,
+    remaining: activitiesNeedingDetails.length - activitiesToProcess.length
+  }
 }
 
 async function calculatePersonalRecordsFromBestEfforts(supabaseClient: any, userId: string) {
