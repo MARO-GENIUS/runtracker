@@ -97,7 +97,12 @@ const RunningCalendar = () => {
           
           {/* Month days */}
           {days.map(day => {
-            const dateKey = day.toISOString().split('T')[0];
+            // Generate date key using the same method as in the hook
+            const year = day.getFullYear();
+            const month = String(day.getMonth() + 1).padStart(2, '0');
+            const dayNum = String(day.getDate()).padStart(2, '0');
+            const dateKey = `${year}-${month}-${dayNum}`;
+            
             const dayActivity = dailyActivities[dateKey];
             const isToday = new Date().toDateString() === day.toDateString();
             const dayNumber = format(day, 'd');

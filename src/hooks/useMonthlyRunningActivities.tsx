@@ -64,7 +64,13 @@ export const useMonthlyRunningActivities = (): UseMonthlyRunningActivitiesReturn
       
       if (activities) {
         activities.forEach(activity => {
-          const date = new Date(activity.start_date_local).toISOString().split('T')[0];
+          // Use the local date from start_date_local to avoid timezone issues
+          const localDate = new Date(activity.start_date_local);
+          // Format the date manually to avoid timezone conversion
+          const year = localDate.getFullYear();
+          const month = String(localDate.getMonth() + 1).padStart(2, '0');
+          const day = String(localDate.getDate()).padStart(2, '0');
+          const date = `${year}-${month}-${day}`;
           
           if (!grouped[date]) {
             grouped[date] = {
