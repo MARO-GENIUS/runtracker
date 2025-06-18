@@ -7,13 +7,13 @@ import WeeklySummary from '../components/WeeklySummary';
 import RecordsSlider from '../components/RecordsSlider';
 import MonthlyStats from '../components/MonthlyStats';
 import RecordsTable from '../components/RecordsTable';
+import ActivitiesView from '../components/ActivitiesView';
 import StravaConnect from '../components/StravaConnect';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const { user, loading, signOut } = useAuth();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'records'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'records' | 'activities'>('dashboard');
 
   if (loading) {
     return (
@@ -40,28 +40,30 @@ const Index = () => {
       />
       
       <main className="max-w-6xl mx-auto p-6 space-y-8">
-        {/* Strava Connection Card */}
-        <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
-          <CardHeader>
-            <CardTitle className="text-orange-800">Connecter Strava</CardTitle>
-            <CardDescription className="text-orange-700">
-              Synchronisez vos activités de course automatiquement depuis Strava
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <StravaConnect />
-          </CardContent>
-        </Card>
-
-        {currentView === 'dashboard' ? (
+        {currentView === 'dashboard' && (
           <>
+            {/* Strava Connection Card */}
+            <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
+              <CardHeader>
+                <CardTitle className="text-orange-800">Connecter Strava</CardTitle>
+                <CardDescription className="text-orange-700">
+                  Synchronisez vos activités de course automatiquement depuis Strava
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <StravaConnect />
+              </CardContent>
+            </Card>
+
             <WeeklySummary />
             <RecordsSlider />
             <MonthlyStats />
           </>
-        ) : (
-          <RecordsTable />
         )}
+        
+        {currentView === 'records' && <RecordsTable />}
+        
+        {currentView === 'activities' && <ActivitiesView />}
       </main>
       
       {/* Footer */}

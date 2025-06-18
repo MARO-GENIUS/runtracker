@@ -1,12 +1,12 @@
 
-import { Calendar, Trophy, ArrowLeft, User, LogOut } from 'lucide-react';
+import { Calendar, Trophy, ArrowLeft, User, LogOut, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface HeaderProps {
-  currentView: 'dashboard' | 'records';
-  onViewChange: (view: 'dashboard' | 'records') => void;
+  currentView: 'dashboard' | 'records' | 'activities';
+  onViewChange: (view: 'dashboard' | 'records' | 'activities') => void;
   user: SupabaseUser;
   onSignOut: () => void;
 }
@@ -16,7 +16,7 @@ const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => 
     <header className="bg-gradient-running text-white p-6 animate-fade-in">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-4">
-          {currentView === 'records' ? (
+          {(currentView === 'records' || currentView === 'activities') ? (
             <button 
               onClick={() => onViewChange('dashboard')}
               className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
@@ -38,13 +38,22 @@ const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => 
           
           <div className="flex items-center gap-4">
             {currentView === 'dashboard' && (
-              <button 
-                onClick={() => onViewChange('records')}
-                className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
-              >
-                <Trophy size={18} />
-                <span>📜 Voir tous mes records</span>
-              </button>
+              <>
+                <button 
+                  onClick={() => onViewChange('activities')}
+                  className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+                >
+                  <Activity size={18} />
+                  <span>📊 Mes Performances</span>
+                </button>
+                <button 
+                  onClick={() => onViewChange('records')}
+                  className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+                >
+                  <Trophy size={18} />
+                  <span>📜 Voir tous mes records</span>
+                </button>
+              </>
             )}
             
             <DropdownMenu>
@@ -68,6 +77,13 @@ const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => 
           <div>
             <h1 className="text-3xl font-bold mb-2">Mes Records Personnels</h1>
             <p className="text-white/80">Historique complet de vos meilleures performances</p>
+          </div>
+        )}
+
+        {currentView === 'activities' && (
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Mes Performances</h1>
+            <p className="text-white/80">Toutes vos activités de course synchronisées depuis Strava</p>
           </div>
         )}
       </div>
