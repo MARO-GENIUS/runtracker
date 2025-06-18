@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
@@ -10,6 +9,7 @@ import MonthlyStats from '../components/MonthlyStats';
 import RecordsTable from '../components/RecordsTable';
 import ActivitiesView from '../components/ActivitiesView';
 import StravaConnect from '../components/StravaConnect';
+import RunningCalendar from '../components/RunningCalendar';
 
 const Index = () => {
   const { user, loading, signOut } = useAuth();
@@ -61,6 +61,7 @@ const Index = () => {
         {currentView === 'dashboard' && (
           <>
             <WeeklySummary />
+            <RunningCalendar />
             <RecordsSlider />
             <MonthlyStats />
           </>
