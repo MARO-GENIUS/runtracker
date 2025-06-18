@@ -2,16 +2,27 @@
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { weeklyData } from '../data/mockData';
 import { useStravaData } from '@/hooks/useStravaData';
+import { useWeeklyRunningActivities } from '@/hooks/useWeeklyRunningActivities';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 
 const WeeklySummary = () => {
-  const { stats, loading, error, syncActivities, isStravaConnected } = useStravaData();
+  const { syncActivities, isStravaConnected } = useStravaData();
+  const { stats: weeklyStats, loading: weeklyLoading, error: weeklyError, refetch } = useWeeklyRunningActivities();
   
-  // Utilise les données mockées si Strava n'est pas connecté ou pas de stats
-  const totalKm = weeklyData.reduce((sum, day) => sum + day.distance, 0);
-  const averageDaily = totalKm / 7;
-  const runningDays = weeklyData.filter(day => day.distance > 0).length;
+  // Utilise les vraies données Strava si disponibles, sinon les données mockées
+  const currentWeeklyData = (isStravaConnected && weeklyStats) ? weeklyStats.weeklyData : weeklyData;
+  const totalKm = (isStravaConnected && weeklyStats) ? weeklyStats.totalKm : weeklyData.reduce((sum, day) => sum + day.distance, 0);
+  const averageDaily = (isStravaConnected && weeklyStats) ? weeklyStats.averageDaily : totalKm / 7;
+  const runningDays = (isStravaConnected && weeklyStats) ? weeklyStats.runningDays : weeklyData.filter(day => day.distance > 0).length;
+
+  const handleSync = async () => {
+    await syncActivities();
+    // Rafraîchir les données hebdomadaires après la synchronisation
+    setTimeout(() => {
+      refetch();
+    }, 1000);
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 animate-scale-in">
@@ -23,11 +34,11 @@ const WeeklySummary = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={syncActivities}
-                disabled={loading}
+                onClick={handleSync}
+                disabled={weeklyLoading}
                 className="flex items-center gap-2"
               >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 ${weeklyLoading ? 'animate-spin' : ''}`} />
                 Sync Strava
               </Button>
             )}
@@ -44,19 +55,19 @@ const WeeklySummary = () => {
           </div>
         </div>
         <div className="bg-gradient-performance text-white px-3 py-1 rounded-full text-sm font-medium">
-          {isStravaConnected ? 'Données Strava' : 'Données d\'exemple'}
+          {isStravaConnected ? 'Semaine courante' : 'Données d\'exemple'}
         </div>
       </div>
 
-      {error && (
+      {weeklyError && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          {error}
+          {weeklyError}
         </div>
       )}
 
       <div className="h-48 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={weeklyData}>
+          <BarChart data={currentWeeklyData}>
             <XAxis 
               dataKey="day" 
               axisLine={false}
