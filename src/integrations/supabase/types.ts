@@ -9,7 +9,164 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      personal_records: {
+        Row: {
+          activity_id: number | null
+          created_at: string
+          date: string
+          distance_meters: number
+          distance_type: string
+          id: string
+          location: string | null
+          time_seconds: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_id?: number | null
+          created_at?: string
+          date: string
+          distance_meters: number
+          distance_type: string
+          id?: string
+          location?: string | null
+          time_seconds: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_id?: number | null
+          created_at?: string
+          date?: string
+          distance_meters?: number
+          distance_type?: string
+          id?: string
+          location?: string | null
+          time_seconds?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personal_records_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "strava_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          profile_picture: string | null
+          strava_access_token: string | null
+          strava_expires_at: number | null
+          strava_refresh_token: string | null
+          strava_user_id: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          profile_picture?: string | null
+          strava_access_token?: string | null
+          strava_expires_at?: number | null
+          strava_refresh_token?: string | null
+          strava_user_id?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          profile_picture?: string | null
+          strava_access_token?: string | null
+          strava_expires_at?: number | null
+          strava_refresh_token?: string | null
+          strava_user_id?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      strava_activities: {
+        Row: {
+          average_heartrate: number | null
+          average_speed: number | null
+          calories: number | null
+          created_at: string
+          distance: number
+          elapsed_time: number
+          id: number
+          location_city: string | null
+          location_country: string | null
+          location_state: string | null
+          max_heartrate: number | null
+          max_speed: number | null
+          moving_time: number
+          name: string
+          start_date: string
+          start_date_local: string
+          suffer_score: number | null
+          total_elevation_gain: number | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          average_heartrate?: number | null
+          average_speed?: number | null
+          calories?: number | null
+          created_at?: string
+          distance: number
+          elapsed_time: number
+          id: number
+          location_city?: string | null
+          location_country?: string | null
+          location_state?: string | null
+          max_heartrate?: number | null
+          max_speed?: number | null
+          moving_time: number
+          name: string
+          start_date: string
+          start_date_local: string
+          suffer_score?: number | null
+          total_elevation_gain?: number | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          average_heartrate?: number | null
+          average_speed?: number | null
+          calories?: number | null
+          created_at?: string
+          distance?: number
+          elapsed_time?: number
+          id?: number
+          location_city?: string | null
+          location_country?: string | null
+          location_state?: string | null
+          max_heartrate?: number | null
+          max_speed?: number | null
+          moving_time?: number
+          name?: string
+          start_date?: string
+          start_date_local?: string
+          suffer_score?: number | null
+          total_elevation_gain?: number | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

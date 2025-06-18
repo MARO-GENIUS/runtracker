@@ -1,12 +1,17 @@
 
-import { Calendar, Trophy, ArrowLeft } from 'lucide-react';
+import { Calendar, Trophy, ArrowLeft, User, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface HeaderProps {
   currentView: 'dashboard' | 'records';
   onViewChange: (view: 'dashboard' | 'records') => void;
+  user: SupabaseUser;
+  onSignOut: () => void;
 }
 
-const Header = ({ currentView, onViewChange }: HeaderProps) => {
+const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => {
   return (
     <header className="bg-gradient-running text-white p-6 animate-fade-in">
       <div className="max-w-6xl mx-auto">
@@ -31,15 +36,32 @@ const Header = ({ currentView, onViewChange }: HeaderProps) => {
             </div>
           )}
           
-          {currentView === 'dashboard' && (
-            <button 
-              onClick={() => onViewChange('records')}
-              className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
-            >
-              <Trophy size={18} />
-              <span>📜 Voir tous mes records</span>
-            </button>
-          )}
+          <div className="flex items-center gap-4">
+            {currentView === 'dashboard' && (
+              <button 
+                onClick={() => onViewChange('records')}
+                className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+              >
+                <Trophy size={18} />
+                <span>📜 Voir tous mes records</span>
+              </button>
+            )}
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-white hover:bg-white/20">
+                  <User size={20} />
+                  <span className="ml-2">{user.email}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onSignOut}>
+                  <LogOut className="mr-2" size={16} />
+                  Déconnexion
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         
         {currentView === 'records' && (
