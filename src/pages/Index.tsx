@@ -2,12 +2,14 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
+import { Calendar } from 'lucide-react';
 import Header from '../components/Header';
 import WeeklySummary from '../components/WeeklySummary';
 import RecordsSlider from '../components/RecordsSlider';
 import MonthlyStats from '../components/MonthlyStats';
 import RecordsTable from '../components/RecordsTable';
 import ActivitiesView from '../components/ActivitiesView';
+import StravaConnect from '../components/StravaConnect';
 
 const Index = () => {
   const { user, loading, signOut } = useAuth();
@@ -36,6 +38,24 @@ const Index = () => {
         user={user}
         onSignOut={signOut}
       />
+      
+      {/* Barre d'informations dans la zone blanche */}
+      {currentView === 'dashboard' && (
+        <div className="bg-white border-b border-gray-100 py-4">
+          <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-gray-100 p-2 rounded-lg">
+                <Calendar size={20} className="text-gray-600" />
+              </div>
+              <div>
+                <p className="text-gray-700 text-sm font-medium">Semaine du 10-16 Juin 2024</p>
+              </div>
+            </div>
+            
+            <StravaConnect />
+          </div>
+        </div>
+      )}
       
       <main className="max-w-6xl mx-auto p-6 space-y-8">
         {currentView === 'dashboard' && (

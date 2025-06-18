@@ -3,7 +3,6 @@ import { Calendar, Trophy, ArrowLeft, User, LogOut, Activity } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { User as SupabaseUser } from '@supabase/supabase-js';
-import StravaConnect from './StravaConnect';
 
 interface HeaderProps {
   currentView: 'dashboard' | 'records' | 'activities';
@@ -69,25 +68,9 @@ const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => 
         
         {/* Titre principal pour les vues spécifiques */}
         {currentView === 'dashboard' && (
-          <div className="space-y-4">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">RunTracker Pro</h1>
-              <p className="text-white/80">Votre compagnon de course personnalisé</p>
-            </div>
-            
-            {/* Ligne avec calendrier à gauche et Strava à droite */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="bg-white/20 p-2 rounded-lg">
-                  <Calendar size={20} />
-                </div>
-                <div>
-                  <p className="text-white/90 text-sm font-medium">Semaine du 10-16 Juin 2024</p>
-                </div>
-              </div>
-              
-              <StravaConnect />
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold mb-2">RunTracker Pro</h1>
+            <p className="text-white/80">Votre compagnon de course personnalisé</p>
           </div>
         )}
 
