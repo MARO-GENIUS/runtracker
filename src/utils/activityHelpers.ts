@@ -58,3 +58,37 @@ export const formatElevation = (elevationInMeters: number | null): string => {
   if (!elevationInMeters) return '0 m';
   return `${Math.round(elevationInMeters)} m`;
 };
+
+export const formatDistanceType = (distanceMeters: number): string => {
+  const km = distanceMeters / 1000;
+  
+  if (km <= 1) return '1 km';
+  if (km <= 3) return '3 km';
+  if (km <= 5) return '5 km';
+  if (km <= 10) return '10 km';
+  if (km <= 15) return '15 km';
+  if (km <= 21.1) return 'Semi-marathon';
+  if (km <= 42.2) return 'Marathon';
+  if (km <= 50) return '50 km';
+  if (km <= 100) return '100 km';
+  
+  return `${Math.round(km)} km`;
+};
+
+export const formatTimeFromSeconds = (timeInSeconds: number): string => {
+  const hours = Math.floor(timeInSeconds / 3600);
+  const minutes = Math.floor((timeInSeconds % 3600) / 60);
+  const seconds = timeInSeconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
+export const isRecentRecord = (dateString: string): boolean => {
+  const recordDate = new Date(dateString);
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  return recordDate > threeMonthsAgo;
+};
