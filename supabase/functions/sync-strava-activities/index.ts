@@ -136,11 +136,14 @@ serve(async (req) => {
         })
     }
 
+    // Fetch detailed data for activities to get best_efforts
+    await fetchBestEfforts(supabaseClient, user.id, runningActivities, accessToken)
+
     // Calculate statistics
     const stats = await calculateStatistics(supabaseClient, user.id)
 
-    // Calculate and update personal records with improved algorithm
-    await calculatePersonalRecords(supabaseClient, user.id)
+    // Calculate and update personal records from best efforts
+    await calculatePersonalRecordsFromBestEfforts(supabaseClient, user.id)
 
     return new Response(
       JSON.stringify({ 
@@ -161,8 +164,165 @@ serve(async (req) => {
   }
 })
 
+async function fetchBestEfforts(supabaseClient: any, userId: string, activities: any[], accessToken: string) {
+  console.log('Fetching best efforts for activities...')
+  
+  // Get activities that don't have best efforts yet
+  const { data: existingEfforts } = await supabaseClient
+    .from('strava_best_efforts')
+    .select('activity_id')
+    .eq('user_id', userId)
+
+  const existingActivityIds = new Set(existingEfforts?.map((e: any) => e.activity_id) || [])
+  const activitiesNeedingDetails = activities.filter(activity => !existingActivityIds.has(activity.id))
+
+  console.log(`Need to fetch details for ${activitiesNeedingDetails.length} activities`)
+
+  // Fetch detailed data for each activity (with rate limiting)
+  for (let i = 0; i < activitiesNeedingDetails.length; i++) {
+    const activity = activitiesNeedingDetails[i]
+    
+    try {
+      // Rate limiting: wait between requests
+      if (i > 0 && i % 10 === 0) {
+        console.log(`Processed ${i} activities, waiting to respect rate limits...`)
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+
+      console.log(`Fetching details for activity ${activity.id}: ${activity.name}`)
+      
+      const detailResponse = await fetch(
+        `https://www.strava.com/api/v3/activities/${activity.id}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        }
+      )
+
+      if (!detailResponse.ok) {
+        console.error(`Failed to fetch details for activity ${activity.id}:`, detailResponse.status)
+        continue
+      }
+
+      const detailData = await detailResponse.json()
+      
+      // Extract and store best efforts
+      if (detailData.best_efforts && detailData.best_efforts.length > 0) {
+        console.log(`Found ${detailData.best_efforts.length} best efforts for activity ${activity.id}`)
+        
+        for (const effort of detailData.best_efforts) {
+          await supabaseClient
+            .from('strava_best_efforts')
+            .upsert({
+              user_id: userId,
+              activity_id: activity.id,
+              name: effort.name,
+              distance: effort.distance,
+              moving_time: effort.moving_time,
+              elapsed_time: effort.elapsed_time,
+              start_date_local: activity.start_date_local,
+            })
+        }
+      }
+    } catch (error) {
+      console.error(`Error processing activity ${activity.id}:`, error)
+    }
+  }
+  
+  console.log('Best efforts fetching completed')
+}
+
+async function calculatePersonalRecordsFromBestEfforts(supabaseClient: any, userId: string) {
+  console.log('Calculating personal records from best efforts...')
+  
+  // Get all best efforts for this user
+  const { data: bestEfforts } = await supabaseClient
+    .from('strava_best_efforts')
+    .select('*')
+    .eq('user_id', userId)
+    .order('moving_time', { ascending: true })
+
+  if (!bestEfforts || bestEfforts.length === 0) {
+    console.log('No best efforts found for personal records calculation')
+    return
+  }
+
+  console.log(`Analyzing ${bestEfforts.length} best efforts for personal records`)
+
+  // Group best efforts by distance and find the best time for each
+  const recordsByDistance = new Map()
+  
+  for (const effort of bestEfforts) {
+    const distance = effort.distance
+    const key = `${Math.round(distance)}`
+    
+    if (!recordsByDistance.has(key) || recordsByDistance.get(key).moving_time > effort.moving_time) {
+      recordsByDistance.set(key, effort)
+    }
+  }
+
+  // Clear existing records for this user
+  await supabaseClient
+    .from('personal_records')
+    .delete()
+    .eq('user_id', userId)
+
+  console.log('Cleared existing personal records')
+
+  // Standard distance mappings for better display
+  const distanceTypeMap: { [key: string]: string } = {
+    '400': '400m',
+    '800': '800m',
+    '1000': '1km',
+    '1609': '1mile',
+    '1610': '1mile', // Sometimes Strava uses 1610m for 1 mile
+    '3000': '3km',
+    '3219': '2miles', // 2 miles ≈ 3219m
+    '5000': '5km',
+    '8000': '8km',
+    '10000': '10km',
+    '15000': '15km',
+    '21097': 'semi',
+    '42195': 'marathon',
+  }
+
+  // Insert new records
+  for (const [distanceKey, bestEffort] of recordsByDistance) {
+    const distance = parseInt(distanceKey)
+    const distanceType = distanceTypeMap[distanceKey] || `${(distance / 1000).toFixed(1)}km`
+    
+    // Only include meaningful distances (>= 400m)
+    if (distance >= 400) {
+      console.log(`Found record for ${distanceType}: ${bestEffort.moving_time}s`)
+      
+      // Get activity details for location
+      const { data: activity } = await supabaseClient
+        .from('strava_activities')
+        .select('location_city, location_state, location_country')
+        .eq('id', bestEffort.activity_id)
+        .single()
+      
+      await supabaseClient
+        .from('personal_records')
+        .insert({
+          user_id: userId,
+          distance_type: distanceType,
+          distance_meters: distance,
+          time_seconds: bestEffort.moving_time,
+          activity_id: bestEffort.activity_id,
+          date: bestEffort.start_date_local,
+          location: activity ? [activity.location_city, activity.location_state, activity.location_country]
+            .filter(Boolean)
+            .join(', ') || 'Non spécifié' : 'Non spécifié',
+        })
+    }
+  }
+
+  console.log('Personal records calculation from best efforts completed')
+}
+
 async function calculateStatistics(supabaseClient: any, userId: string) {
-  // ... keep existing code (statistics calculation)
   const now = new Date()
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth() + 1
@@ -229,123 +389,4 @@ async function calculateStatistics(supabaseClient: any, userId: string) {
       date: latestActivity[0].start_date_local
     } : null
   }
-}
-
-async function calculatePersonalRecords(supabaseClient: any, userId: string) {
-  console.log('Starting improved personal records calculation...')
-  
-  // Get all running activities for this user
-  const { data: activities } = await supabaseClient
-    .from('strava_activities')
-    .select('*')
-    .eq('user_id', userId)
-    .order('moving_time', { ascending: true })
-
-  if (!activities || activities.length === 0) {
-    console.log('No activities found for personal records calculation')
-    return
-  }
-
-  console.log(`Analyzing ${activities.length} activities for personal records`)
-
-  // Define standard distances with adaptive tolerances
-  const standardDistances = [
-    { type: '400m', meters: 400, tolerance: 0.10 }, // 10% tolerance for short distances
-    { type: '800m', meters: 800, tolerance: 0.10 },
-    { type: '1km', meters: 1000, tolerance: 0.08 },
-    { type: '1mile', meters: 1609, tolerance: 0.08 }, // 1 mile
-    { type: '2km', meters: 2000, tolerance: 0.08 },
-    { type: '3km', meters: 3000, tolerance: 0.08 },
-    { type: '5km', meters: 5000, tolerance: 0.06 },
-    { type: '8km', meters: 8000, tolerance: 0.06 },
-    { type: '10km', meters: 10000, tolerance: 0.05 },
-    { type: '15km', meters: 15000, tolerance: 0.05 },
-    { type: 'semi', meters: 21097, tolerance: 0.03 }, // Half marathon
-    { type: 'marathon', meters: 42195, tolerance: 0.02 }, // Marathon
-    { type: '50km', meters: 50000, tolerance: 0.02 },
-  ]
-
-  // Also detect actual distances from activities (group similar distances)
-  const distanceGroups = new Map()
-  
-  activities.forEach(activity => {
-    const distance = activity.distance
-    const kmDistance = Math.round(distance / 100) * 100 // Group by 100m intervals
-    
-    if (!distanceGroups.has(kmDistance) || 
-        distanceGroups.get(kmDistance).moving_time > activity.moving_time) {
-      distanceGroups.set(kmDistance, activity)
-    }
-  })
-
-  // Clear existing records for this user
-  await supabaseClient
-    .from('personal_records')
-    .delete()
-    .eq('user_id', userId)
-
-  console.log('Cleared existing personal records')
-
-  // Calculate records for standard distances
-  for (const distance of standardDistances) {
-    const tolerance = distance.meters * distance.tolerance
-    const minDistance = distance.meters - tolerance
-    const maxDistance = distance.meters + tolerance
-
-    const bestActivity = activities.find(activity => 
-      activity.distance >= minDistance && 
-      activity.distance <= maxDistance
-    )
-
-    if (bestActivity) {
-      console.log(`Found record for ${distance.type}: ${bestActivity.moving_time}s`)
-      
-      await supabaseClient
-        .from('personal_records')
-        .insert({
-          user_id: userId,
-          distance_type: distance.type,
-          distance_meters: distance.meters,
-          time_seconds: bestActivity.moving_time,
-          activity_id: bestActivity.id,
-          date: bestActivity.start_date,
-          location: [bestActivity.location_city, bestActivity.location_state, bestActivity.location_country]
-            .filter(Boolean)
-            .join(', ') || 'Non spécifié',
-        })
-    }
-  }
-
-  // Add records for other significant distances found in activities
-  const significantDistances = Array.from(distanceGroups.entries())
-    .filter(([distance, activity]) => {
-      // Only include distances that are not too close to standard distances
-      return !standardDistances.some(std => {
-        const tolerance = std.meters * std.tolerance
-        return Math.abs(distance - std.meters) <= tolerance
-      }) && distance >= 1000 // At least 1km
-    })
-    .sort(([a], [b]) => a - b) // Sort by distance
-
-  for (const [distance, activity] of significantDistances.slice(0, 10)) { // Limit to 10 additional distances
-    const distanceType = `${(distance / 1000).toFixed(1)}km`
-    
-    console.log(`Found additional record for ${distanceType}: ${activity.moving_time}s`)
-    
-    await supabaseClient
-      .from('personal_records')
-      .insert({
-        user_id: userId,
-        distance_type: distanceType,
-        distance_meters: distance,
-        time_seconds: activity.moving_time,
-        activity_id: activity.id,
-        date: activity.start_date,
-        location: [activity.location_city, activity.location_state, activity.location_country]
-          .filter(Boolean)
-          .join(', ') || 'Non spécifié',
-      })
-  }
-
-  console.log('Personal records calculation completed')
 }

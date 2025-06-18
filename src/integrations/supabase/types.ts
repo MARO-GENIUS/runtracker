@@ -167,6 +167,53 @@ export type Database = {
         }
         Relationships: []
       }
+      strava_best_efforts: {
+        Row: {
+          activity_id: number
+          created_at: string
+          distance: number
+          elapsed_time: number | null
+          id: string
+          moving_time: number
+          name: string
+          start_date_local: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_id: number
+          created_at?: string
+          distance: number
+          elapsed_time?: number | null
+          id?: string
+          moving_time: number
+          name: string
+          start_date_local: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_id?: number
+          created_at?: string
+          distance?: number
+          elapsed_time?: number | null
+          id?: string
+          moving_time?: number
+          name?: string
+          start_date_local?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strava_best_efforts_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "strava_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
