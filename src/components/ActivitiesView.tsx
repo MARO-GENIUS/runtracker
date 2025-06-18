@@ -2,8 +2,9 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, TrendingUp, Clock, MapPin, Activity } from 'lucide-react';
+import { RefreshCw, TrendingUp, Clock, MapPin } from 'lucide-react';
 import { useStravaData } from '@/hooks/useStravaData';
+import ActivitiesTable from './ActivitiesTable';
 
 const ActivitiesView = () => {
   const { stats, loading, error, syncActivities, isStravaConnected } = useStravaData();
@@ -113,21 +114,8 @@ const ActivitiesView = () => {
         </Card>
       )}
 
-      {/* Zone pour le tableau des activités - sera implémenté dans l'étape suivante */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Historique des activités</CardTitle>
-          <CardDescription>
-            Toutes vos courses synchronisées depuis Strava
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-12 text-gray-500">
-            <Activity size={48} className="mx-auto mb-4 opacity-50" />
-            <p>Le tableau des activités sera disponible dans la prochaine étape</p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Tableau des activités */}
+      <ActivitiesTable />
     </div>
   );
 };
