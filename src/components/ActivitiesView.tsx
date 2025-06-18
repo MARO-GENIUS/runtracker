@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, TrendingUp, Clock, MapPin } from 'lucide-react';
+import { RefreshCw, TrendingUp, Clock, MapPin, Activity } from 'lucide-react';
 import { useStravaData } from '@/hooks/useStravaData';
 
 const ActivitiesView = () => {
