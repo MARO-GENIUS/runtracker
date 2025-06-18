@@ -1,4 +1,3 @@
-
 // Utility functions for formatting activity data
 
 export const formatDistance = (distanceInMeters: number): string => {
@@ -60,19 +59,32 @@ export const formatElevation = (elevationInMeters: number | null): string => {
 };
 
 export const formatDistanceType = (distanceMeters: number): string => {
-  const km = distanceMeters / 1000;
-  
-  if (km <= 1) return '1 km';
-  if (km <= 3) return '3 km';
-  if (km <= 5) return '5 km';
-  if (km <= 10) return '10 km';
-  if (km <= 15) return '15 km';
-  if (km <= 21.1) return 'Semi-marathon';
-  if (km <= 42.2) return 'Marathon';
-  if (km <= 50) return '50 km';
-  if (km <= 100) return '100 km';
-  
-  return `${Math.round(km)} km`;
+  // Handle specific standard distances
+  switch (distanceMeters) {
+    case 400: return '400 m';
+    case 800: return '800 m';
+    case 1000: return '1 km';
+    case 1609: return '1 mile';
+    case 2000: return '2 km';
+    case 3000: return '3 km';
+    case 5000: return '5 km';
+    case 8000: return '8 km';
+    case 10000: return '10 km';
+    case 15000: return '15 km';
+    case 21097: return 'Semi-marathon';
+    case 42195: return 'Marathon';
+    case 50000: return '50 km';
+    default:
+      // For non-standard distances, show in km with appropriate precision
+      const km = distanceMeters / 1000;
+      if (km < 1) {
+        return `${distanceMeters} m`;
+      } else if (km < 10) {
+        return `${km.toFixed(1)} km`;
+      } else {
+        return `${Math.round(km)} km`;
+      }
+  }
 };
 
 export const formatTimeFromSeconds = (timeInSeconds: number): string => {
