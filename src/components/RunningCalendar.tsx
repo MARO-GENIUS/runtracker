@@ -14,9 +14,9 @@ const RunningCalendar = () => {
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   const getCircleSize = (distance: number): string => {
-    if (distance <= 5) return 'w-2 h-2'; // 8px
-    if (distance <= 10) return 'w-3 h-3'; // 12px
-    return 'w-4 h-4'; // 16px
+    if (distance <= 5) return 'w-6 h-6'; // 24px
+    if (distance <= 10) return 'w-7 h-7'; // 28px
+    return 'w-8 h-8'; // 32px
   };
 
   const getCircleColor = (distance: number): string => {
@@ -100,30 +100,33 @@ const RunningCalendar = () => {
             const dateKey = day.toISOString().split('T')[0];
             const dayActivity = dailyActivities[dateKey];
             const isToday = new Date().toDateString() === day.toDateString();
+            const dayNumber = format(day, 'd');
             
             return (
-              <div key={dateKey} className="relative h-8 flex items-center justify-center">
-                <div className={`
-                  w-full h-full flex items-center justify-center rounded-md text-sm
-                  ${isToday ? 'bg-running-blue/10 font-semibold text-running-blue' : 'text-gray-700'}
-                  ${!isSameMonth(day, currentMonth) ? 'text-gray-300' : ''}
-                `}>
-                  {format(day, 'd')}
-                </div>
-                
-                {/* Activity circle */}
-                {dayActivity && (
+              <div key={dateKey} className="h-8 flex items-center justify-center">
+                {dayActivity ? (
                   <ActivityPopover activities={dayActivity.activities} date={dateKey}>
                     <button
                       className={`
-                        absolute top-1 right-1 rounded-full transition-all duration-200
-                        hover:scale-110 hover:shadow-sm
+                        rounded-full transition-all duration-200 flex items-center justify-center
+                        hover:scale-110 hover:shadow-md text-white font-medium text-xs
                         ${getCircleSize(dayActivity.totalDistance)}
                         ${getCircleColor(dayActivity.totalDistance)}
+                        ${!isSameMonth(day, currentMonth) ? 'opacity-30' : ''}
                       `}
                       title={`${dayActivity.totalDistance.toFixed(1)} km`}
-                    />
+                    >
+                      {dayNumber}
+                    </button>
                   </ActivityPopover>
+                ) : (
+                  <div className={`
+                    w-full h-full flex items-center justify-center rounded-md text-sm
+                    ${isToday ? 'bg-running-blue/10 font-semibold text-running-blue' : 'text-gray-700'}
+                    ${!isSameMonth(day, currentMonth) ? 'text-gray-300' : ''}
+                  `}>
+                    {dayNumber}
+                  </div>
                 )}
               </div>
             );
@@ -135,15 +138,15 @@ const RunningCalendar = () => {
       <div className="mt-4 pt-4 border-t border-gray-100">
         <div className="flex items-center justify-center gap-6 text-xs text-gray-500">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-running-blue/30"></div>
+            <div className="w-6 h-6 rounded-full bg-running-blue/30 flex items-center justify-center text-white font-medium text-xs">1</div>
             <span>≤ 3km</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-running-blue/60"></div>
+            <div className="w-7 h-7 rounded-full bg-running-blue/60 flex items-center justify-center text-white font-medium text-xs">15</div>
             <span>3-7km</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-running-blue"></div>
+            <div className="w-8 h-8 rounded-full bg-running-blue flex items-center justify-center text-white font-medium text-xs">20</div>
             <span>≥ 12km</span>
           </div>
         </div>
