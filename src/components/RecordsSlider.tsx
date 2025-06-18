@@ -1,13 +1,16 @@
 
 import { MapPin, Clock, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
 import { usePersonalRecords } from '@/hooks/usePersonalRecords';
 import { useStravaData } from '@/hooks/useStravaData';
 import { personalRecords } from '../data/mockData';
 import { Button } from '@/components/ui/button';
+import DistanceHistoryPanel from '@/components/DistanceHistoryPanel';
 
 const RecordsSlider = () => {
   const { records, loading, error, refetch } = usePersonalRecords();
   const { syncActivities, isStravaConnected } = useStravaData();
+  const [selectedRecord, setSelectedRecord] = useState<{ distance: number; name: string } | null>(null);
 
   // Utilise les vraies données Strava si disponibles, sinon les données mockées
   const currentRecords = (isStravaConnected && records.length > 0) ? records : personalRecords;
@@ -18,6 +21,28 @@ const RecordsSlider = () => {
     setTimeout(() => {
       refetch();
     }, 1000);
+  };
+
+  const handleRecordClick = (record: any) => {
+    // Mapper le nom de distance vers les mètres pour la requête
+    const distanceMap: { [key: string]: number } = {
+      '400m': 400,
+      '800m': 800,
+      '1 km': 1000,
+      '1 mile': 1609,
+      '5 km': 5000,
+      '10 km': 10000,
+      '21,1 km': 21097,
+      '42,2 km': 42195
+    };
+
+    const distanceInMeters = distanceMap[record.distance];
+    if (distanceInMeters) {
+      setSelectedRecord({
+        distance: distanceInMeters,
+        name: record.distance
+      });
+    }
   };
 
   return (
@@ -59,11 +84,12 @@ const RecordsSlider = () => {
           {currentRecords.map((record, index) => (
             <div 
               key={record.id}
+              onClick={() => handleRecordClick(record)}
               className={`min-w-64 bg-gradient-to-br ${
                 record.isRecent 
                   ? 'from-orange-50 to-orange-100 border-l-4 border-running-orange' 
                   : 'from-gray-50 to-gray-100 border-l-4 border-gray-300'
-              } rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:scale-105 cursor-pointer`}
+              } rounded-lg p-4 hover:shadow-lg transition-all duration-200 hover:scale-105 cursor-pointer transform active:scale-95`}
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="flex justify-between items-start mb-3">
@@ -91,6 +117,13 @@ const RecordsSlider = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Indicateur cliquable */}
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <div className="text-xs text-running-blue font-medium hover:text-running-orange transition-colors">
+                  Cliquez pour voir l'historique →
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -101,6 +134,14 @@ const RecordsSlider = () => {
           Connectez-vous à Strava pour voir vos records personnels réels
         </div>
       )}
+
+      {/* Panneau d'historique */}
+      <DistanceHistoryPanel
+        isOpen={selectedRecord !== null}
+        onClose={() => setSelectedRecord(null)}
+        distance={selectedRecord?.distance || 0}
+        distanceName={selectedRecord?.name || ''}
+      />
     </div>
   );
 };
