@@ -8,7 +8,6 @@ import RecordsSlider from '../components/RecordsSlider';
 import MonthlyStats from '../components/MonthlyStats';
 import RecordsTable from '../components/RecordsTable';
 import ActivitiesView from '../components/ActivitiesView';
-import StravaConnect from '../components/StravaConnect';
 
 const Index = () => {
   const { user, loading, signOut } = useAuth();
@@ -37,13 +36,6 @@ const Index = () => {
         user={user}
         onSignOut={signOut}
       />
-      
-      {/* Bouton Strava intégré discrètement */}
-      {currentView === 'dashboard' && (
-        <div className="max-w-6xl mx-auto px-6 -mt-4 mb-8 flex justify-end">
-          <StravaConnect />
-        </div>
-      )}
       
       <main className="max-w-6xl mx-auto p-6 space-y-8">
         {currentView === 'dashboard' && (
