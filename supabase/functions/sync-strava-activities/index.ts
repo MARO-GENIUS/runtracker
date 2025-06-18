@@ -50,6 +50,7 @@ serve(async (req) => {
     let accessToken = profile.strava_access_token
 
     if (profile.strava_expires_at && profile.strava_expires_at < now) {
+      console.log('Token expired, refreshing...')
       // Refresh token
       const refreshResponse = await fetch('https://www.strava.com/oauth/token', {
         method: 'POST',
@@ -77,10 +78,13 @@ serve(async (req) => {
             strava_expires_at: refreshData.expires_at,
           })
           .eq('id', user.id)
+        
+        console.log('Token refreshed successfully')
       }
     }
 
     // Fetch activities from Strava
+    console.log('Fetching activities from Strava...')
     const activitiesResponse = await fetch(
       'https://www.strava.com/api/v3/athlete/activities?per_page=200',
       {
@@ -90,7 +94,16 @@ serve(async (req) => {
       }
     )
 
+    if (!activitiesResponse.ok) {
+      console.error('Strava API error:', activitiesResponse.status, activitiesResponse.statusText)
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch activities from Strava' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const activities = await activitiesResponse.json()
+    console.log(`Fetched ${activities.length} activities from Strava`)
     
     // Filter for running activities
     const runningActivities = activities.filter((activity: any) => 
@@ -124,6 +137,9 @@ serve(async (req) => {
         })
     }
 
+    // Calculate statistics
+    const stats = await calculateStatistics(supabaseClient, user.id)
+
     // Calculate and update personal records
     await calculatePersonalRecords(supabaseClient, user.id)
 
@@ -131,6 +147,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         activities_synced: runningActivities.length,
+        stats: stats,
         message: `${runningActivities.length} activités synchronisées avec succès`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -144,6 +161,75 @@ serve(async (req) => {
     )
   }
 })
+
+async function calculateStatistics(supabaseClient: any, userId: string) {
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth() + 1
+
+  // Get current month activities
+  const startOfMonth = new Date(currentYear, currentMonth - 1, 1).toISOString()
+  const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59).toISOString()
+
+  const { data: monthActivities } = await supabaseClient
+    .from('strava_activities')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('start_date', startOfMonth)
+    .lte('start_date', endOfMonth)
+    .order('start_date', { ascending: false })
+
+  // Get current year activities
+  const startOfYear = new Date(currentYear, 0, 1).toISOString()
+  const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59).toISOString()
+
+  const { data: yearActivities } = await supabaseClient
+    .from('strava_activities')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('start_date', startOfYear)
+    .lte('start_date', endOfYear)
+    .order('start_date', { ascending: false })
+
+  // Calculate monthly stats
+  const monthlyDistance = monthActivities?.reduce((sum, activity) => sum + (activity.distance / 1000), 0) || 0
+  const monthlyActivitiesCount = monthActivities?.length || 0
+  const longestMonthlyActivity = monthActivities?.reduce((longest, activity) => 
+    activity.distance > (longest?.distance || 0) ? activity : longest, null)
+
+  // Calculate yearly stats
+  const yearlyDistance = yearActivities?.reduce((sum, activity) => sum + (activity.distance / 1000), 0) || 0
+  const yearlyActivitiesCount = yearActivities?.length || 0
+
+  // Get latest activity
+  const { data: latestActivity } = await supabaseClient
+    .from('strava_activities')
+    .select('*')
+    .eq('user_id', userId)
+    .order('start_date', { ascending: false })
+    .limit(1)
+
+  return {
+    monthly: {
+      distance: Math.round(monthlyDistance * 10) / 10,
+      activitiesCount: monthlyActivitiesCount,
+      longestActivity: longestMonthlyActivity ? {
+        name: longestMonthlyActivity.name,
+        distance: Math.round((longestMonthlyActivity.distance / 1000) * 10) / 10,
+        date: longestMonthlyActivity.start_date_local
+      } : null
+    },
+    yearly: {
+      distance: Math.round(yearlyDistance * 10) / 10,
+      activitiesCount: yearlyActivitiesCount
+    },
+    latest: latestActivity?.[0] ? {
+      name: latestActivity[0].name,
+      distance: Math.round((latestActivity[0].distance / 1000) * 10) / 10,
+      date: latestActivity[0].start_date_local
+    } : null
+  }
+}
 
 async function calculatePersonalRecords(supabaseClient: any, userId: string) {
   // Define distances to calculate records for
