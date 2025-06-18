@@ -1,8 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ExternalLink, Activity, CheckCircle, RefreshCw } from 'lucide-react';
+import { ExternalLink, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -77,78 +76,53 @@ const StravaConnect = () => {
     }
   };
 
+  // Simple Strava icon SVG
+  const StravaIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-orange-600">
+      <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.172"/>
+    </svg>
+  );
+
   if (isStravaConnected) {
     return (
-      <div className="space-y-4">
-        <Card className="w-full max-w-md mx-auto">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="bg-green-100 p-3 rounded-full">
-                <CheckCircle className="text-green-600" size={32} />
-              </div>
-            </div>
-            <CardTitle className="text-xl font-bold text-green-800">Strava Connecté</CardTitle>
-            <CardDescription>
-              Votre compte Strava est connecté et vos activités peuvent être synchronisées
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
-            <Button 
-              onClick={syncActivities}
-              disabled={loading}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white"
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              {loading ? 'Synchronisation...' : 'Synchroniser les activités'}
-            </Button>
-            
-            {stats && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg text-sm">
-                <div className="grid grid-cols-2 gap-2 text-left">
-                  <div>
-                    <span className="text-gray-600">Ce mois:</span>
-                    <div className="font-semibold">{stats.monthly.distance} km</div>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Cette année:</span>
-                    <div className="font-semibold">{stats.yearly.distance} km</div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <div className="flex items-center gap-3">
+        <Button 
+          onClick={syncActivities}
+          disabled={loading}
+          variant="ghost"
+          size="sm"
+          className="h-auto p-2 text-gray-600 hover:text-orange-600 hover:bg-orange-50 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <StravaIcon />
+            <span className="text-sm font-medium">Synchroniser</span>
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </div>
+        </Button>
+        
+        {stats && (
+          <div className="text-xs text-gray-500">
+            <span>{stats.monthly.distance} km ce mois</span>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="text-center">
-        <div className="flex justify-center mb-4">
-          <div className="bg-orange-100 p-3 rounded-full">
-            <Activity className="text-orange-600" size={32} />
-          </div>
-        </div>
-        <CardTitle className="text-xl font-bold">Connecter Strava</CardTitle>
-        <CardDescription>
-          Liez votre compte Strava pour synchroniser automatiquement vos activités de course
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button 
-          onClick={handleStravaConnect} 
-          disabled={connecting}
-          className="w-full bg-orange-600 hover:bg-orange-700 text-white"
-        >
-          <ExternalLink className="mr-2" size={16} />
-          {connecting ? 'Connexion...' : 'Connecter avec Strava'}
-        </Button>
-        <p className="text-xs text-gray-500 mt-4 text-center">
-          Vos données restent privées et sécurisées
-        </p>
-      </CardContent>
-    </Card>
+    <Button 
+      onClick={handleStravaConnect} 
+      disabled={connecting}
+      variant="ghost"
+      size="sm"
+      className="h-auto p-2 text-gray-600 hover:text-orange-600 hover:bg-orange-50 transition-colors"
+    >
+      <div className="flex items-center gap-2">
+        <StravaIcon />
+        <span className="text-sm font-medium">Connecter Strava</span>
+        <ExternalLink className="w-4 h-4" />
+      </div>
+    </Button>
   );
 };
 

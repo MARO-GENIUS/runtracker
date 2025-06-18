@@ -9,7 +9,6 @@ import MonthlyStats from '../components/MonthlyStats';
 import RecordsTable from '../components/RecordsTable';
 import ActivitiesView from '../components/ActivitiesView';
 import StravaConnect from '../components/StravaConnect';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Index = () => {
   const { user, loading, signOut } = useAuth();
@@ -42,18 +41,10 @@ const Index = () => {
       <main className="max-w-6xl mx-auto p-6 space-y-8">
         {currentView === 'dashboard' && (
           <>
-            {/* Strava Connection Card */}
-            <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
-              <CardHeader>
-                <CardTitle className="text-orange-800">Connecter Strava</CardTitle>
-                <CardDescription className="text-orange-700">
-                  Synchronisez vos activités de course automatiquement depuis Strava
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <StravaConnect />
-              </CardContent>
-            </Card>
+            {/* Subtle Strava connection in the top right corner */}
+            <div className="flex justify-end mb-4">
+              <StravaConnect />
+            </div>
 
             <WeeklySummary />
             <RecordsSlider />
