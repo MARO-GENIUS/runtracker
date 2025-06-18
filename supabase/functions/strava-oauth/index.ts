@@ -31,7 +31,7 @@ serve(async (req) => {
       )
     }
 
-    const { action, code, state } = await req.json()
+    const { action } = await req.json()
 
     if (action === 'get_auth_url') {
       const clientId = Deno.env.get('STRAVA_CLIENT_ID')
@@ -42,63 +42,17 @@ serve(async (req) => {
         )
       }
 
-      const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/strava-oauth`
+      // Use the new callback function URL
+      const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/strava-callback`
       const scope = 'read,activity:read_all'
       const authUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=force&scope=${scope}&state=${user.id}`
+
+      console.log('Generated auth URL with redirect:', redirectUri)
 
       return new Response(
         JSON.stringify({ auth_url: authUrl }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
-    }
-
-    if (action === 'exchange_token') {
-      const clientId = Deno.env.get('STRAVA_CLIENT_ID')
-      const clientSecret = Deno.env.get('STRAVA_CLIENT_SECRET')
-      
-      if (!clientId || !clientSecret) {
-        return new Response(
-          JSON.stringify({ error: 'Strava credentials not configured' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      // Exchange authorization code for access token
-      const tokenResponse = await fetch('https://www.strava.com/oauth/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          client_id: clientId,
-          client_secret: clientSecret,
-          code: code,
-          grant_type: 'authorization_code',
-        }),
-      })
-
-      const tokenData = await tokenResponse.json()
-
-      if (tokenData.access_token) {
-        // Store tokens in profiles table
-        await supabaseClient
-          .from('profiles')
-          .upsert({
-            id: user.id,
-            strava_user_id: tokenData.athlete.id,
-            strava_access_token: tokenData.access_token,
-            strava_refresh_token: tokenData.refresh_token,
-            strava_expires_at: tokenData.expires_at,
-            first_name: tokenData.athlete.firstname,
-            last_name: tokenData.athlete.lastname,
-            profile_picture: tokenData.athlete.profile,
-          })
-
-        return new Response(
-          JSON.stringify({ success: true, athlete: tokenData.athlete }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
     }
 
     return new Response(
