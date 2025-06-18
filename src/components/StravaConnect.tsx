@@ -2,15 +2,16 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ExternalLink, Activity, CheckCircle } from 'lucide-react';
+import { ExternalLink, Activity, CheckCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { useStravaData } from '@/hooks/useStravaData';
 
 const StravaConnect = () => {
   const [connecting, setConnecting] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
   const { user } = useAuth();
+  const { isStravaConnected, syncActivities, loading, stats } = useStravaData();
 
   useEffect(() => {
     // Check URL parameters for connection status
@@ -20,7 +21,6 @@ const StravaConnect = () => {
 
     if (stravaConnected === 'true') {
       toast.success('Compte Strava connecté avec succès !');
-      setIsConnected(true);
       // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (error) {
@@ -49,30 +49,7 @@ const StravaConnect = () => {
       // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-
-    // Check if user is already connected to Strava
-    if (user) {
-      checkStravaConnection();
-    }
-  }, [user]);
-
-  const checkStravaConnection = async () => {
-    if (!user) return;
-
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('strava_access_token')
-        .eq('id', user.id)
-        .single();
-
-      if (profile?.strava_access_token) {
-        setIsConnected(true);
-      }
-    } catch (error) {
-      console.error('Erreur lors de la vérification de la connexion Strava:', error);
-    }
-  };
+  }, []);
 
   const handleStravaConnect = async () => {
     if (!user) {
@@ -100,21 +77,48 @@ const StravaConnect = () => {
     }
   };
 
-  if (isConnected) {
+  if (isStravaConnected) {
     return (
-      <Card className="w-full max-w-md mx-auto">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="bg-green-100 p-3 rounded-full">
-              <CheckCircle className="text-green-600" size={32} />
+      <div className="space-y-4">
+        <Card className="w-full max-w-md mx-auto">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="bg-green-100 p-3 rounded-full">
+                <CheckCircle className="text-green-600" size={32} />
+              </div>
             </div>
-          </div>
-          <CardTitle className="text-xl font-bold text-green-800">Strava Connecté</CardTitle>
-          <CardDescription>
-            Votre compte Strava est connecté et vos activités peuvent être synchronisées
-          </CardDescription>
-        </CardHeader>
-      </Card>
+            <CardTitle className="text-xl font-bold text-green-800">Strava Connecté</CardTitle>
+            <CardDescription>
+              Votre compte Strava est connecté et vos activités peuvent être synchronisées
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Button 
+              onClick={syncActivities}
+              disabled={loading}
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? 'Synchronisation...' : 'Synchroniser les activités'}
+            </Button>
+            
+            {stats && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg text-sm">
+                <div className="grid grid-cols-2 gap-2 text-left">
+                  <div>
+                    <span className="text-gray-600">Ce mois:</span>
+                    <div className="font-semibold">{stats.monthly.distance} km</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Cette année:</span>
+                    <div className="font-semibold">{stats.yearly.distance} km</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
