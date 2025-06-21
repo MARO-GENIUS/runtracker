@@ -464,6 +464,7 @@ async function calculateStatistics(supabaseClient: any, userId: string) {
   // Calculate monthly stats
   const monthlyDistance = monthActivities?.reduce((sum, activity) => sum + (activity.distance / 1000), 0) || 0
   const monthlyActivitiesCount = monthActivities?.length || 0
+  const monthlyDuration = monthActivities?.reduce((sum, activity) => sum + (activity.moving_time || 0), 0) || 0
   const longestMonthlyActivity = monthActivities?.reduce((longest, activity) => 
     activity.distance > (longest?.distance || 0) ? activity : longest, null)
 
@@ -483,6 +484,7 @@ async function calculateStatistics(supabaseClient: any, userId: string) {
     monthly: {
       distance: Math.round(monthlyDistance * 10) / 10,
       activitiesCount: monthlyActivitiesCount,
+      duration: monthlyDuration, // Durée en secondes
       longestActivity: longestMonthlyActivity ? {
         name: longestMonthlyActivity.name,
         distance: Math.round((longestMonthlyActivity.distance / 1000) * 10) / 10,
