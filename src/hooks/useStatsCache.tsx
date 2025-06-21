@@ -38,7 +38,7 @@ export const useStatsCache = () => {
         .single();
 
       if (cachedStats && isRecentCache(cachedStats.updated_at)) {
-        return cachedStats.stats_data as StravaStats;
+        return cachedStats.stats_data as unknown as StravaStats;
       }
 
       return null;
