@@ -38,7 +38,7 @@ export const useStatsCache = () => {
         .single();
 
       if (cachedStats && isRecentCache(cachedStats.updated_at)) {
-        return cachedStats.stats_data;
+        return cachedStats.stats_data as StravaStats;
       }
 
       return null;
@@ -56,7 +56,7 @@ export const useStatsCache = () => {
         .from('user_stats_cache')
         .upsert({
           user_id: user.id,
-          stats_data: statsData,
+          stats_data: statsData as any,
           updated_at: new Date().toISOString()
         });
       

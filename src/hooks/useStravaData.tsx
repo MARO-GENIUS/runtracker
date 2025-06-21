@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useStatsCache } from '@/hooks/useStatsCache';
 import { toast } from 'sonner';
 
 interface StravaStats {
@@ -41,6 +42,7 @@ export const useStravaData = (): UseStravaDataReturn => {
   const [error, setError] = useState<string | null>(null);
   const [isStravaConnected, setIsStravaConnected] = useState(false);
   const { user } = useAuth();
+  const { getCachedStats, setCachedStats } = useStatsCache();
 
   const checkStravaConnection = async () => {
     if (!user) return;
@@ -69,15 +71,11 @@ export const useStravaData = (): UseStravaDataReturn => {
 
     try {
       // D'abord, essayer de charger les stats depuis le cache
-      const { data: cachedStats } = await supabase
-        .from('user_stats_cache')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      const cachedStats = await getCachedStats();
 
-      if (cachedStats && isRecentCache(cachedStats.updated_at)) {
+      if (cachedStats) {
         // Utiliser les données du cache si elles sont récentes (moins de 1 heure)
-        setStats(cachedStats.stats_data);
+        setStats(cachedStats);
         console.log('Using cached Strava stats');
         return;
       }
@@ -89,13 +87,6 @@ export const useStravaData = (): UseStravaDataReturn => {
       // Fallback : calculer depuis les activités
       await loadStats();
     }
-  };
-
-  const isRecentCache = (updatedAt: string): boolean => {
-    const cacheTime = new Date(updatedAt);
-    const now = new Date();
-    const hoursDiff = (now.getTime() - cacheTime.getTime()) / (1000 * 60 * 60);
-    return hoursDiff < 1; // Cache valide pendant 1 heure
   };
 
   const loadStats = async () => {
@@ -176,30 +167,12 @@ export const useStravaData = (): UseStravaDataReturn => {
       setStats(calculatedStats);
 
       // Sauvegarder dans le cache
-      await saveCachedStats(calculatedStats);
+      await setCachedStats(calculatedStats);
     } catch (error) {
       console.error('Error loading stats:', error);
       setError('Erreur lors du chargement des statistiques');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const saveCachedStats = async (statsData: StravaStats) => {
-    if (!user) return;
-
-    try {
-      await supabase
-        .from('user_stats_cache')
-        .upsert({
-          user_id: user.id,
-          stats_data: statsData,
-          updated_at: new Date().toISOString()
-        });
-      
-      console.log('Stats cached successfully');
-    } catch (error) {
-      console.error('Error caching stats:', error);
     }
   };
 
@@ -239,7 +212,7 @@ export const useStravaData = (): UseStravaDataReturn => {
         setStats(data.stats);
         
         // Sauvegarder immédiatement dans le cache après synchronisation
-        await saveCachedStats(data.stats);
+        await setCachedStats(data.stats);
         
         if (data.message) {
           toast.success(data.message);

@@ -244,6 +244,27 @@ export type Database = {
           },
         ]
       }
+      user_stats_cache: {
+        Row: {
+          id: string
+          stats_data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          stats_data: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          stats_data?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
