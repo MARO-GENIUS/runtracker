@@ -8,6 +8,7 @@ interface StravaStats {
   monthly: {
     distance: number;
     activitiesCount: number;
+    duration: number; // Ajout de la propriété duration
     longestActivity: {
       name: string;
       distance: number;
@@ -111,7 +112,7 @@ export const useStravaData = (): UseStravaDataReturn => {
       let errorMessage = 'Erreur lors de la synchronisation des activités';
       
       // Handle specific error types
-      if (error.message?.include('rate limit') || error.message?.includes('429')) {
+      if (error.message?.includes('rate limit') || error.message?.includes('429')) {
         errorMessage = 'Limite de taux Strava atteinte. Veuillez attendre quelques minutes.';
       } else if (error.message?.includes('token')) {
         errorMessage = 'Problème d\'authentification Strava. Veuillez reconnecter votre compte.';
