@@ -13,6 +13,7 @@ import {
 interface PersonalRecord {
   id: string;
   distance: string;
+  distanceMeters: number; // Ajout de la distance en mètres
   time: string;
   pace: string;
   date: string;
@@ -51,6 +52,7 @@ export const usePersonalRecords = () => {
         const formattedRecords: PersonalRecord[] = recordsData.map((record) => ({
           id: record.id,
           distance: formatDistanceType(record.distance_meters),
+          distanceMeters: record.distance_meters, // Inclure la distance en mètres
           time: formatTimeFromSeconds(record.time_seconds),
           pace: formatPace(record.distance_meters, record.time_seconds),
           date: formatDate(record.date),

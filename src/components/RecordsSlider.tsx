@@ -24,23 +24,36 @@ const RecordsSlider = () => {
   };
 
   const handleRecordClick = (record: any) => {
-    // Mapper le nom de distance vers les mètres pour la requête
-    const distanceMap: { [key: string]: number } = {
-      '400m': 400,
-      '800m': 800,
-      '1 km': 1000,
-      '1 mile': 1609,
-      '5 km': 5000,
-      '10 km': 10000,
-      '21,1 km': 21097,
-      '42,2 km': 42195
-    };
+    // Utiliser directement distanceMeters si disponible (données réelles Strava)
+    // Sinon utiliser le mapping pour les données mockées
+    let distanceInMeters: number;
+    let distanceName: string;
 
-    const distanceInMeters = distanceMap[record.distance];
+    if (record.distanceMeters) {
+      // Données réelles Strava - utiliser directement la distance en mètres
+      distanceInMeters = record.distanceMeters;
+      distanceName = record.distance;
+    } else {
+      // Données mockées - utiliser le mapping existant
+      const distanceMap: { [key: string]: number } = {
+        '400m': 400,
+        '800m': 800,
+        '1 km': 1000,
+        '1 mile': 1609,
+        '5 km': 5000,
+        '10 km': 10000,
+        '21,1 km': 21097,
+        '42,2 km': 42195
+      };
+      
+      distanceInMeters = distanceMap[record.distance];
+      distanceName = record.distance;
+    }
+
     if (distanceInMeters) {
       setSelectedRecord({
         distance: distanceInMeters,
-        name: record.distance
+        name: distanceName
       });
     }
   };

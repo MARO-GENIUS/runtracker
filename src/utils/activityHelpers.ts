@@ -59,29 +59,35 @@ export const formatElevation = (elevationInMeters: number | null): string => {
 };
 
 export const formatDistanceType = (distanceMeters: number): string => {
-  // Handle specific standard distances
+  // Handle specific standard distances first
   switch (distanceMeters) {
     case 400: return '400 m';
     case 800: return '800 m';
+    case 805: return '805 m';
     case 1000: return '1 km';
     case 1609: return '1 mile';
     case 2000: return '2 km';
     case 3000: return '3 km';
+    case 3219: return '2 miles';
     case 5000: return '5 km';
     case 8000: return '8 km';
+    case 8047: return '5 miles';
     case 10000: return '10 km';
     case 15000: return '15 km';
+    case 16090: return '10 miles';
     case 21097: return 'Semi-marathon';
     case 42195: return 'Marathon';
     case 50000: return '50 km';
     default:
-      // For non-standard distances, show in km with appropriate precision
+      // For non-standard distances, show in appropriate units with smart formatting
       const km = distanceMeters / 1000;
       if (km < 1) {
         return `${distanceMeters} m`;
       } else if (km < 10) {
-        return `${km.toFixed(1)} km`;
+        // Pour les distances < 10km, afficher avec 1 décimale si nécessaire
+        return km % 1 === 0 ? `${km} km` : `${km.toFixed(1)} km`;
       } else {
+        // Pour les distances >= 10km, arrondir au km près
         return `${Math.round(km)} km`;
       }
   }
