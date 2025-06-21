@@ -1,10 +1,10 @@
 
-import { Clock, MapPin, Calendar } from 'lucide-react';
+import { Clock, MapPin, Calendar, RefreshCw } from 'lucide-react';
 import { useStravaData } from '@/hooks/useStravaData';
 import { getCurrentMonthName } from '@/utils/dateHelpers';
 
 const StravaMonthlyDashboard = () => {
-  const { stats, loading, isStravaConnected } = useStravaData();
+  const { stats, loading, isStravaConnected, syncActivities } = useStravaData();
 
   // Conversion de la durée en heures et minutes
   const formatDuration = (seconds: number) => {
@@ -47,15 +47,55 @@ const StravaMonthlyDashboard = () => {
     );
   }
 
+  // Si pas de données disponibles, proposer de synchroniser
+  if (!stats || (stats.monthly.distance === 0 && stats.monthly.activitiesCount === 0)) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="bg-strava-orange/10 p-2 rounded-lg">
+            <Calendar className="text-strava-orange" size={20} />
+          </div>
+          <h3 className="font-semibold text-gray-800">
+            Données Strava - {getCurrentMonthName()}
+          </h3>
+        </div>
+
+        <div className="text-center py-8">
+          <p className="text-gray-600 mb-4">
+            Aucune donnée disponible pour ce mois
+          </p>
+          <button
+            onClick={syncActivities}
+            disabled={loading}
+            className="bg-strava-orange text-white px-4 py-2 rounded-lg hover:bg-strava-orange/90 transition-colors flex items-center gap-2 mx-auto"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Synchroniser avec Strava
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-200">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="bg-strava-orange/10 p-2 rounded-lg">
-          <Calendar className="text-strava-orange" size={20} />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="bg-strava-orange/10 p-2 rounded-lg">
+            <Calendar className="text-strava-orange" size={20} />
+          </div>
+          <h3 className="font-semibold text-gray-800">
+            Données Strava - {getCurrentMonthName()}
+          </h3>
         </div>
-        <h3 className="font-semibold text-gray-800">
-          Données Strava - {getCurrentMonthName()}
-        </h3>
+        <button
+          onClick={syncActivities}
+          disabled={loading}
+          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          title="Synchroniser avec Strava"
+        >
+          <RefreshCw className={`w-4 h-4 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -63,7 +103,7 @@ const StravaMonthlyDashboard = () => {
         <div className="text-center">
           <div className="bg-gradient-to-br from-running-green to-running-green-light p-4 rounded-xl text-white mb-3">
             <div className="text-2xl font-bold">
-              {stats?.monthly.distance?.toFixed(1) || '0'} km
+              {stats.monthly.distance?.toFixed(1) || '0'} km
             </div>
             <div className="text-sm opacity-90">Distance parcourue</div>
           </div>
@@ -73,7 +113,7 @@ const StravaMonthlyDashboard = () => {
         <div className="text-center">
           <div className="bg-gradient-to-br from-running-blue to-blue-400 p-4 rounded-xl text-white mb-3">
             <div className="text-2xl font-bold">
-              {stats?.monthly.activitiesCount || 0}
+              {stats.monthly.activitiesCount || 0}
             </div>
             <div className="text-sm opacity-90">Activités</div>
           </div>
@@ -83,7 +123,7 @@ const StravaMonthlyDashboard = () => {
         <div className="text-center">
           <div className="bg-gradient-to-br from-running-purple to-purple-400 p-4 rounded-xl text-white mb-3">
             <div className="text-2xl font-bold">
-              {stats?.monthly.duration ? formatDuration(stats.monthly.duration) : '0h 0min'}
+              {stats.monthly.duration ? formatDuration(stats.monthly.duration) : '0h 0min'}
             </div>
             <div className="text-sm opacity-90">Temps total</div>
           </div>
@@ -91,7 +131,7 @@ const StravaMonthlyDashboard = () => {
       </div>
 
       {/* Activité la plus longue */}
-      {stats?.monthly.longestActivity && (
+      {stats.monthly.longestActivity && (
         <div className="mt-6 pt-4 border-t border-gray-100">
           <div className="flex items-center gap-2 mb-2">
             <MapPin size={16} className="text-gray-500" />

@@ -32,6 +32,7 @@ interface UseStravaDataReturn {
   error: string | null;
   syncActivities: () => Promise<void>;
   isStravaConnected: boolean;
+  loadStats: () => Promise<void>;
 }
 
 export const useStravaData = (): UseStravaDataReturn => {
@@ -52,9 +53,98 @@ export const useStravaData = (): UseStravaDataReturn => {
         .single();
 
       setIsStravaConnected(!!profile?.strava_access_token);
+      
+      // Si Strava est connecté, charger automatiquement les stats
+      if (profile?.strava_access_token) {
+        await loadStats();
+      }
     } catch (error) {
       console.error('Error checking Strava connection:', error);
       setIsStravaConnected(false);
+    }
+  };
+
+  const loadStats = async () => {
+    if (!user || !isStravaConnected) return;
+
+    setLoading(true);
+    try {
+      // Calculer les statistiques à partir des activités existantes
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+
+      // Get current month activities
+      const startOfMonth = new Date(currentYear, currentMonth - 1, 1).toISOString();
+      const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59).toISOString();
+
+      const { data: monthActivities } = await supabase
+        .from('strava_activities')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('start_date', startOfMonth)
+        .lte('start_date', endOfMonth)
+        .order('start_date', { ascending: false });
+
+      // Get current year activities
+      const startOfYear = new Date(currentYear, 0, 1).toISOString();
+      const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59).toISOString();
+
+      const { data: yearActivities } = await supabase
+        .from('strava_activities')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('start_date', startOfYear)
+        .lte('start_date', endOfYear)
+        .order('start_date', { ascending: false });
+
+      // Get latest activity
+      const { data: latestActivity } = await supabase
+        .from('strava_activities')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('start_date', { ascending: false })
+        .limit(1);
+
+      // Calculate monthly stats
+      const monthlyDistance = monthActivities?.reduce((sum, activity) => sum + (activity.distance / 1000), 0) || 0;
+      const monthlyActivitiesCount = monthActivities?.length || 0;
+      const monthlyDuration = monthActivities?.reduce((sum, activity) => sum + (activity.moving_time || 0), 0) || 0;
+      const longestMonthlyActivity = monthActivities?.reduce((longest, activity) => 
+        activity.distance > (longest?.distance || 0) ? activity : longest, null);
+
+      // Calculate yearly stats
+      const yearlyDistance = yearActivities?.reduce((sum, activity) => sum + (activity.distance / 1000), 0) || 0;
+      const yearlyActivitiesCount = yearActivities?.length || 0;
+
+      const calculatedStats: StravaStats = {
+        monthly: {
+          distance: Math.round(monthlyDistance * 10) / 10,
+          activitiesCount: monthlyActivitiesCount,
+          duration: monthlyDuration,
+          longestActivity: longestMonthlyActivity ? {
+            name: longestMonthlyActivity.name,
+            distance: Math.round((longestMonthlyActivity.distance / 1000) * 10) / 10,
+            date: longestMonthlyActivity.start_date_local
+          } : null
+        },
+        yearly: {
+          distance: Math.round(yearlyDistance * 10) / 10,
+          activitiesCount: yearlyActivitiesCount
+        },
+        latest: latestActivity?.[0] ? {
+          name: latestActivity[0].name,
+          distance: Math.round((latestActivity[0].distance / 1000) * 10) / 10,
+          date: latestActivity[0].start_date_local
+        } : null
+      };
+
+      setStats(calculatedStats);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+      setError('Erreur lors du chargement des statistiques');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -106,6 +196,10 @@ export const useStravaData = (): UseStravaDataReturn => {
         if (data.best_efforts_status && !data.best_efforts_status.success) {
           toast.info('Synchronisation partielle - certains détails seront récupérés lors de la prochaine synchronisation');
         }
+      } else {
+        // Fallback: reload stats from database
+        await loadStats();
+        toast.success('Données synchronisées avec succès');
       }
     } catch (error: any) {
       console.error('Error syncing activities:', error);
@@ -138,6 +232,7 @@ export const useStravaData = (): UseStravaDataReturn => {
     loading,
     error,
     syncActivities,
-    isStravaConnected
+    isStravaConnected,
+    loadStats
   };
 };
