@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TrendingUp } from 'lucide-react';
 import { formatDistanceType, formatTimeFromSeconds } from '@/utils/activityHelpers';
 
 interface BestEffort {
