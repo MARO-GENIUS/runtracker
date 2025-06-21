@@ -1,21 +1,46 @@
 
-import { TrendingUp, Target, Calendar } from 'lucide-react';
+import { TrendingUp, Target, Calendar, Settings } from 'lucide-react';
 import { useStravaData } from '@/hooks/useStravaData';
+import { useMonthlyGoals } from '@/hooks/useMonthlyGoals';
 import { monthlyStats } from '../data/mockData';
+import { 
+  getCurrentMonthName, 
+  getDaysRemainingInMonth, 
+  getDaysPassedInMonth,
+  getDailyAverageNeeded,
+  getProgressColor,
+  getProgressBarColor
+} from '@/utils/dateHelpers';
+import { useState } from 'react';
 
 const MonthlyStats = () => {
   const { stats, loading, isStravaConnected } = useStravaData();
+  const { currentGoal, updateGoal } = useMonthlyGoals();
+  const [showGoalEdit, setShowGoalEdit] = useState(false);
+  const [newGoal, setNewGoal] = useState(currentGoal);
 
   // Utilise les données Strava si disponibles, sinon les données mockées
   const currentMonthKm = stats?.monthly.distance || monthlyStats.currentMonth.km;
-  const monthlyTarget = monthlyStats.currentMonth.target; // Garde l'objectif fixe pour l'instant
   const yearlyTotal = stats?.yearly.distance || monthlyStats.yearTotal;
   const monthlyActivities = stats?.monthly.activitiesCount || 0;
   const yearlyActivities = stats?.yearly.activitiesCount || 0;
 
-  const progressPercentage = (currentMonthKm / monthlyTarget) * 100;
+  // Calculs dynamiques
+  const progressPercentage = (currentMonthKm / currentGoal) * 100;
+  const daysRemaining = getDaysRemainingInMonth();
+  const daysPassed = getDaysPassedInMonth();
+  const daysInMonth = daysPassed + daysRemaining;
+  const daysPassedRatio = daysPassed / daysInMonth;
+  const remainingKm = Math.max(0, currentGoal - currentMonthKm);
+  const dailyAverageNeeded = getDailyAverageNeeded(remainingKm, daysRemaining);
+  
   const monthlyGrowth = ((currentMonthKm - monthlyStats.previousMonth.km) / monthlyStats.previousMonth.km * 100);
   const yearlyGrowth = ((yearlyTotal - monthlyStats.previousYear) / monthlyStats.previousYear * 100);
+
+  const handleGoalUpdate = async () => {
+    await updateGoal(newGoal);
+    setShowGoalEdit(false);
+  };
 
   if (loading) {
     return (
@@ -34,37 +59,95 @@ const MonthlyStats = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in">
-      {/* Objectif mensuel */}
+      {/* Objectif mensuel dynamique */}
       <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-200">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="bg-running-green/10 p-2 rounded-lg">
-            <Target className="text-running-green" size={20} />
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-running-green/10 p-2 rounded-lg">
+              <Target className="text-running-green" size={20} />
+            </div>
+            <h3 className="font-semibold text-gray-800">Objectif {getCurrentMonthName()}</h3>
           </div>
-          <h3 className="font-semibold text-gray-800">Objectif Juin</h3>
+          <button
+            onClick={() => {
+              setNewGoal(currentGoal);
+              setShowGoalEdit(!showGoalEdit);
+            }}
+            className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <Settings size={16} className="text-gray-500" />
+          </button>
         </div>
         
-        <div className="space-y-3">
-          <div className="flex justify-between items-end">
-            <span className="text-2xl font-bold text-running-green">
-              {currentMonthKm.toFixed(1)}
-            </span>
-            <span className="text-gray-600">/ {monthlyTarget} km</span>
+        {showGoalEdit ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={newGoal}
+                onChange={(e) => setNewGoal(Number(e.target.value))}
+                className="border rounded px-2 py-1 w-20 text-center"
+                min="1"
+                max="1000"
+              />
+              <span className="text-gray-600">km</span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleGoalUpdate}
+                className="bg-running-green text-white px-3 py-1 rounded text-sm hover:bg-running-green/90"
+              >
+                Sauver
+              </button>
+              <button
+                onClick={() => setShowGoalEdit(false)}
+                className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300"
+              >
+                Annuler
+              </button>
+            </div>
           </div>
-          
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div 
-              className="bg-gradient-to-r from-running-green to-running-green-light h-3 rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(progressPercentage, 100)}%` }}
-            />
+        ) : (
+          <div className="space-y-3">
+            <div className="flex justify-between items-end">
+              <span className="text-2xl font-bold text-running-green">
+                {currentMonthKm.toFixed(1)}
+              </span>
+              <span className="text-gray-600">/ {currentGoal} km</span>
+            </div>
+            
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div 
+                className={`bg-gradient-to-r ${getProgressBarColor(progressPercentage, daysPassedRatio)} h-3 rounded-full transition-all duration-500`}
+                style={{ width: `${Math.min(progressPercentage, 100)}%` }}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">{progressPercentage.toFixed(0)}% réalisé</span>
+                <span className={`font-medium ${getProgressColor(progressPercentage, daysPassedRatio)}`}>
+                  {daysRemaining} jours restants
+                </span>
+              </div>
+              
+              {remainingKm > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Reste: {remainingKm.toFixed(1)} km</span>
+                  <span className="text-gray-500">
+                    Moy. nécessaire: {dailyAverageNeeded.toFixed(1)} km/jour
+                  </span>
+                </div>
+              )}
+              
+              <div className="text-sm">
+                <span className={`font-medium ${isStravaConnected ? 'text-running-blue' : getProgressColor(progressPercentage, daysPassedRatio)}`}>
+                  {isStravaConnected ? `${monthlyActivities} activités ce mois` : `${monthlyGrowth >= 0 ? '+' : ''}${monthlyGrowth.toFixed(1)}% vs mois dernier`}
+                </span>
+              </div>
+            </div>
           </div>
-          
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">{progressPercentage.toFixed(0)}% réalisé</span>
-            <span className={`font-medium ${monthlyGrowth >= 0 ? 'text-running-green' : 'text-red-500'}`}>
-              {isStravaConnected ? `${monthlyActivities} activités` : `${monthlyGrowth >= 0 ? '+' : ''}${monthlyGrowth.toFixed(1)}% vs mai`}
-            </span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Total annuel */}
