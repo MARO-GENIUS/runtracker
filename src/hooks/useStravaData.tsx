@@ -8,7 +8,7 @@ interface StravaStats {
   monthly: {
     distance: number;
     activitiesCount: number;
-    duration: number; // Ajout de la propriété duration
+    duration: number;
     longestActivity: {
       name: string;
       distance: number;
@@ -54,14 +54,48 @@ export const useStravaData = (): UseStravaDataReturn => {
 
       setIsStravaConnected(!!profile?.strava_access_token);
       
-      // Si Strava est connecté, charger automatiquement les stats
+      // Si Strava est connecté, charger les stats depuis le cache ou calculer
       if (profile?.strava_access_token) {
-        await loadStats();
+        await loadCachedStats();
       }
     } catch (error) {
       console.error('Error checking Strava connection:', error);
       setIsStravaConnected(false);
     }
+  };
+
+  const loadCachedStats = async () => {
+    if (!user) return;
+
+    try {
+      // D'abord, essayer de charger les stats depuis le cache
+      const { data: cachedStats } = await supabase
+        .from('user_stats_cache')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (cachedStats && isRecentCache(cachedStats.updated_at)) {
+        // Utiliser les données du cache si elles sont récentes (moins de 1 heure)
+        setStats(cachedStats.stats_data);
+        console.log('Using cached Strava stats');
+        return;
+      }
+
+      // Si pas de cache ou cache expiré, calculer depuis les activités
+      await loadStats();
+    } catch (error) {
+      console.error('Error loading cached stats:', error);
+      // Fallback : calculer depuis les activités
+      await loadStats();
+    }
+  };
+
+  const isRecentCache = (updatedAt: string): boolean => {
+    const cacheTime = new Date(updatedAt);
+    const now = new Date();
+    const hoursDiff = (now.getTime() - cacheTime.getTime()) / (1000 * 60 * 60);
+    return hoursDiff < 1; // Cache valide pendant 1 heure
   };
 
   const loadStats = async () => {
@@ -140,11 +174,32 @@ export const useStravaData = (): UseStravaDataReturn => {
       };
 
       setStats(calculatedStats);
+
+      // Sauvegarder dans le cache
+      await saveCachedStats(calculatedStats);
     } catch (error) {
       console.error('Error loading stats:', error);
       setError('Erreur lors du chargement des statistiques');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveCachedStats = async (statsData: StravaStats) => {
+    if (!user) return;
+
+    try {
+      await supabase
+        .from('user_stats_cache')
+        .upsert({
+          user_id: user.id,
+          stats_data: statsData,
+          updated_at: new Date().toISOString()
+        });
+      
+      console.log('Stats cached successfully');
+    } catch (error) {
+      console.error('Error caching stats:', error);
     }
   };
 
@@ -163,7 +218,6 @@ export const useStravaData = (): UseStravaDataReturn => {
       if (functionError) {
         console.error('Function error:', functionError);
         
-        // Handle specific error cases
         if (functionError.message?.includes('non-2xx status code')) {
           throw new Error('Erreur de synchronisation Strava. Veuillez réessayer dans quelques minutes.');
         }
@@ -172,7 +226,6 @@ export const useStravaData = (): UseStravaDataReturn => {
       }
 
       if (data?.error) {
-        // Handle rate limiting specifically
         if (data.type === 'rate_limit' || data.error.includes('rate limit')) {
           toast.error('Limite de taux Strava atteinte. Veuillez attendre quelques minutes avant de réessayer.');
           setError('Limite de taux Strava atteinte');
@@ -185,19 +238,20 @@ export const useStravaData = (): UseStravaDataReturn => {
       if (data?.stats) {
         setStats(data.stats);
         
-        // Show appropriate success message
+        // Sauvegarder immédiatement dans le cache après synchronisation
+        await saveCachedStats(data.stats);
+        
         if (data.message) {
           toast.success(data.message);
         } else {
           toast.success(`${data.activities_synced || 0} activités synchronisées`);
         }
         
-        // Show additional info if there were issues with best efforts
         if (data.best_efforts_status && !data.best_efforts_status.success) {
           toast.info('Synchronisation partielle - certains détails seront récupérés lors de la prochaine synchronisation');
         }
       } else {
-        // Fallback: reload stats from database
+        // Fallback: reload stats from database and cache them
         await loadStats();
         toast.success('Données synchronisées avec succès');
       }
@@ -205,7 +259,6 @@ export const useStravaData = (): UseStravaDataReturn => {
       console.error('Error syncing activities:', error);
       let errorMessage = 'Erreur lors de la synchronisation des activités';
       
-      // Handle specific error types
       if (error.message?.includes('rate limit') || error.message?.includes('429')) {
         errorMessage = 'Limite de taux Strava atteinte. Veuillez attendre quelques minutes.';
       } else if (error.message?.includes('token')) {
