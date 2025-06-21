@@ -48,7 +48,13 @@ serve(async (req) => {
       .eq('id', user.id)
       .single()
 
-    if (profileError || !profile?.strava_access_token) {
+    if (profileError) {
+      console.error('Profile error:', profileError)
+      throw new Error('Could not fetch user profile')
+    }
+
+    if (!profile?.strava_access_token) {
+      console.log('No Strava access token found')
       throw new Error('Strava not connected')
     }
 
@@ -90,7 +96,50 @@ serve(async (req) => {
       console.log('Token refreshed successfully')
     }
 
-    // Fetch activity streams for detailed data
+    // Fetch detailed activity data from Strava API
+    const activityResponse = await fetch(
+      `https://www.strava.com/api/v3/activities/${activityId}?include_all_efforts=true`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      }
+    )
+
+    let activityData = null
+    if (activityResponse.ok) {
+      activityData = await activityResponse.json()
+      console.log('Successfully fetched activity details from Strava')
+    } else {
+      console.log('Could not fetch activity details from Strava API')
+    }
+
+    // Extract best efforts from activity data
+    let bestEfforts = []
+    if (activityData?.best_efforts) {
+      bestEfforts = activityData.best_efforts.map(effort => ({
+        name: effort.name,
+        distance: effort.distance,
+        moving_time: effort.moving_time,
+        elapsed_time: effort.elapsed_time,
+        start_date_local: effort.start_date_local
+      }))
+    }
+
+    // Extract splits from activity data
+    let splits = []
+    if (activityData?.splits_metric) {
+      splits = activityData.splits_metric.map((split, index) => ({
+        split: index + 1,
+        distance: split.distance,
+        moving_time: split.moving_time,
+        elapsed_time: split.elapsed_time,
+        elevation_difference: split.elevation_difference || 0,
+        average_speed: split.average_speed
+      }))
+    }
+
+    // Fetch activity streams for additional data if needed
     const streamsResponse = await fetch(
       `https://www.strava.com/api/v3/activities/${activityId}/streams?keys=latlng,distance,altitude,velocity_smooth,heartrate,cadence,watts,temp,moving,grade_smooth&key_by_type=true`,
       {
@@ -105,50 +154,19 @@ serve(async (req) => {
       streams = await streamsResponse.json()
       console.log('Successfully fetched activity streams')
     } else {
-      console.log('Could not fetch activity streams, using basic data only')
-    }
-
-    // Try to get best efforts from our database (stored during sync)
-    const { data: bestEfforts } = await supabase
-      .from('strava_best_efforts')
-      .select('*')
-      .eq('activity_id', activityId)
-      .order('distance', { ascending: true })
-
-    // Generate splits if we have distance data
-    let splits = []
-    if (streams?.distance?.data && streams?.distance?.data.length > 0) {
-      const distanceData = streams.distance.data
-      const timeData = streams.time?.data || []
-      
-      // Create kilometer splits
-      let currentKm = 1
-      let lastIndex = 0
-      
-      for (let i = 0; i < distanceData.length; i++) {
-        if (distanceData[i] >= currentKm * 1000) {
-          const splitTime = timeData[i] - (timeData[lastIndex] || 0)
-          splits.push({
-            split: currentKm,
-            distance: 1000,
-            moving_time: splitTime,
-            elapsed_time: splitTime,
-            elevation_difference: 0, // Could calculate from altitude data if available
-            average_speed: 1000 / splitTime // m/s
-          })
-          
-          lastIndex = i
-          currentKm++
-        }
-      }
+      console.log('Could not fetch activity streams')
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        best_efforts: bestEfforts || [],
+        best_efforts: bestEfforts,
         splits: splits,
-        streams: streams ? Object.keys(streams) : []
+        streams: streams ? Object.keys(streams) : [],
+        activity_data: activityData ? {
+          segment_efforts: activityData.segment_efforts || [],
+          laps: activityData.laps || []
+        } : null
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
