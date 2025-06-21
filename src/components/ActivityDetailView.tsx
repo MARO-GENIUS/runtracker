@@ -33,6 +33,13 @@ interface ActivityDetailViewProps {
 }
 
 export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity }) => {
+  console.log('ActivityDetailView received activity:', {
+    id: activity.id,
+    name: activity.name,
+    best_efforts_count: activity.best_efforts?.length || 0,
+    splits_count: activity.splits?.length || 0
+  });
+
   return (
     <div className="space-y-6">
       {/* Header Info */}
@@ -59,9 +66,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
 
         <TabsContent value="overview" className="space-y-6">
           <ActivityMetrics activity={activity} />
-          {activity.best_efforts && activity.best_efforts.length > 0 && (
-            <BestEfforts bestEfforts={activity.best_efforts} />
-          )}
+          <BestEfforts bestEfforts={activity.best_efforts || []} />
         </TabsContent>
 
         <TabsContent value="charts" className="space-y-6">
@@ -81,9 +86,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
         </TabsContent>
 
         <TabsContent value="details" className="space-y-6">
-          {activity.splits && activity.splits.length > 0 && (
-            <ActivitySplits splits={activity.splits} />
-          )}
+          <ActivitySplits splits={activity.splits || []} />
           <Card>
             <CardHeader>
               <CardTitle>Informations techniques</CardTitle>

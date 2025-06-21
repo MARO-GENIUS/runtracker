@@ -44,7 +44,7 @@ serve(async (req) => {
     // Get user's Strava access token
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('strava_access_token, strava_refresh_token, strava_token_expires_at')
+      .select('strava_access_token, strava_refresh_token, strava_expires_at')
       .eq('id', user.id)
       .single()
 
@@ -60,7 +60,7 @@ serve(async (req) => {
 
     // Check if token needs refresh
     let accessToken = profile.strava_access_token
-    if (profile.strava_token_expires_at && new Date(profile.strava_token_expires_at * 1000) <= new Date()) {
+    if (profile.strava_expires_at && new Date(profile.strava_expires_at * 1000) <= new Date()) {
       console.log('Token expired, refreshing...')
       
       const refreshResponse = await fetch('https://www.strava.com/oauth/token', {
@@ -89,7 +89,7 @@ serve(async (req) => {
         .update({
           strava_access_token: refreshData.access_token,
           strava_refresh_token: refreshData.refresh_token,
-          strava_token_expires_at: refreshData.expires_at,
+          strava_expires_at: refreshData.expires_at,
         })
         .eq('id', user.id)
 
@@ -107,54 +107,39 @@ serve(async (req) => {
     )
 
     let activityData = null
+    let bestEfforts = []
+    let splits = []
+
     if (activityResponse.ok) {
       activityData = await activityResponse.json()
       console.log('Successfully fetched activity details from Strava')
+      
+      // Extract best efforts from activity data
+      if (activityData?.best_efforts && Array.isArray(activityData.best_efforts)) {
+        bestEfforts = activityData.best_efforts.map(effort => ({
+          name: effort.name,
+          distance: effort.distance,
+          moving_time: effort.moving_time,
+          elapsed_time: effort.elapsed_time,
+          start_date_local: effort.start_date_local
+        }))
+        console.log(`Found ${bestEfforts.length} best efforts`)
+      }
+
+      // Extract splits from activity data
+      if (activityData?.splits_metric && Array.isArray(activityData.splits_metric)) {
+        splits = activityData.splits_metric.map((split, index) => ({
+          split: index + 1,
+          distance: split.distance,
+          moving_time: split.moving_time,
+          elapsed_time: split.elapsed_time,
+          elevation_difference: split.elevation_difference || 0,
+          average_speed: split.average_speed
+        }))
+        console.log(`Found ${splits.length} splits`)
+      }
     } else {
       console.log('Could not fetch activity details from Strava API')
-    }
-
-    // Extract best efforts from activity data
-    let bestEfforts = []
-    if (activityData?.best_efforts) {
-      bestEfforts = activityData.best_efforts.map(effort => ({
-        name: effort.name,
-        distance: effort.distance,
-        moving_time: effort.moving_time,
-        elapsed_time: effort.elapsed_time,
-        start_date_local: effort.start_date_local
-      }))
-    }
-
-    // Extract splits from activity data
-    let splits = []
-    if (activityData?.splits_metric) {
-      splits = activityData.splits_metric.map((split, index) => ({
-        split: index + 1,
-        distance: split.distance,
-        moving_time: split.moving_time,
-        elapsed_time: split.elapsed_time,
-        elevation_difference: split.elevation_difference || 0,
-        average_speed: split.average_speed
-      }))
-    }
-
-    // Fetch activity streams for additional data if needed
-    const streamsResponse = await fetch(
-      `https://www.strava.com/api/v3/activities/${activityId}/streams?keys=latlng,distance,altitude,velocity_smooth,heartrate,cadence,watts,temp,moving,grade_smooth&key_by_type=true`,
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      }
-    )
-
-    let streams = null
-    if (streamsResponse.ok) {
-      streams = await streamsResponse.json()
-      console.log('Successfully fetched activity streams')
-    } else {
-      console.log('Could not fetch activity streams')
     }
 
     return new Response(
@@ -162,7 +147,6 @@ serve(async (req) => {
         success: true,
         best_efforts: bestEfforts,
         splits: splits,
-        streams: streams ? Object.keys(streams) : [],
         activity_data: activityData ? {
           segment_efforts: activityData.segment_efforts || [],
           laps: activityData.laps || []

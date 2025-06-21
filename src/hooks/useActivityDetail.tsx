@@ -49,6 +49,8 @@ export const useActivityDetail = (): UseActivityDetailReturn => {
       setLoading(true);
       setError(null);
 
+      console.log(`Fetching activity detail for ${activityId}`);
+
       // Fetch basic activity data from our database
       const { data: activityData, error: fetchError } = await supabase
         .from('strava_activities')
@@ -58,18 +60,30 @@ export const useActivityDetail = (): UseActivityDetailReturn => {
         .single();
 
       if (fetchError) {
+        console.error('Error fetching basic activity data:', fetchError);
         throw new Error(fetchError.message);
       }
 
+      console.log('Basic activity data fetched:', activityData);
       setActivity(activityData);
 
-      // Fetch additional details (best efforts, splits) via edge function if available
+      // Fetch additional details (best efforts, splits) via edge function
       try {
+        console.log('Calling edge function for detailed data...');
         const { data: detailData, error: detailError } = await supabase.functions.invoke('get-activity-details', {
           body: { activityId }
         });
 
-        if (!detailError && detailData) {
+        console.log('Edge function response:', detailData);
+
+        if (detailError) {
+          console.error('Edge function error:', detailError);
+        } else if (detailData?.success) {
+          console.log('Updating activity with detailed data:', {
+            best_efforts: detailData.best_efforts?.length || 0,
+            splits: detailData.splits?.length || 0
+          });
+          
           setActivity(prev => prev ? {
             ...prev,
             best_efforts: detailData.best_efforts || [],
@@ -77,7 +91,7 @@ export const useActivityDetail = (): UseActivityDetailReturn => {
           } : null);
         }
       } catch (detailError) {
-        console.log('Could not fetch additional activity details:', detailError);
+        console.error('Could not fetch additional activity details:', detailError);
         // This is not a critical error, continue with basic data
       }
 
