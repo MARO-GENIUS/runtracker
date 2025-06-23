@@ -35,6 +35,8 @@ interface UseStravaDataReturn {
   syncActivities: () => Promise<void>;
   isStravaConnected: boolean;
   loadStats: () => Promise<void>;
+  isAutoSyncing: boolean;
+  lastSyncTime: Date | null;
   rateLimitInfo: {
     requestsUsed: number;
     canMakeRequest: boolean;
@@ -49,6 +51,8 @@ export const useStravaData = (): UseStravaDataReturn => {
   const [error, setError] = useState<string | null>(null);
   const [isStravaConnected, setIsStravaConnected] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isAutoSyncing, setIsAutoSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const { user } = useAuth();
   const { getCachedStats, updateCachedStats } = useStatsCache();
   const { 
@@ -215,6 +219,7 @@ export const useStravaData = (): UseStravaDataReturn => {
       toast.warning(`Attention: seulement ${remaining} requêtes Strava restantes aujourd'hui.`);
     }
 
+    setIsAutoSyncing(true);
     setLoading(true);
     setError(null);
 
@@ -266,6 +271,8 @@ export const useStravaData = (): UseStravaDataReturn => {
         await loadStats();
         toast.success('Données synchronisées avec succès');
       }
+
+      setLastSyncTime(new Date());
     } catch (error: any) {
       console.error('Error syncing activities:', error);
       let errorMessage = 'Erreur lors de la synchronisation des activités';
@@ -283,6 +290,7 @@ export const useStravaData = (): UseStravaDataReturn => {
       toast.error(errorMessage);
     } finally {
       setLoading(false);
+      setIsAutoSyncing(false);
     }
   };
 
@@ -299,6 +307,8 @@ export const useStravaData = (): UseStravaDataReturn => {
       setStats(null);
       setIsStravaConnected(false);
       setIsInitialized(false);
+      setIsAutoSyncing(false);
+      setLastSyncTime(null);
     }
   }, [user, isInitialized]);
 
@@ -309,6 +319,8 @@ export const useStravaData = (): UseStravaDataReturn => {
     syncActivities,
     isStravaConnected,
     loadStats,
+    isAutoSyncing,
+    lastSyncTime,
     rateLimitInfo: {
       requestsUsed,
       canMakeRequest,
