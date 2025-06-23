@@ -28,7 +28,7 @@ const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => 
           ) : (
             <div className="flex items-center gap-3">
               <img 
-                src="/lovable-uploads/c2ca1ccc-74df-4162-90d2-15a2f47241a8.png" 
+                src="/lovable-uploads/734bc265-5a79-4eb5-abe6-747a6f0b6e12.png" 
                 alt="RunTracker Pro Logo" 
                 className="h-32 w-32 opacity-90"
               />
