@@ -60,7 +60,7 @@ serve(async (req) => {
           success: true,
           best_efforts: [],
           splits: [],
-          heart_rate_stream: null,
+          heart_rate_stream: [],
           message: 'No Strava token available'
         }),
         {
@@ -95,7 +95,7 @@ serve(async (req) => {
             success: true,
             best_efforts: [],
             splits: [],
-            heart_rate_stream: null,
+            heart_rate_stream: [],
             message: 'Token refresh failed'
           }),
           {
@@ -123,12 +123,37 @@ serve(async (req) => {
 
     let bestEfforts = []
     let splits = []
-    let heartRateStream = null
+    let heartRateStream = []
 
-    // Fetch detailed activity data from Strava API
+    // Helper function to wait between API calls
+    const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+    // Fetch detailed activity data from Strava API with retry logic
+    const fetchWithRetry = async (url: string, options: any, retries = 3) => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const response = await fetch(url, options)
+          
+          if (response.status === 429) {
+            const waitTime = Math.pow(2, i) * 2000 // Exponential backoff: 2s, 4s, 8s
+            console.log(`Rate limit hit. Waiting ${waitTime}ms before retry ${i + 1}/${retries}`)
+            await wait(waitTime)
+            continue
+          }
+          
+          return response
+        } catch (error) {
+          if (i === retries - 1) throw error
+          console.log(`Request failed, retrying... (${i + 1}/${retries})`)
+          await wait(1000)
+        }
+      }
+      throw new Error('Max retries exceeded')
+    }
+
     try {
       console.log('Fetching activity details from Strava API...')
-      const activityResponse = await fetch(
+      const activityResponse = await fetchWithRetry(
         `https://www.strava.com/api/v3/activities/${activityId}?include_all_efforts=true`,
         {
           headers: {
@@ -137,7 +162,7 @@ serve(async (req) => {
         }
       )
 
-      if (activityResponse.ok) {
+      if (activityResponse && activityResponse.ok) {
         const activityData = await activityResponse.json()
         console.log('Successfully fetched activity details from Strava')
         
@@ -165,7 +190,7 @@ serve(async (req) => {
           }))
           console.log(`Found ${splits.length} splits`)
         }
-      } else {
+      } else if (activityResponse) {
         const errorText = await activityResponse.text()
         console.log(`Could not fetch activity details: ${activityResponse.status} - ${errorText}`)
       }
@@ -173,10 +198,13 @@ serve(async (req) => {
       console.error('Error fetching activity details:', error)
     }
 
-    // Fetch activity streams (time series data)
+    // Add delay before streams request to avoid rate limiting
+    await wait(1000)
+
+    // Fetch activity streams (time series data) with retry logic
     try {
       console.log('Fetching activity streams from Strava API...')
-      const streamsResponse = await fetch(
+      const streamsResponse = await fetchWithRetry(
         `https://www.strava.com/api/v3/activities/${activityId}/streams?keys=heartrate,time,distance&key_by_type=true`,
         {
           headers: {
@@ -185,7 +213,7 @@ serve(async (req) => {
         }
       )
 
-      if (streamsResponse.ok) {
+      if (streamsResponse && streamsResponse.ok) {
         const streamsData = await streamsResponse.json()
         console.log('Successfully fetched activity streams from Strava')
         console.log('Streams data keys:', Object.keys(streamsData || {}))
@@ -200,19 +228,35 @@ serve(async (req) => {
             time,
             heartRate: heartRateData[index] || null,
             distance: distanceData[index] || null
-          })).filter((point: any) => point.heartRate !== null)
+          })).filter((point: any) => point.heartRate !== null && point.heartRate > 0)
           
           console.log(`Created ${heartRateStream.length} heart rate data points`)
+          
+          // Log sample data for debugging
+          if (heartRateStream.length > 0) {
+            console.log('Sample heart rate data:', heartRateStream.slice(0, 3))
+            console.log('Heart rate range:', {
+              min: Math.min(...heartRateStream.map(p => p.heartRate)),
+              max: Math.max(...heartRateStream.map(p => p.heartRate))
+            })
+          }
         } else {
           console.log('No heart rate or time data found in streams')
+          console.log('Available stream keys:', Object.keys(streamsData || {}))
         }
-      } else {
+      } else if (streamsResponse) {
         const errorText = await streamsResponse.text()
         console.log(`Could not fetch activity streams: ${streamsResponse.status} - ${errorText}`)
       }
     } catch (error) {
       console.error('Error fetching activity streams:', error)
     }
+
+    console.log('Final response data:', {
+      best_efforts_count: bestEfforts.length,
+      splits_count: splits.length,
+      heart_rate_stream_count: heartRateStream.length
+    })
 
     return new Response(
       JSON.stringify({
@@ -236,7 +280,6 @@ serve(async (req) => {
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
       }
     )
   }

@@ -92,6 +92,20 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
 
         <TabsContent value="overview" className="space-y-6">
           <ActivityMetrics activity={activity} />
+          
+          {/* Heart Rate Section - placed after metrics */}
+          {hasAnyHeartRateData && (
+            <Card>
+              <CardContent className="p-6">
+                <HeartRateTimeSeries 
+                  heartRateData={activity.heart_rate_stream || []}
+                  averageHR={activity.average_heartrate || 0}
+                  maxHR={activity.max_heartrate}
+                />
+              </CardContent>
+            </Card>
+          )}
+          
           <BestEfforts bestEfforts={activity.best_efforts || []} />
         </TabsContent>
 
@@ -106,18 +120,15 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
 
         <TabsContent value="charts" className="space-y-6">
           {hasAnyHeartRateData ? (
-            hasDetailedHeartRate ? (
-              <HeartRateTimeSeries 
-                heartRateData={activity.heart_rate_stream!}
-                averageHR={activity.average_heartrate || 0}
-                maxHR={activity.max_heartrate}
-              />
-            ) : (
-              <HeartRateChart 
-                averageHR={activity.average_heartrate!}
-                maxHR={activity.max_heartrate}
-              />
-            )
+            <Card>
+              <CardContent className="p-6">
+                <HeartRateTimeSeries 
+                  heartRateData={activity.heart_rate_stream || []}
+                  averageHR={activity.average_heartrate || 0}
+                  maxHR={activity.max_heartrate}
+                />
+              </CardContent>
+            </Card>
           ) : (
             <Card>
               <CardContent className="p-8 text-center">
