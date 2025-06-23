@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss"
 
 const config = {
@@ -62,6 +61,7 @@ const config = {
       },
       backgroundImage: {
         'gradient-performance': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        'gradient-running': 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
       },
       borderRadius: {
         lg: "var(--radius)",
