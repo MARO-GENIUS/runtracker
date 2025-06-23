@@ -13,53 +13,53 @@ interface HeaderProps {
 
 const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => {
   return (
-    <header className="bg-gradient-running text-white animate-fade-in">
+    <header className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-600 text-white shadow-lg animate-fade-in">
       <div className="max-w-6xl mx-auto p-6">
         {/* Ligne supérieure avec navigation */}
         <div className="flex items-center justify-between mb-6">
           {(currentView === 'records' || currentView === 'activities') ? (
             <button 
               onClick={() => onViewChange('dashboard')}
-              className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+              className="flex items-center gap-2 text-white/80 hover:text-white transition-all duration-200 hover:scale-105"
             >
               <ArrowLeft size={20} />
-              <span>Retour au dashboard</span>
+              <span className="font-medium">Retour au dashboard</span>
             </button>
           ) : (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <img 
                 src="/lovable-uploads/734bc265-5a79-4eb5-abe6-747a6f0b6e12.png" 
                 alt="RunTracker Pro Logo" 
-                className="h-32 w-32 opacity-90"
+                className="h-16 w-16 drop-shadow-lg"
               />
             </div>
           )}
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {currentView === 'dashboard' && (
               <>
                 <button 
                   onClick={() => onViewChange('activities')}
-                  className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+                  className="flex items-center gap-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm px-4 py-2.5 rounded-xl transition-all duration-200 hover:scale-105 border border-white/20"
                 >
                   <Activity size={18} />
-                  <span>📊 Mes Performances</span>
+                  <span className="font-medium">📊 Mes Performances</span>
                 </button>
                 <button 
                   onClick={() => onViewChange('records')}
-                  className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+                  className="flex items-center gap-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm px-4 py-2.5 rounded-xl transition-all duration-200 hover:scale-105 border border-white/20"
                 >
                   <Trophy size={18} />
-                  <span>📜 Voir tous mes records</span>
+                  <span className="font-medium">📜 Voir tous mes records</span>
                 </button>
               </>
             )}
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-white hover:bg-white/20">
+                <Button variant="ghost" className="text-white hover:bg-white/20 border border-white/20 backdrop-blur-sm">
                   <User size={20} />
-                  <span className="ml-2">{user.email}</span>
+                  <span className="ml-2 font-medium">{user.email}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -74,23 +74,23 @@ const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => 
         
         {/* Titre principal pour les vues spécifiques */}
         {currentView === 'dashboard' && (
-          <div>
-            <h1 className="text-3xl font-bold mb-2">RunTracker Pro</h1>
-            <p className="text-white/80">Votre compagnon de course personnalisé</p>
+          <div className="text-center">
+            <h1 className="text-4xl font-bold mb-2 text-white drop-shadow-lg">RunTracker Pro</h1>
+            <p className="text-white/90 text-lg font-medium">Votre compagnon de course personnalisé</p>
           </div>
         )}
 
         {currentView === 'records' && (
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Mes Records Personnels</h1>
-            <p className="text-white/80">Historique complet de vos meilleures performances</p>
+          <div className="text-center">
+            <h1 className="text-4xl font-bold mb-2 text-white drop-shadow-lg">Mes Records Personnels</h1>
+            <p className="text-white/90 text-lg font-medium">Historique complet de vos meilleures performances</p>
           </div>
         )}
 
         {currentView === 'activities' && (
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Mes Performances</h1>
-            <p className="text-white/80">Toutes vos activités de course synchronisées depuis Strava</p>
+          <div className="text-center">
+            <h1 className="text-4xl font-bold mb-2 text-white drop-shadow-lg">Mes Performances</h1>
+            <p className="text-white/90 text-lg font-medium">Toutes vos activités de course synchronisées depuis Strava</p>
           </div>
         )}
       </div>
