@@ -31,13 +31,22 @@ const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => 
           
           <div className="flex items-center gap-4">
             {currentView === 'dashboard' && (
-              <button 
-                onClick={() => onViewChange('records')}
-                className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
-              >
-                <Trophy size={18} />
-                <span>📜 Voir tous mes records</span>
-              </button>
+              <>
+                <button 
+                  onClick={() => onViewChange('activities')}
+                  className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+                >
+                  <Activity size={18} />
+                  <span>📊 Mes Performances</span>
+                </button>
+                <button 
+                  onClick={() => onViewChange('records')}
+                  className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+                >
+                  <Trophy size={18} />
+                  <span>📜 Voir tous mes records</span>
+                </button>
+              </>
             )}
             
             <DropdownMenu>
