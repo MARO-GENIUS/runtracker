@@ -11,7 +11,8 @@ interface AutoSyncOptions {
 }
 
 export const useAutoSync = (options: AutoSyncOptions = {}) => {
-  const { intervalHours = 6, syncOnAppStart = true, syncOnFocus = true } = options;
+  // DÉSACTIVÉ: Options par défaut changées pour éviter la synchronisation automatique
+  const { intervalHours = 24, syncOnAppStart = false, syncOnFocus = false } = options;
   const { user } = useAuth();
   const { getCachedStats } = useStatsCache();
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
@@ -39,49 +40,46 @@ export const useAutoSync = (options: AutoSyncOptions = {}) => {
       return hoursSinceLastSync >= intervalHours;
     } catch (error) {
       console.error('Error checking sync status:', error);
-      return true; // En cas d'erreur, on considère qu'une sync est nécessaire
+      return false; // En cas d'erreur, on ne force pas une sync automatique
     }
   };
 
-  // Fonction pour effectuer la synchronisation automatique
+  // Fonction pour effectuer la synchronisation automatique - MAINTENANT MANUELLE UNIQUEMENT
   const performAutoSync = async () => {
     if (!user || isAutoSyncing) return;
 
-    const shouldSync = await needsSync();
-    if (!shouldSync) return;
-
     setIsAutoSyncing(true);
-    console.log('Démarrage de la synchronisation automatique...');
+    console.log('Démarrage de la synchronisation manuelle...');
 
     try {
       const { error } = await supabase.functions.invoke('sync-strava-activities');
       
       if (!error) {
         setLastSyncTime(new Date());
-        console.log('Synchronisation automatique réussie');
+        console.log('Synchronisation manuelle réussie');
       } else {
-        console.error('Erreur lors de la synchronisation automatique:', error);
+        console.error('Erreur lors de la synchronisation manuelle:', error);
       }
     } catch (error) {
-      console.error('Erreur lors de la synchronisation automatique:', error);
+      console.error('Erreur lors de la synchronisation manuelle:', error);
     } finally {
       setIsAutoSyncing(false);
     }
   };
 
-  // Effet pour la synchronisation au démarrage de l'application
+  // DÉSACTIVÉ: Effet pour la synchronisation au démarrage de l'application
   useEffect(() => {
     if (user && syncOnAppStart) {
-      // Délai pour éviter les appels simultanés
-      const timer = setTimeout(() => {
-        performAutoSync();
-      }, 2000);
-
-      return () => clearTimeout(timer);
+      console.log('Synchronisation au démarrage désactivée');
+      // Code désactivé pour éviter la sync automatique
+      // const timer = setTimeout(() => {
+      //   performAutoSync();
+      // }, 2000);
+      // return () => clearTimeout(timer);
     }
   }, [user, syncOnAppStart]);
 
-  // Effet pour la synchronisation périodique
+  // DÉSACTIVÉ: Effet pour la synchronisation périodique
   useEffect(() => {
     if (!user) return;
 
@@ -90,10 +88,13 @@ export const useAutoSync = (options: AutoSyncOptions = {}) => {
       clearInterval(intervalRef.current);
     }
 
-    // Créer un nouvel intervalle
-    intervalRef.current = setInterval(() => {
-      performAutoSync();
-    }, intervalHours * 60 * 60 * 1000); // Convertir les heures en millisecondes
+    // DÉSACTIVÉ: Ne plus créer d'intervalle automatique
+    console.log('Synchronisation périodique désactivée');
+    
+    // Code désactivé pour éviter la sync automatique
+    // intervalRef.current = setInterval(() => {
+    //   performAutoSync();
+    // }, intervalHours * 60 * 60 * 1000);
 
     return () => {
       if (intervalRef.current) {
@@ -102,34 +103,36 @@ export const useAutoSync = (options: AutoSyncOptions = {}) => {
     };
   }, [user, intervalHours]);
 
-  // Effet pour la synchronisation quand l'utilisateur revient sur l'application
+  // DÉSACTIVÉ: Effet pour la synchronisation quand l'utilisateur revient sur l'application
   useEffect(() => {
     if (!syncOnFocus || !user) return;
 
-    const handleFocus = () => {
-      // Attendre un peu pour éviter les appels trop fréquents
-      setTimeout(() => {
-        performAutoSync();
-      }, 1000);
-    };
+    console.log('Synchronisation au focus désactivée');
 
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
-        handleFocus();
-      }
-    });
+    // Code désactivé pour éviter la sync automatique
+    // const handleFocus = () => {
+    //   setTimeout(() => {
+    //     performAutoSync();
+    //   }, 1000);
+    // };
 
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
-    };
+    // window.addEventListener('focus', handleFocus);
+    // document.addEventListener('visibilitychange', () => {
+    //   if (!document.hidden) {
+    //     handleFocus();
+    //   }
+    // });
+
+    // return () => {
+    //   window.removeEventListener('focus', handleFocus);
+    //   document.removeEventListener('visibilitychange', handleFocus);
+    // };
   }, [user, syncOnFocus]);
 
   return {
     isAutoSyncing,
     lastSyncTime,
-    performAutoSync,
+    performAutoSync, // Fonction disponible pour déclenchement manuel uniquement
     needsSync
   };
 };
