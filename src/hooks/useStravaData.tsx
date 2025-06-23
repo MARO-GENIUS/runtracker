@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useStatsCache } from '@/hooks/useStatsCache';
+import { useAutoSync } from '@/hooks/useAutoSync';
 import { toast } from 'sonner';
 
 interface StravaStats {
@@ -34,6 +35,8 @@ interface UseStravaDataReturn {
   syncActivities: () => Promise<void>;
   isStravaConnected: boolean;
   loadStats: () => Promise<void>;
+  isAutoSyncing: boolean;
+  lastSyncTime: Date | null;
 }
 
 export const useStravaData = (): UseStravaDataReturn => {
@@ -43,6 +46,13 @@ export const useStravaData = (): UseStravaDataReturn => {
   const [isStravaConnected, setIsStravaConnected] = useState(false);
   const { user } = useAuth();
   const { getCachedStats, setCachedStats } = useStatsCache();
+  
+  // Intégration de la synchronisation automatique
+  const { isAutoSyncing, lastSyncTime, performAutoSync } = useAutoSync({
+    intervalHours: 6,
+    syncOnAppStart: true,
+    syncOnFocus: true
+  });
 
   const checkStravaConnection = async () => {
     if (!user) return;
@@ -56,7 +66,7 @@ export const useStravaData = (): UseStravaDataReturn => {
 
       setIsStravaConnected(!!profile?.strava_access_token);
       
-      // Si Strava est connecté, charger les stats depuis le cache ou calculer
+      // Si Strava est connecté, charger les stats automatiquement
       if (profile?.strava_access_token) {
         await loadCachedStats();
       }
@@ -70,21 +80,19 @@ export const useStravaData = (): UseStravaDataReturn => {
     if (!user) return;
 
     try {
-      // D'abord, essayer de charger les stats depuis le cache
+      // Charger les stats depuis le cache
       const cachedStats = await getCachedStats();
 
       if (cachedStats) {
-        // Utiliser les données du cache si elles sont récentes (moins de 1 heure)
         setStats(cachedStats);
-        console.log('Using cached Strava stats');
+        console.log('Données Strava chargées depuis le cache');
         return;
       }
 
-      // Si pas de cache ou cache expiré, calculer depuis les activités
+      // Si pas de cache, calculer depuis les activités
       await loadStats();
     } catch (error) {
       console.error('Error loading cached stats:', error);
-      // Fallback : calculer depuis les activités
       await loadStats();
     }
   };
@@ -165,8 +173,6 @@ export const useStravaData = (): UseStravaDataReturn => {
       };
 
       setStats(calculatedStats);
-
-      // Sauvegarder dans le cache
       await setCachedStats(calculatedStats);
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -176,6 +182,7 @@ export const useStravaData = (): UseStravaDataReturn => {
     }
   };
 
+  // Fonction de synchronisation manuelle (conservée pour compatibilité)
   const syncActivities = async () => {
     if (!user || !isStravaConnected) {
       setError('Utilisateur non connecté ou Strava non lié');
@@ -210,8 +217,6 @@ export const useStravaData = (): UseStravaDataReturn => {
 
       if (data?.stats) {
         setStats(data.stats);
-        
-        // Sauvegarder immédiatement dans le cache après synchronisation
         await setCachedStats(data.stats);
         
         if (data.message) {
@@ -224,7 +229,6 @@ export const useStravaData = (): UseStravaDataReturn => {
           toast.info('Synchronisation partielle - certains détails seront récupérés lors de la prochaine synchronisation');
         }
       } else {
-        // Fallback: reload stats from database and cache them
         await loadStats();
         toast.success('Données synchronisées avec succès');
       }
@@ -253,12 +257,21 @@ export const useStravaData = (): UseStravaDataReturn => {
     }
   }, [user]);
 
+  // Écouter les changements de synchronisation automatique
+  useEffect(() => {
+    if (isAutoSyncing) {
+      console.log('Synchronisation automatique en cours...');
+    }
+  }, [isAutoSyncing]);
+
   return {
     stats,
-    loading,
+    loading: loading || isAutoSyncing,
     error,
     syncActivities,
     isStravaConnected,
-    loadStats
+    loadStats,
+    isAutoSyncing,
+    lastSyncTime
   };
 };

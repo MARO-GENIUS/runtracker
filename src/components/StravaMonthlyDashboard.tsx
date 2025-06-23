@@ -1,10 +1,10 @@
 
-import { Clock, MapPin, Calendar, RefreshCw } from 'lucide-react';
+import { Clock, MapPin, Calendar } from 'lucide-react';
 import { useStravaData } from '@/hooks/useStravaData';
 import { getCurrentMonthName } from '@/utils/dateHelpers';
 
 const StravaMonthlyDashboard = () => {
-  const { stats, loading, isStravaConnected, syncActivities } = useStravaData();
+  const { stats, loading, isStravaConnected, isAutoSyncing, lastSyncTime } = useStravaData();
 
   // Conversion de la durée en heures et minutes
   const formatDuration = (seconds: number) => {
@@ -14,6 +14,23 @@ const StravaMonthlyDashboard = () => {
       return `${hours}h ${minutes}min`;
     }
     return `${minutes}min`;
+  };
+
+  const formatLastSync = (date: Date | null) => {
+    if (!date) return 'Jamais';
+    
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    
+    if (diffHours > 0) {
+      return `Il y a ${diffHours}h`;
+    } else if (diffMinutes > 0) {
+      return `Il y a ${diffMinutes}min`;
+    } else {
+      return 'À l\'instant';
+    }
   };
 
   if (!isStravaConnected) {
@@ -47,7 +64,7 @@ const StravaMonthlyDashboard = () => {
     );
   }
 
-  // Si pas de données disponibles, proposer de synchroniser
+  // Si pas de données disponibles
   if (!stats || (stats.monthly.distance === 0 && stats.monthly.activitiesCount === 0)) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
@@ -62,16 +79,14 @@ const StravaMonthlyDashboard = () => {
 
         <div className="text-center py-8">
           <p className="text-gray-600 mb-4">
-            Aucune donnée disponible pour ce mois
+            {isAutoSyncing ? 'Synchronisation en cours...' : 'Aucune donnée disponible pour ce mois'}
           </p>
-          <button
-            onClick={syncActivities}
-            disabled={loading}
-            className="bg-strava-orange text-white px-4 py-2 rounded-lg hover:bg-strava-orange/90 transition-colors flex items-center gap-2 mx-auto"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Synchroniser avec Strava
-          </button>
+          {isAutoSyncing && (
+            <div className="flex items-center justify-center gap-2 text-strava-orange">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-strava-orange"></div>
+              <span className="text-sm">Mise à jour automatique...</span>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -88,14 +103,21 @@ const StravaMonthlyDashboard = () => {
             Données Strava - {getCurrentMonthName()}
           </h3>
         </div>
-        <button
-          onClick={syncActivities}
-          disabled={loading}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-          title="Synchroniser avec Strava"
-        >
-          <RefreshCw className={`w-4 h-4 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
-        </button>
+        
+        {/* Indicateur de synchronisation automatique */}
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          {isAutoSyncing ? (
+            <div className="flex items-center gap-1">
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-strava-orange"></div>
+              <span>Synchronisation...</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span>Synchronisation auto</span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -151,11 +173,14 @@ const StravaMonthlyDashboard = () => {
         </div>
       )}
 
-      {/* Dernière synchronisation */}
+      {/* Informations de synchronisation */}
       <div className="mt-4 pt-3 border-t border-gray-100">
         <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>Données synchronisées depuis Strava</span>
-          <Clock size={12} />
+          <span>Synchronisation automatique toutes les 6h</span>
+          <div className="flex items-center gap-1">
+            <Clock size={12} />
+            <span>Dernière sync: {formatLastSync(lastSyncTime)}</span>
+          </div>
         </div>
       </div>
     </div>

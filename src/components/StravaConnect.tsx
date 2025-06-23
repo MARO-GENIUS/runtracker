@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, RefreshCw } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,7 +10,7 @@ import { useStravaData } from '@/hooks/useStravaData';
 const StravaConnect = () => {
   const [connecting, setConnecting] = useState(false);
   const { user } = useAuth();
-  const { isStravaConnected, syncActivities, loading, stats } = useStravaData();
+  const { isStravaConnected, stats, isAutoSyncing } = useStravaData();
 
   useEffect(() => {
     // Check URL parameters for connection status
@@ -19,7 +19,7 @@ const StravaConnect = () => {
     const error = urlParams.get('error');
 
     if (stravaConnected === 'true') {
-      toast.success('Compte Strava connecté avec succès !');
+      toast.success('Compte Strava connecté avec succès ! Synchronisation automatique activée.');
       // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (error) {
@@ -86,23 +86,28 @@ const StravaConnect = () => {
   if (isStravaConnected) {
     return (
       <div className="flex items-center gap-3">
-        <Button 
-          onClick={syncActivities}
-          disabled={loading}
-          variant="ghost"
-          size="sm"
-          className="h-auto p-2 text-gray-600 hover:text-orange-600 hover:bg-orange-50 transition-colors"
-        >
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-1">
             <StravaIcon />
-            <span className="text-sm font-medium">Synchroniser</span>
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <span className="font-medium text-gray-700">Strava</span>
           </div>
-        </Button>
+          
+          {isAutoSyncing ? (
+            <div className="flex items-center gap-1 text-orange-600">
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-orange-600"></div>
+              <span className="text-xs">Synchronisation...</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 text-green-600">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-xs">Synchronisé</span>
+            </div>
+          )}
+        </div>
         
         {stats && (
           <div className="text-xs text-gray-500">
-            <span>{stats.monthly.distance} km ce mois</span>
+            <span>{stats.monthly.distance.toFixed(1)} km ce mois</span>
           </div>
         )}
       </div>
