@@ -26,7 +26,13 @@ const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => 
               <span>Retour au dashboard</span>
             </button>
           ) : (
-            <div></div>
+            <div className="flex items-center gap-3">
+              <img 
+                src="/lovable-uploads/a2cee3cb-da89-44da-abe5-71ec896d51a9.png" 
+                alt="RunTracker Pro Logo" 
+                className="h-8 w-8 opacity-90"
+              />
+            </div>
           )}
           
           <div className="flex items-center gap-4">
@@ -68,9 +74,16 @@ const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => 
         
         {/* Titre principal pour les vues spécifiques */}
         {currentView === 'dashboard' && (
-          <div>
-            <h1 className="text-3xl font-bold mb-2">RunTracker Pro</h1>
-            <p className="text-white/80">Votre compagnon de course personnalisé</p>
+          <div className="flex items-center gap-4">
+            <img 
+              src="/lovable-uploads/a2cee3cb-da89-44da-abe5-71ec896d51a9.png" 
+              alt="RunTracker Pro Logo" 
+              className="h-12 w-12 opacity-90"
+            />
+            <div>
+              <h1 className="text-3xl font-bold mb-2">RunTracker Pro</h1>
+              <p className="text-white/80">Votre compagnon de course personnalisé</p>
+            </div>
           </div>
         )}
 
