@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -71,11 +70,36 @@ export const useActivityDetail = (): UseActivityDetailReturn => {
         effort_rating: activityData.effort_rating,
         effort_notes: activityData.effort_notes
       });
-      setActivity(activityData);
 
-      // Fetch additional details (best efforts, splits) via edge function
+      // Fetch best efforts from our local database
+      const { data: bestEffortsData, error: bestEffortsError } = await supabase
+        .from('strava_best_efforts')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('activity_id', activityId)
+        .order('distance', { ascending: true });
+
+      if (bestEffortsError) {
+        console.error('Error fetching best efforts:', bestEffortsError);
+      }
+
+      console.log('Best efforts fetched from database:', {
+        count: bestEffortsData?.length || 0,
+        efforts: bestEffortsData
+      });
+
+      // Set initial activity data with local best efforts
+      const activityWithBestEfforts = {
+        ...activityData,
+        best_efforts: bestEffortsData || [],
+        splits: [] // Will be populated from edge function if available
+      };
+
+      setActivity(activityWithBestEfforts);
+
+      // Try to fetch additional details (splits) via edge function as a secondary source
       try {
-        console.log('Calling edge function for detailed data...');
+        console.log('Calling edge function for additional data...');
         const { data: detailData, error: detailError } = await supabase.functions.invoke('get-activity-details', {
           body: { activityId }
         });
@@ -85,16 +109,44 @@ export const useActivityDetail = (): UseActivityDetailReturn => {
         if (detailError) {
           console.error('Edge function error:', detailError);
         } else if (detailData?.success) {
-          console.log('Updating activity with detailed data:', {
-            best_efforts: detailData.best_efforts?.length || 0,
+          console.log('Updating activity with edge function data:', {
+            api_best_efforts: detailData.best_efforts?.length || 0,
             splits: detailData.splits?.length || 0
           });
           
+          // Only update splits from edge function, keep local best efforts
           setActivity(prev => prev ? {
             ...prev,
-            best_efforts: detailData.best_efforts || [],
             splits: detailData.splits || []
           } : null);
+
+          // If we have API best efforts but no local ones, store them
+          if (detailData.best_efforts?.length > 0 && (!bestEffortsData || bestEffortsData.length === 0)) {
+            console.log('Storing new best efforts from API');
+            const bestEffortsToInsert = detailData.best_efforts.map((effort: any) => ({
+              user_id: user.id,
+              activity_id: activityId,
+              name: effort.name,
+              distance: effort.distance,
+              moving_time: effort.moving_time,
+              elapsed_time: effort.elapsed_time || effort.moving_time,
+              start_date_local: effort.start_date_local
+            }));
+
+            const { error: insertError } = await supabase
+              .from('strava_best_efforts')
+              .insert(bestEffortsToInsert);
+
+            if (insertError) {
+              console.error('Error storing best efforts:', insertError);
+            } else {
+              // Update activity with new best efforts
+              setActivity(prev => prev ? {
+                ...prev,
+                best_efforts: detailData.best_efforts
+              } : null);
+            }
+          }
         }
       } catch (detailError) {
         console.error('Could not fetch additional activity details:', detailError);
