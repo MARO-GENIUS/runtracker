@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useStatsCache } from '@/hooks/useStatsCache';
-import { useAutoSync } from '@/hooks/useAutoSync';
+import { useStravaRateLimit } from '@/hooks/useStravaRateLimit';
 import { toast } from 'sonner';
 
 interface StravaStats {
@@ -35,8 +35,12 @@ interface UseStravaDataReturn {
   syncActivities: () => Promise<void>;
   isStravaConnected: boolean;
   loadStats: () => Promise<void>;
-  isAutoSyncing: boolean;
-  lastSyncTime: Date | null;
+  rateLimitInfo: {
+    requestsUsed: number;
+    canMakeRequest: boolean;
+    remainingRequests: number;
+    usagePercentage: number;
+  };
 }
 
 export const useStravaData = (): UseStravaDataReturn => {
@@ -47,13 +51,13 @@ export const useStravaData = (): UseStravaDataReturn => {
   const [isInitialized, setIsInitialized] = useState(false);
   const { user } = useAuth();
   const { getCachedStats, updateCachedStats } = useStatsCache();
-  
-  // Intégration de la synchronisation automatique
-  const { isAutoSyncing, lastSyncTime, performAutoSync } = useAutoSync({
-    intervalHours: 6,
-    syncOnAppStart: true,
-    syncOnFocus: true
-  });
+  const { 
+    requestsUsed, 
+    canMakeRequest, 
+    incrementRequests, 
+    getRemainingRequests, 
+    getUsagePercentage 
+  } = useStravaRateLimit();
 
   const checkStravaConnection = async () => {
     if (!user) return;
@@ -181,14 +185,8 @@ export const useStravaData = (): UseStravaDataReturn => {
 
       console.log('Stats calculées:', calculatedStats);
       
-      // Mise à jour incrémentale du cache
-      if (isInitialized && stats) {
-        await updateCachedStats(calculatedStats);
-      } else {
-        await updateCachedStats(calculatedStats);
-        setStats(calculatedStats);
-      }
-      
+      await updateCachedStats(calculatedStats);
+      setStats(calculatedStats);
       setIsInitialized(true);
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -198,18 +196,35 @@ export const useStravaData = (): UseStravaDataReturn => {
     }
   };
 
-  // Fonction de synchronisation manuelle (conservée pour compatibilité)
   const syncActivities = async () => {
     if (!user || !isStravaConnected) {
       setError('Utilisateur non connecté ou Strava non lié');
       return;
     }
 
+    // Vérifier les rate limits avant de faire l'appel
+    if (!canMakeRequest) {
+      const remaining = getRemainingRequests();
+      toast.error(`Limite de requêtes Strava atteinte. ${remaining} requêtes restantes aujourd'hui.`);
+      setError(`Limite quotidienne atteinte (${requestsUsed}/1800). Réessayez demain.`);
+      return;
+    }
+
+    const remaining = getRemainingRequests();
+    if (remaining < 50) {
+      toast.warning(`Attention: seulement ${remaining} requêtes Strava restantes aujourd'hui.`);
+    }
+
     setLoading(true);
     setError(null);
 
     try {
+      console.log(`Début de synchronisation - Requêtes restantes: ${remaining}`);
+      
       const { data, error: functionError } = await supabase.functions.invoke('sync-strava-activities');
+
+      // Incrémenter le compteur de requêtes (estimation conservative)
+      incrementRequests(10); // Estimation pour une sync basique
 
       if (functionError) {
         console.error('Function error:', functionError);
@@ -223,6 +238,8 @@ export const useStravaData = (): UseStravaDataReturn => {
 
       if (data?.error) {
         if (data.type === 'rate_limit' || data.error.includes('rate limit')) {
+          // Incrémenter davantage en cas de rate limit
+          incrementRequests(50);
           toast.error('Limite de taux Strava atteinte. Veuillez attendre quelques minutes avant de réessayer.');
           setError('Limite de taux Strava atteinte');
           return;
@@ -233,16 +250,17 @@ export const useStravaData = (): UseStravaDataReturn => {
 
       if (data?.stats) {
         await updateCachedStats(data.stats);
-        // Recharger les stats depuis le cache mis à jour
         const updatedStats = await getCachedStats();
         if (updatedStats) {
           setStats(updatedStats);
         }
         
-        if (data.message) {
-          toast.success(data.message);
-        } else {
-          toast.success(`${data.activities_synced || 0} activités synchronisées`);
+        const message = data.message || `${data.activities_synced || 0} activités synchronisées`;
+        toast.success(message);
+        
+        // Incrémenter en fonction du nombre d'activités traitées
+        if (data.activities_synced) {
+          incrementRequests(Math.min(data.activities_synced * 2, 100)); // Max 100 pour éviter de surcompter
         }
       } else {
         await loadStats();
@@ -253,6 +271,7 @@ export const useStravaData = (): UseStravaDataReturn => {
       let errorMessage = 'Erreur lors de la synchronisation des activités';
       
       if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+        incrementRequests(100); // Pénalité en cas de rate limit
         errorMessage = 'Limite de taux Strava atteinte. Veuillez attendre quelques minutes.';
       } else if (error.message?.includes('token')) {
         errorMessage = 'Problème d\'authentification Strava. Veuillez reconnecter votre compte.';
@@ -283,29 +302,18 @@ export const useStravaData = (): UseStravaDataReturn => {
     }
   }, [user, isInitialized]);
 
-  // Écouter les changements de synchronisation automatique
-  useEffect(() => {
-    if (isAutoSyncing) {
-      console.log('Synchronisation automatique en cours...');
-    }
-  }, [isAutoSyncing]);
-
-  // Mise à jour incrémentale après synchronisation automatique
-  useEffect(() => {
-    if (!isAutoSyncing && lastSyncTime && isStravaConnected && isInitialized) {
-      console.log('Synchronisation terminée, mise à jour incrémentale...');
-      loadStats();
-    }
-  }, [isAutoSyncing, lastSyncTime, isStravaConnected, isInitialized]);
-
   return {
     stats,
-    loading: loading && !stats, // Ne pas afficher le loading si on a déjà des stats
+    loading: loading && !stats,
     error,
     syncActivities,
     isStravaConnected,
     loadStats,
-    isAutoSyncing,
-    lastSyncTime
+    rateLimitInfo: {
+      requestsUsed,
+      canMakeRequest,
+      remainingRequests: getRemainingRequests(),
+      usagePercentage: getUsagePercentage()
+    }
   };
 };

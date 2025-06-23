@@ -35,9 +35,9 @@ export const HeartRateTimeSeries: React.FC<HeartRateTimeSeriesProps> = ({
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // Convert time to minutes for display
-  const formatTimeInMinutes = (seconds: number) => {
-    return Math.round(seconds / 60);
+  // Convert time to minutes for display - FIXED: return string instead of number
+  const formatTimeInMinutes = (seconds: number): string => {
+    return Math.round(seconds / 60).toString();
   };
 
   // Custom tooltip component
