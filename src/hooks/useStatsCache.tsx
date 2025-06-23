@@ -37,7 +37,8 @@ export const useStatsCache = () => {
         .eq('user_id', user.id)
         .single();
 
-      if (cachedStats && isRecentCache(cachedStats.updated_at)) {
+      if (cachedStats) {
+        console.log('Stats trouvées dans le cache:', cachedStats);
         return cachedStats.stats_data as unknown as StravaStats;
       }
 
@@ -60,17 +61,50 @@ export const useStatsCache = () => {
           updated_at: new Date().toISOString()
         });
       
-      console.log('Stats cached successfully');
+      console.log('Stats mises en cache avec succès');
     } catch (error) {
       console.error('Error caching stats:', error);
     }
   };
 
-  const isRecentCache = (updatedAt: string): boolean => {
-    const cacheTime = new Date(updatedAt);
-    const now = new Date();
-    const hoursDiff = (now.getTime() - cacheTime.getTime()) / (1000 * 60 * 60);
-    return hoursDiff < 1; // Cache valide pendant 1 heure
+  const updateCachedStats = async (newStats: StravaStats): Promise<void> => {
+    if (!user) return;
+
+    try {
+      const existingStats = await getCachedStats();
+      
+      if (existingStats) {
+        // Mise à jour incrémentale : préservation des données existantes
+        const updatedStats: StravaStats = {
+          monthly: {
+            distance: Math.max(existingStats.monthly.distance, newStats.monthly.distance),
+            activitiesCount: Math.max(existingStats.monthly.activitiesCount, newStats.monthly.activitiesCount),
+            duration: Math.max(existingStats.monthly.duration, newStats.monthly.duration),
+            longestActivity: newStats.monthly.longestActivity && 
+              (!existingStats.monthly.longestActivity || 
+               newStats.monthly.longestActivity.distance > existingStats.monthly.longestActivity.distance)
+              ? newStats.monthly.longestActivity
+              : existingStats.monthly.longestActivity
+          },
+          yearly: {
+            distance: Math.max(existingStats.yearly.distance, newStats.yearly.distance),
+            activitiesCount: Math.max(existingStats.yearly.activitiesCount, newStats.yearly.activitiesCount)
+          },
+          latest: newStats.latest && 
+            (!existingStats.latest || 
+             new Date(newStats.latest.date) > new Date(existingStats.latest.date))
+            ? newStats.latest
+            : existingStats.latest
+        };
+
+        await setCachedStats(updatedStats);
+      } else {
+        // Première mise en cache
+        await setCachedStats(newStats);
+      }
+    } catch (error) {
+      console.error('Error updating cached stats:', error);
+    }
   };
 
   const clearCache = async (): Promise<void> => {
@@ -82,7 +116,7 @@ export const useStatsCache = () => {
         .delete()
         .eq('user_id', user.id);
       
-      console.log('Cache cleared successfully');
+      console.log('Cache vidé avec succès');
     } catch (error) {
       console.error('Error clearing cache:', error);
     }
@@ -91,7 +125,7 @@ export const useStatsCache = () => {
   return {
     getCachedStats,
     setCachedStats,
-    clearCache,
-    isRecentCache
+    updateCachedStats,
+    clearCache
   };
 };

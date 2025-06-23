@@ -48,21 +48,8 @@ const StravaMonthlyDashboard = () => {
     );
   }
 
-  if (loading && !stats) {
-    return (
-      <div className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
-        <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-        <div className="grid grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="text-center">
-              <div className="h-8 bg-gray-200 rounded mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto"></div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  // Affichage des données en permanence dès qu'elles existent
+  const hasAnyData = stats && (stats.monthly.distance > 0 || stats.monthly.activitiesCount > 0);
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-200">
@@ -86,31 +73,36 @@ const StravaMonthlyDashboard = () => {
           ) : (
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>Synchronisation auto</span>
+              <span>Données à jour</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Affichage des statistiques ou message si aucune donnée */}
-      {!stats || (stats.monthly.distance === 0 && stats.monthly.activitiesCount === 0) ? (
-        <div className="text-center py-8">
-          <p className="text-gray-600 mb-4">
-            {isAutoSyncing ? 'Chargement des données en cours...' : 'Aucune activité trouvée pour ce mois'}
-          </p>
-          {isAutoSyncing && (
-            <div className="flex items-center justify-center gap-2 text-strava-orange">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-strava-orange"></div>
-              <span className="text-sm">Synchronisation automatique...</span>
-            </div>
-          )}
+      {/* Affichage des statistiques avec loading initial uniquement */}
+      {loading && !stats ? (
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+          <div className="grid grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="text-center">
+                <div className="h-8 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto"></div>
+              </div>
+            ))}
+          </div>
         </div>
-      ) : (
+      ) : hasAnyData ? (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Distance totale */}
             <div className="text-center">
-              <div className="bg-gradient-to-br from-running-green to-running-green-light p-4 rounded-xl text-white mb-3">
+              <div className="bg-gradient-to-br from-running-green to-running-green-light p-4 rounded-xl text-white mb-3 relative">
+                {isAutoSyncing && (
+                  <div className="absolute top-2 right-2">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white/50"></div>
+                  </div>
+                )}
                 <div className="text-2xl font-bold">
                   {stats.monthly.distance?.toFixed(1) || '0'} km
                 </div>
@@ -120,7 +112,12 @@ const StravaMonthlyDashboard = () => {
 
             {/* Nombre d'activités */}
             <div className="text-center">
-              <div className="bg-gradient-to-br from-running-blue to-blue-400 p-4 rounded-xl text-white mb-3">
+              <div className="bg-gradient-to-br from-running-blue to-blue-400 p-4 rounded-xl text-white mb-3 relative">
+                {isAutoSyncing && (
+                  <div className="absolute top-2 right-2">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white/50"></div>
+                  </div>
+                )}
                 <div className="text-2xl font-bold">
                   {stats.monthly.activitiesCount || 0}
                 </div>
@@ -130,7 +127,12 @@ const StravaMonthlyDashboard = () => {
 
             {/* Durée totale */}
             <div className="text-center">
-              <div className="bg-gradient-to-br from-running-purple to-purple-400 p-4 rounded-xl text-white mb-3">
+              <div className="bg-gradient-to-br from-running-purple to-purple-400 p-4 rounded-xl text-white mb-3 relative">
+                {isAutoSyncing && (
+                  <div className="absolute top-2 right-2">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white/50"></div>
+                  </div>
+                )}
                 <div className="text-2xl font-bold">
                   {stats.monthly.duration ? formatDuration(stats.monthly.duration) : '0h 0min'}
                 </div>
@@ -160,12 +162,24 @@ const StravaMonthlyDashboard = () => {
             </div>
           )}
         </>
+      ) : (
+        <div className="text-center py-8">
+          <p className="text-gray-600 mb-4">
+            {isAutoSyncing ? 'Recherche de nouvelles activités...' : 'Aucune activité trouvée pour ce mois'}
+          </p>
+          {isAutoSyncing && (
+            <div className="flex items-center justify-center gap-2 text-strava-orange">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-strava-orange"></div>
+              <span className="text-sm">Synchronisation en cours...</span>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Informations de synchronisation */}
       <div className="mt-4 pt-3 border-t border-gray-100">
         <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>Synchronisation automatique toutes les 6h</span>
+          <span>Mise à jour automatique toutes les 6h</span>
           <div className="flex items-center gap-1">
             <Clock size={12} />
             <span>Dernière sync: {formatLastSync(lastSyncTime)}</span>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -43,8 +44,9 @@ export const useStravaData = (): UseStravaDataReturn => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isStravaConnected, setIsStravaConnected] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { user } = useAuth();
-  const { getCachedStats, setCachedStats } = useStatsCache();
+  const { getCachedStats, updateCachedStats } = useStatsCache();
   
   // Intégration de la synchronisation automatique
   const { isAutoSyncing, lastSyncTime, performAutoSync } = useAutoSync({
@@ -66,33 +68,30 @@ export const useStravaData = (): UseStravaDataReturn => {
       const connected = !!profile?.strava_access_token;
       setIsStravaConnected(connected);
       
-      // Si Strava est connecté, charger les stats automatiquement
-      if (connected) {
-        await loadCachedStats();
-      }
+      return connected;
     } catch (error) {
       console.error('Error checking Strava connection:', error);
       setIsStravaConnected(false);
+      return false;
     }
   };
 
-  const loadCachedStats = async () => {
-    if (!user) return;
+  const loadCachedStatsInitial = async () => {
+    if (!user || isInitialized) return;
 
-    console.log('Chargement des stats depuis le cache...');
+    console.log('Chargement initial des stats depuis le cache...');
     
     try {
-      // Charger les stats depuis le cache
       const cachedStats = await getCachedStats();
 
       if (cachedStats) {
         console.log('Stats trouvées dans le cache:', cachedStats);
         setStats(cachedStats);
+        setIsInitialized(true);
         return;
       }
 
-      console.log('Pas de cache, calcul depuis les activités...');
-      // Si pas de cache, calculer depuis les activités
+      console.log('Pas de cache, calcul initial depuis les activités...');
       await loadStats();
     } catch (error) {
       console.error('Error loading cached stats:', error);
@@ -181,8 +180,16 @@ export const useStravaData = (): UseStravaDataReturn => {
       };
 
       console.log('Stats calculées:', calculatedStats);
-      setStats(calculatedStats);
-      await setCachedStats(calculatedStats);
+      
+      // Mise à jour incrémentale du cache
+      if (isInitialized && stats) {
+        await updateCachedStats(calculatedStats);
+      } else {
+        await updateCachedStats(calculatedStats);
+        setStats(calculatedStats);
+      }
+      
+      setIsInitialized(true);
     } catch (error) {
       console.error('Error loading stats:', error);
       setError('Erreur lors du chargement des statistiques');
@@ -225,17 +232,17 @@ export const useStravaData = (): UseStravaDataReturn => {
       }
 
       if (data?.stats) {
-        setStats(data.stats);
-        await setCachedStats(data.stats);
+        await updateCachedStats(data.stats);
+        // Recharger les stats depuis le cache mis à jour
+        const updatedStats = await getCachedStats();
+        if (updatedStats) {
+          setStats(updatedStats);
+        }
         
         if (data.message) {
           toast.success(data.message);
         } else {
           toast.success(`${data.activities_synced || 0} activités synchronisées`);
-        }
-        
-        if (data.best_efforts_status && !data.best_efforts_status.success) {
-          toast.info('Synchronisation partielle - certains détails seront récupérés lors de la prochaine synchronisation');
         }
       } else {
         await loadStats();
@@ -262,14 +269,19 @@ export const useStravaData = (): UseStravaDataReturn => {
 
   // Effet principal pour initialiser les données
   useEffect(() => {
-    if (user) {
-      console.log('Utilisateur connecté, vérification de Strava...');
-      checkStravaConnection();
-    } else {
+    if (user && !isInitialized) {
+      console.log('Utilisateur connecté, initialisation...');
+      checkStravaConnection().then((connected) => {
+        if (connected) {
+          loadCachedStatsInitial();
+        }
+      });
+    } else if (!user) {
       setStats(null);
       setIsStravaConnected(false);
+      setIsInitialized(false);
     }
-  }, [user]);
+  }, [user, isInitialized]);
 
   // Écouter les changements de synchronisation automatique
   useEffect(() => {
@@ -278,17 +290,17 @@ export const useStravaData = (): UseStravaDataReturn => {
     }
   }, [isAutoSyncing]);
 
-  // Rafraîchir les stats après une synchronisation automatique
+  // Mise à jour incrémentale après synchronisation automatique
   useEffect(() => {
-    if (!isAutoSyncing && lastSyncTime && isStravaConnected) {
-      console.log('Synchronisation terminée, rechargement des stats...');
-      loadCachedStats();
+    if (!isAutoSyncing && lastSyncTime && isStravaConnected && isInitialized) {
+      console.log('Synchronisation terminée, mise à jour incrémentale...');
+      loadStats();
     }
-  }, [isAutoSyncing, lastSyncTime, isStravaConnected]);
+  }, [isAutoSyncing, lastSyncTime, isStravaConnected, isInitialized]);
 
   return {
     stats,
-    loading: loading,
+    loading: loading && !stats, // Ne pas afficher le loading si on a déjà des stats
     error,
     syncActivities,
     isStravaConnected,
