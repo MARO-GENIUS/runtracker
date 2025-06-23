@@ -1,6 +1,13 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+
+interface HeartRateDataPoint {
+  time: number;
+  heartRate: number;
+  distance?: number;
+}
 
 interface ActivityDetail {
   id: number;
@@ -25,6 +32,7 @@ interface ActivityDetail {
   effort_notes?: string | null;
   best_efforts?: any[];
   splits?: any[];
+  heart_rate_stream?: HeartRateDataPoint[];
 }
 
 interface UseActivityDetailReturn {
@@ -92,12 +100,13 @@ export const useActivityDetail = (): UseActivityDetailReturn => {
       const activityWithBestEfforts = {
         ...activityData,
         best_efforts: bestEffortsData || [],
-        splits: [] // Will be populated from edge function if available
+        splits: [], // Will be populated from edge function if available
+        heart_rate_stream: [] // Will be populated from edge function if available
       };
 
       setActivity(activityWithBestEfforts);
 
-      // Try to fetch additional details (splits) via edge function as a secondary source
+      // Try to fetch additional details (splits, heart rate data) via edge function as a secondary source
       try {
         console.log('Calling edge function for additional data...');
         const { data: detailData, error: detailError } = await supabase.functions.invoke('get-activity-details', {
@@ -111,13 +120,15 @@ export const useActivityDetail = (): UseActivityDetailReturn => {
         } else if (detailData?.success) {
           console.log('Updating activity with edge function data:', {
             api_best_efforts: detailData.best_efforts?.length || 0,
-            splits: detailData.splits?.length || 0
+            splits: detailData.splits?.length || 0,
+            heart_rate_stream: detailData.heart_rate_stream?.length || 0
           });
           
           // Only update splits from edge function, keep local best efforts
           setActivity(prev => prev ? {
             ...prev,
-            splits: detailData.splits || []
+            splits: detailData.splits || [],
+            heart_rate_stream: detailData.heart_rate_stream || []
           } : null);
 
           // If we have API best efforts but no local ones, store them

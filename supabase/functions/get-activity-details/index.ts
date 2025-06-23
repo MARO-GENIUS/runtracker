@@ -106,9 +106,20 @@ serve(async (req) => {
       }
     )
 
+    // Fetch activity streams (time series data)
+    const streamsResponse = await fetch(
+      `https://www.strava.com/api/v3/activities/${activityId}/streams?keys=heartrate,time,distance&key_by_type=true`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      }
+    )
+
     let activityData = null
     let bestEfforts = []
     let splits = []
+    let heartRateStream = null
 
     if (activityResponse.ok) {
       activityData = await activityResponse.json()
@@ -142,11 +153,35 @@ serve(async (req) => {
       console.log('Could not fetch activity details from Strava API')
     }
 
+    // Process streams data
+    if (streamsResponse.ok) {
+      const streamsData = await streamsResponse.json()
+      console.log('Successfully fetched activity streams from Strava')
+      
+      if (streamsData?.heartrate && streamsData?.time) {
+        const heartRateData = streamsData.heartrate.data
+        const timeData = streamsData.time.data
+        const distanceData = streamsData.distance?.data || []
+        
+        // Combine the data into a usable format
+        heartRateStream = timeData.map((time: number, index: number) => ({
+          time,
+          heartRate: heartRateData[index] || null,
+          distance: distanceData[index] || null
+        })).filter((point: any) => point.heartRate !== null)
+        
+        console.log(`Found ${heartRateStream.length} heart rate data points`)
+      }
+    } else {
+      console.log('Could not fetch activity streams from Strava API')
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         best_efforts: bestEfforts,
         splits: splits,
+        heart_rate_stream: heartRateStream,
         activity_data: activityData ? {
           segment_efforts: activityData.segment_efforts || [],
           laps: activityData.laps || []

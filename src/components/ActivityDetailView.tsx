@@ -6,9 +6,16 @@ import { ActivityMetrics } from './ActivityMetrics';
 import { BestEfforts } from './BestEfforts';
 import { ActivitySplits } from './ActivitySplits';
 import { HeartRateChart } from './HeartRateChart';
+import { HeartRateTimeSeries } from './HeartRateTimeSeries';
 import { EffortRating } from './EffortRating';
 import { useEffortRating } from '@/hooks/useEffortRating';
 import { formatDate, formatDateTime } from '@/utils/activityHelpers';
+
+interface HeartRateDataPoint {
+  time: number;
+  heartRate: number;
+  distance?: number;
+}
 
 interface ActivityDetailViewProps {
   activity: {
@@ -33,6 +40,7 @@ interface ActivityDetailViewProps {
     effort_notes?: string | null;
     best_efforts?: any[];
     splits?: any[];
+    heart_rate_stream?: HeartRateDataPoint[];
   };
 }
 
@@ -44,12 +52,16 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
     name: activity.name,
     effort_rating: activity.effort_rating,
     best_efforts_count: activity.best_efforts?.length || 0,
-    splits_count: activity.splits?.length || 0
+    splits_count: activity.splits?.length || 0,
+    heart_rate_stream_count: activity.heart_rate_stream?.length || 0
   });
 
   const handleEffortSave = async (rating: number, notes: string) => {
     await updateEffortRating(activity.id, rating, notes);
   };
+
+  // Check if we have detailed heart rate data
+  const hasDetailedHeartRate = activity.heart_rate_stream && activity.heart_rate_stream.length > 0;
 
   return (
     <div className="space-y-6">
@@ -91,7 +103,14 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
         </TabsContent>
 
         <TabsContent value="charts" className="space-y-6">
-          {activity.average_heartrate && (
+          {activity.average_heartrate && hasDetailedHeartRate && (
+            <HeartRateTimeSeries 
+              heartRateData={activity.heart_rate_stream!}
+              averageHR={activity.average_heartrate}
+              maxHR={activity.max_heartrate}
+            />
+          )}
+          {activity.average_heartrate && !hasDetailedHeartRate && (
             <HeartRateChart 
               averageHR={activity.average_heartrate}
               maxHR={activity.max_heartrate}
