@@ -132,6 +132,8 @@ export type Database = {
           calories: number | null
           created_at: string
           distance: number
+          effort_notes: string | null
+          effort_rating: number | null
           elapsed_time: number
           id: number
           location_city: string | null
@@ -155,6 +157,8 @@ export type Database = {
           calories?: number | null
           created_at?: string
           distance: number
+          effort_notes?: string | null
+          effort_rating?: number | null
           elapsed_time: number
           id: number
           location_city?: string | null
@@ -178,6 +182,8 @@ export type Database = {
           calories?: number | null
           created_at?: string
           distance?: number
+          effort_notes?: string | null
+          effort_rating?: number | null
           elapsed_time?: number
           id?: number
           location_city?: string | null

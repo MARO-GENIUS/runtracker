@@ -6,6 +6,8 @@ import { ActivityMetrics } from './ActivityMetrics';
 import { BestEfforts } from './BestEfforts';
 import { ActivitySplits } from './ActivitySplits';
 import { HeartRateChart } from './HeartRateChart';
+import { EffortRating } from './EffortRating';
+import { useEffortRating } from '@/hooks/useEffortRating';
 import { formatDate, formatDateTime } from '@/utils/activityHelpers';
 
 interface ActivityDetailViewProps {
@@ -27,18 +29,27 @@ interface ActivityDetailViewProps {
     max_heartrate: number | null;
     suffer_score: number | null;
     calories: number | null;
+    effort_rating?: number | null;
+    effort_notes?: string | null;
     best_efforts?: any[];
     splits?: any[];
   };
 }
 
 export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity }) => {
+  const { updateEffortRating } = useEffortRating();
+
   console.log('ActivityDetailView received activity:', {
     id: activity.id,
     name: activity.name,
+    effort_rating: activity.effort_rating,
     best_efforts_count: activity.best_efforts?.length || 0,
     splits_count: activity.splits?.length || 0
   });
+
+  const handleEffortSave = async (rating: number, notes: string) => {
+    await updateEffortRating(activity.id, rating, notes);
+  };
 
   return (
     <div className="space-y-6">
@@ -58,8 +69,9 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="effort">Ressenti</TabsTrigger>
           <TabsTrigger value="charts">Graphiques</TabsTrigger>
           <TabsTrigger value="details">Détails</TabsTrigger>
         </TabsList>
@@ -67,6 +79,15 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
         <TabsContent value="overview" className="space-y-6">
           <ActivityMetrics activity={activity} />
           <BestEfforts bestEfforts={activity.best_efforts || []} />
+        </TabsContent>
+
+        <TabsContent value="effort" className="space-y-6">
+          <EffortRating 
+            activityId={activity.id}
+            currentRating={activity.effort_rating}
+            currentNotes={activity.effort_notes}
+            onSave={handleEffortSave}
+          />
         </TabsContent>
 
         <TabsContent value="charts" className="space-y-6">

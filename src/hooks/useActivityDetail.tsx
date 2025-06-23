@@ -22,6 +22,8 @@ interface ActivityDetail {
   max_heartrate: number | null;
   suffer_score: number | null;
   calories: number | null;
+  effort_rating?: number | null;
+  effort_notes?: string | null;
   best_efforts?: any[];
   splits?: any[];
 }
@@ -51,7 +53,7 @@ export const useActivityDetail = (): UseActivityDetailReturn => {
 
       console.log(`Fetching activity detail for ${activityId}`);
 
-      // Fetch basic activity data from our database
+      // Fetch basic activity data from our database (including effort rating)
       const { data: activityData, error: fetchError } = await supabase
         .from('strava_activities')
         .select('*')
@@ -64,7 +66,11 @@ export const useActivityDetail = (): UseActivityDetailReturn => {
         throw new Error(fetchError.message);
       }
 
-      console.log('Basic activity data fetched:', activityData);
+      console.log('Basic activity data fetched:', {
+        id: activityData.id,
+        effort_rating: activityData.effort_rating,
+        effort_notes: activityData.effort_notes
+      });
       setActivity(activityData);
 
       // Fetch additional details (best efforts, splits) via edge function
