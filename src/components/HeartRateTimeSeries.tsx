@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Heart } from 'lucide-react';
+import { Heart, AlertCircle } from 'lucide-react';
 
 interface HeartRateDataPoint {
   time: number;
@@ -21,6 +21,13 @@ export const HeartRateTimeSeries: React.FC<HeartRateTimeSeriesProps> = ({
   averageHR, 
   maxHR 
 }) => {
+  console.log('HeartRateTimeSeries received data:', {
+    dataCount: heartRateData?.length || 0,
+    averageHR,
+    maxHR,
+    sampleData: heartRateData?.slice(0, 3)
+  });
+
   // Format time in minutes:seconds
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -51,7 +58,10 @@ export const HeartRateTimeSeries: React.FC<HeartRateTimeSeriesProps> = ({
     return null;
   };
 
-  if (!heartRateData || heartRateData.length === 0) {
+  // Check if we have valid heart rate data
+  const hasValidData = heartRateData && heartRateData.length > 0;
+
+  if (!hasValidData) {
     return (
       <Card>
         <CardHeader>
@@ -61,9 +71,35 @@ export const HeartRateTimeSeries: React.FC<HeartRateTimeSeriesProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-gray-600">
-            Aucune donnée de fréquence cardiaque détaillée disponible
+          <div className="flex flex-col items-center justify-center py-8 text-gray-600">
+            <AlertCircle size={48} className="text-gray-400 mb-4" />
+            <p className="text-center text-lg font-medium mb-2">
+              Données de fréquence cardiaque non disponibles
+            </p>
+            <p className="text-center text-sm text-gray-500 max-w-md">
+              Cette activité ne contient pas de données détaillées de fréquence cardiaque. 
+              Assurez-vous que votre montre ou capteur était connecté pendant l'entraînement.
+            </p>
           </div>
+          
+          {(averageHR || maxHR) && (
+            <div className="mt-6 pt-6 border-t">
+              <div className="grid grid-cols-2 gap-4">
+                {averageHR && (
+                  <div className="text-center p-3 bg-red-50 rounded-lg">
+                    <p className="text-sm text-gray-600">FC Moyenne</p>
+                    <p className="text-2xl font-bold text-red-600">{Math.round(averageHR)} bpm</p>
+                  </div>
+                )}
+                {maxHR && (
+                  <div className="text-center p-3 bg-red-100 rounded-lg">
+                    <p className="text-sm text-gray-600">FC Max</p>
+                    <p className="text-2xl font-bold text-red-700">{Math.round(maxHR)} bpm</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     );

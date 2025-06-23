@@ -76,7 +76,8 @@ export const useActivityDetail = (): UseActivityDetailReturn => {
       console.log('Basic activity data fetched:', {
         id: activityData.id,
         effort_rating: activityData.effort_rating,
-        effort_notes: activityData.effort_notes
+        effort_notes: activityData.effort_notes,
+        average_heartrate: activityData.average_heartrate
       });
 
       // Fetch best efforts from our local database
@@ -106,25 +107,27 @@ export const useActivityDetail = (): UseActivityDetailReturn => {
 
       setActivity(activityWithBestEfforts);
 
-      // Try to fetch additional details (splits, heart rate data) via edge function as a secondary source
+      // Try to fetch additional details (splits, heart rate data) via edge function
       try {
         console.log('Calling edge function for additional data...');
         const { data: detailData, error: detailError } = await supabase.functions.invoke('get-activity-details', {
           body: { activityId }
         });
 
-        console.log('Edge function response:', detailData);
+        console.log('Edge function response:', {
+          success: detailData?.success,
+          error: detailError,
+          heartRateCount: detailData?.heart_rate_stream?.length || 0,
+          splitsCount: detailData?.splits?.length || 0,
+          bestEffortsCount: detailData?.best_efforts?.length || 0
+        });
 
         if (detailError) {
           console.error('Edge function error:', detailError);
         } else if (detailData?.success) {
-          console.log('Updating activity with edge function data:', {
-            api_best_efforts: detailData.best_efforts?.length || 0,
-            splits: detailData.splits?.length || 0,
-            heart_rate_stream: detailData.heart_rate_stream?.length || 0
-          });
+          console.log('Updating activity with edge function data');
           
-          // Only update splits from edge function, keep local best efforts
+          // Update activity with additional data from edge function
           setActivity(prev => prev ? {
             ...prev,
             splits: detailData.splits || [],

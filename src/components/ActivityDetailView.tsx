@@ -53,7 +53,8 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
     effort_rating: activity.effort_rating,
     best_efforts_count: activity.best_efforts?.length || 0,
     splits_count: activity.splits?.length || 0,
-    heart_rate_stream_count: activity.heart_rate_stream?.length || 0
+    heart_rate_stream_count: activity.heart_rate_stream?.length || 0,
+    average_heartrate: activity.average_heartrate
   });
 
   const handleEffortSave = async (rating: number, notes: string) => {
@@ -62,6 +63,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
 
   // Check if we have detailed heart rate data
   const hasDetailedHeartRate = activity.heart_rate_stream && activity.heart_rate_stream.length > 0;
+  const hasAnyHeartRateData = activity.average_heartrate || hasDetailedHeartRate;
 
   return (
     <div className="space-y-6">
@@ -103,23 +105,26 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
         </TabsContent>
 
         <TabsContent value="charts" className="space-y-6">
-          {activity.average_heartrate && hasDetailedHeartRate && (
-            <HeartRateTimeSeries 
-              heartRateData={activity.heart_rate_stream!}
-              averageHR={activity.average_heartrate}
-              maxHR={activity.max_heartrate}
-            />
-          )}
-          {activity.average_heartrate && !hasDetailedHeartRate && (
-            <HeartRateChart 
-              averageHR={activity.average_heartrate}
-              maxHR={activity.max_heartrate}
-            />
-          )}
-          {!activity.average_heartrate && (
+          {hasAnyHeartRateData ? (
+            hasDetailedHeartRate ? (
+              <HeartRateTimeSeries 
+                heartRateData={activity.heart_rate_stream!}
+                averageHR={activity.average_heartrate || 0}
+                maxHR={activity.max_heartrate}
+              />
+            ) : (
+              <HeartRateChart 
+                averageHR={activity.average_heartrate!}
+                maxHR={activity.max_heartrate}
+              />
+            )
+          ) : (
             <Card>
               <CardContent className="p-8 text-center">
-                <p className="text-gray-600">Aucune donnée de fréquence cardiaque disponible</p>
+                <p className="text-gray-600 mb-2">Aucune donnée de fréquence cardiaque disponible</p>
+                <p className="text-sm text-gray-500">
+                  Cette activité ne contient pas de données de fréquence cardiaque.
+                </p>
               </CardContent>
             </Card>
           )}
