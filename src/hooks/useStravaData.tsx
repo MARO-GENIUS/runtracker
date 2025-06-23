@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useStatsCache } from '@/hooks/useStatsCache';
+import { useAutoSync } from '@/hooks/useAutoSync';
 import { toast } from 'sonner';
 
 interface StravaStats {
@@ -44,10 +45,15 @@ export const useStravaData = (): UseStravaDataReturn => {
   const [error, setError] = useState<string | null>(null);
   const [isStravaConnected, setIsStravaConnected] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
-  const [isAutoSyncing, setIsAutoSyncing] = useState(false);
   const { user } = useAuth();
   const { getCachedStats, updateCachedStats } = useStatsCache();
+  
+  // Intégration de la synchronisation automatique
+  const { isAutoSyncing, lastSyncTime, performAutoSync } = useAutoSync({
+    intervalHours: 6,
+    syncOnAppStart: true,
+    syncOnFocus: true
+  });
 
   const checkStravaConnection = async () => {
     if (!user) return;
@@ -192,7 +198,7 @@ export const useStravaData = (): UseStravaDataReturn => {
     }
   };
 
-  // Fonction de synchronisation manuelle UNIQUEMENT
+  // Fonction de synchronisation manuelle (conservée pour compatibilité)
   const syncActivities = async () => {
     if (!user || !isStravaConnected) {
       setError('Utilisateur non connecté ou Strava non lié');
@@ -200,9 +206,7 @@ export const useStravaData = (): UseStravaDataReturn => {
     }
 
     setLoading(true);
-    setIsAutoSyncing(true);
     setError(null);
-    console.log('Démarrage de la synchronisation manuelle...');
 
     try {
       const { data, error: functionError } = await supabase.functions.invoke('sync-strava-activities');
@@ -235,8 +239,6 @@ export const useStravaData = (): UseStravaDataReturn => {
           setStats(updatedStats);
         }
         
-        setLastSyncTime(new Date());
-        
         if (data.message) {
           toast.success(data.message);
         } else {
@@ -244,7 +246,6 @@ export const useStravaData = (): UseStravaDataReturn => {
         }
       } else {
         await loadStats();
-        setLastSyncTime(new Date());
         toast.success('Données synchronisées avec succès');
       }
     } catch (error: any) {
@@ -263,14 +264,13 @@ export const useStravaData = (): UseStravaDataReturn => {
       toast.error(errorMessage);
     } finally {
       setLoading(false);
-      setIsAutoSyncing(false);
     }
   };
 
-  // Effet principal pour initialiser les données - SANS SYNCHRONISATION AUTOMATIQUE
+  // Effet principal pour initialiser les données
   useEffect(() => {
     if (user && !isInitialized) {
-      console.log('Utilisateur connecté, initialisation SANS synchronisation automatique...');
+      console.log('Utilisateur connecté, initialisation...');
       checkStravaConnection().then((connected) => {
         if (connected) {
           loadCachedStatsInitial();
@@ -283,11 +283,26 @@ export const useStravaData = (): UseStravaDataReturn => {
     }
   }, [user, isInitialized]);
 
+  // Écouter les changements de synchronisation automatique
+  useEffect(() => {
+    if (isAutoSyncing) {
+      console.log('Synchronisation automatique en cours...');
+    }
+  }, [isAutoSyncing]);
+
+  // Mise à jour incrémentale après synchronisation automatique
+  useEffect(() => {
+    if (!isAutoSyncing && lastSyncTime && isStravaConnected && isInitialized) {
+      console.log('Synchronisation terminée, mise à jour incrémentale...');
+      loadStats();
+    }
+  }, [isAutoSyncing, lastSyncTime, isStravaConnected, isInitialized]);
+
   return {
     stats,
     loading: loading && !stats, // Ne pas afficher le loading si on a déjà des stats
     error,
-    syncActivities, // Fonction manuelle uniquement
+    syncActivities,
     isStravaConnected,
     loadStats,
     isAutoSyncing,
