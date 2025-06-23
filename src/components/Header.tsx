@@ -1,3 +1,4 @@
+
 import { Calendar, Trophy, ArrowLeft, User, LogOut, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -38,11 +39,11 @@ const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => 
             {currentView === 'dashboard' && (
               <>
                 <button 
-                  onClick={() => onViewChange('records')}
+                  onClick={() => onViewChange('activities')}
                   className="flex items-center gap-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm px-4 py-2.5 rounded-xl transition-all duration-200 hover:scale-105 border border-white/20"
                 >
-                  <Trophy size={18} />
-                  <span className="font-medium">📜 Voir tous mes records</span>
+                  <Activity size={18} />
+                  <span className="font-medium">📊 Mes Performances</span>
                 </button>
               </>
             )}
