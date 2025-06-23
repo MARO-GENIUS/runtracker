@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -64,10 +63,11 @@ export const useStravaData = (): UseStravaDataReturn => {
         .eq('id', user.id)
         .single();
 
-      setIsStravaConnected(!!profile?.strava_access_token);
+      const connected = !!profile?.strava_access_token;
+      setIsStravaConnected(connected);
       
       // Si Strava est connecté, charger les stats automatiquement
-      if (profile?.strava_access_token) {
+      if (connected) {
         await loadCachedStats();
       }
     } catch (error) {
@@ -79,16 +79,19 @@ export const useStravaData = (): UseStravaDataReturn => {
   const loadCachedStats = async () => {
     if (!user) return;
 
+    console.log('Chargement des stats depuis le cache...');
+    
     try {
       // Charger les stats depuis le cache
       const cachedStats = await getCachedStats();
 
       if (cachedStats) {
+        console.log('Stats trouvées dans le cache:', cachedStats);
         setStats(cachedStats);
-        console.log('Données Strava chargées depuis le cache');
         return;
       }
 
+      console.log('Pas de cache, calcul depuis les activités...');
       // Si pas de cache, calculer depuis les activités
       await loadStats();
     } catch (error) {
@@ -101,6 +104,8 @@ export const useStravaData = (): UseStravaDataReturn => {
     if (!user || !isStravaConnected) return;
 
     setLoading(true);
+    console.log('Calcul des stats depuis les activités...');
+    
     try {
       // Calculer les statistiques à partir des activités existantes
       const now = new Date();
@@ -139,6 +144,9 @@ export const useStravaData = (): UseStravaDataReturn => {
         .order('start_date', { ascending: false })
         .limit(1);
 
+      console.log('Activités du mois trouvées:', monthActivities?.length || 0);
+      console.log('Activités de l\'année trouvées:', yearActivities?.length || 0);
+
       // Calculate monthly stats
       const monthlyDistance = monthActivities?.reduce((sum, activity) => sum + (activity.distance / 1000), 0) || 0;
       const monthlyActivitiesCount = monthActivities?.length || 0;
@@ -172,6 +180,7 @@ export const useStravaData = (): UseStravaDataReturn => {
         } : null
       };
 
+      console.log('Stats calculées:', calculatedStats);
       setStats(calculatedStats);
       await setCachedStats(calculatedStats);
     } catch (error) {
@@ -251,9 +260,14 @@ export const useStravaData = (): UseStravaDataReturn => {
     }
   };
 
+  // Effet principal pour initialiser les données
   useEffect(() => {
     if (user) {
+      console.log('Utilisateur connecté, vérification de Strava...');
       checkStravaConnection();
+    } else {
+      setStats(null);
+      setIsStravaConnected(false);
     }
   }, [user]);
 
@@ -264,9 +278,17 @@ export const useStravaData = (): UseStravaDataReturn => {
     }
   }, [isAutoSyncing]);
 
+  // Rafraîchir les stats après une synchronisation automatique
+  useEffect(() => {
+    if (!isAutoSyncing && lastSyncTime && isStravaConnected) {
+      console.log('Synchronisation terminée, rechargement des stats...');
+      loadCachedStats();
+    }
+  }, [isAutoSyncing, lastSyncTime, isStravaConnected]);
+
   return {
     stats,
-    loading: loading || isAutoSyncing,
+    loading: loading,
     error,
     syncActivities,
     isStravaConnected,
