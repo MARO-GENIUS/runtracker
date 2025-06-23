@@ -30,7 +30,7 @@ const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => 
               <img 
                 src="/lovable-uploads/c2ca1ccc-74df-4162-90d2-15a2f47241a8.png" 
                 alt="RunTracker Pro Logo" 
-                className="h-8 w-8 opacity-90"
+                className="h-32 w-32 opacity-90"
               />
             </div>
           )}
