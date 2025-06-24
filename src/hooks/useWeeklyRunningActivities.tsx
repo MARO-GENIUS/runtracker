@@ -15,19 +15,22 @@ interface WeeklyStats {
   weeklyData: WeeklyActivity[];
 }
 
-export const useWeeklyRunningActivities = () => {
+interface UseWeeklyRunningActivitiesProps {
+  weekDate?: Date;
+}
+
+export const useWeeklyRunningActivities = ({ weekDate }: UseWeeklyRunningActivitiesProps = {}) => {
   const [stats, setStats] = useState<WeeklyStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const getWeekBounds = () => {
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Adjust for Sunday = 0
+  const getWeekBounds = (date: Date = new Date()) => {
+    const dayOfWeek = date.getDay();
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - mondayOffset);
+    const startOfWeek = new Date(date);
+    startOfWeek.setDate(date.getDate() - mondayOffset);
     startOfWeek.setHours(0, 0, 0, 0);
     
     const endOfWeek = new Date(startOfWeek);
@@ -48,7 +51,7 @@ export const useWeeklyRunningActivities = () => {
       setLoading(true);
       setError(null);
 
-      const { startOfWeek, endOfWeek } = getWeekBounds();
+      const { startOfWeek, endOfWeek } = getWeekBounds(weekDate);
 
       const { data: activities, error: fetchError } = await supabase
         .from('strava_activities')
@@ -103,7 +106,7 @@ export const useWeeklyRunningActivities = () => {
 
   useEffect(() => {
     fetchWeeklyActivities();
-  }, [user]);
+  }, [user, weekDate]);
 
   return {
     stats,

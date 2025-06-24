@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { weeklyData } from '../data/mockData';
 import { useStravaData } from '@/hooks/useStravaData';
@@ -6,15 +7,19 @@ import { useWeeklyRunningActivities } from '@/hooks/useWeeklyRunningActivities';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
+import WeekSelector from './WeekSelector';
 
 const WeeklySummary = () => {
+  const [selectedWeek, setSelectedWeek] = useState(new Date());
   const { syncActivities, isStravaConnected } = useStravaData();
-  const { stats: weeklyStats, loading: weeklyLoading, error: weeklyError, refetch } = useWeeklyRunningActivities();
+  const { stats: weeklyStats, loading: weeklyLoading, error: weeklyError, refetch } = useWeeklyRunningActivities({ 
+    weekDate: selectedWeek 
+  });
   
   // Auto-refresh quand les données Strava sont synchronisées
   useAutoRefresh({
     onRefresh: refetch,
-    dependencies: [isStravaConnected],
+    dependencies: [isStravaConnected, selectedWeek],
     enabled: isStravaConnected
   });
   
@@ -32,28 +37,32 @@ const WeeklySummary = () => {
     }, 1000);
   };
 
+  const handleWeekChange = (newWeek: Date) => {
+    setSelectedWeek(newWeek);
+  };
+
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 animate-scale-in">
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h2 className="text-xl font-bold text-gray-800">Résumé Hebdomadaire</h2>
+    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 animate-scale-in">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
+        <div className="flex-1">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800">Résumé Hebdomadaire</h2>
             {isStravaConnected && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleSync}
                 disabled={weeklyLoading}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-fit"
               >
                 <RefreshCw className={`h-4 w-4 ${weeklyLoading ? 'animate-spin' : ''}`} />
-                Sync Strava
+                <span className="hidden sm:inline">Sync Strava</span>
               </Button>
             )}
           </div>
-          <div className="flex gap-6">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
             <div>
-              <span className="text-3xl font-bold text-running-blue">{totalKm.toFixed(1)}</span>
+              <span className="text-2xl sm:text-3xl font-bold text-running-blue">{totalKm.toFixed(1)}</span>
               <span className="text-gray-600 ml-1">km</span>
             </div>
             <div className="text-sm text-gray-600">
@@ -62,8 +71,12 @@ const WeeklySummary = () => {
             </div>
           </div>
         </div>
-        <div className="bg-gradient-performance text-white px-3 py-1 rounded-full text-sm font-medium">
-          {isStravaConnected ? 'Semaine courante' : 'Données d\'exemple'}
+        
+        <div className="flex justify-center sm:justify-end">
+          <WeekSelector 
+            currentWeek={selectedWeek}
+            onWeekChange={handleWeekChange}
+          />
         </div>
       </div>
 
