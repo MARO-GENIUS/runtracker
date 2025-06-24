@@ -1,5 +1,5 @@
 
-import { Calendar, Trophy, ArrowLeft, User, LogOut, Activity } from 'lucide-react';
+import { Calendar, Trophy, ArrowLeft, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { User as SupabaseUser } from '@supabase/supabase-js';
@@ -40,10 +40,14 @@ const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => 
               <>
                 <button 
                   onClick={() => onViewChange('activities')}
-                  className="flex items-center gap-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm px-4 py-2.5 rounded-xl transition-all duration-200 hover:scale-105 border border-white/20"
+                  className="flex items-center gap-3 bg-white/15 hover:bg-white/25 backdrop-blur-sm px-4 py-2.5 rounded-xl transition-all duration-200 hover:scale-105 border border-white/20"
                 >
-                  <Activity size={18} />
-                  <span className="font-medium">📊 Mes Performances</span>
+                  <img 
+                    src="/lovable-uploads/a2cee3cb-da89-44da-abe5-71ec896d51a9.png" 
+                    alt="Carnet de sport" 
+                    className="h-5 w-5 filter brightness-0 invert"
+                  />
+                  <span className="font-medium">Mes Performances</span>
                 </button>
               </>
             )}
