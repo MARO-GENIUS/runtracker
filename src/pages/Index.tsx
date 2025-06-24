@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useGlobalSync } from '@/hooks/useGlobalSync';
@@ -19,7 +18,15 @@ const Index = () => {
   const { user, loading, signOut } = useAuth();
   const [currentView, setCurrentView] = useState<'dashboard' | 'records' | 'activities'>('dashboard');
   const { isGlobalSyncing, syncProgress } = useGlobalSync();
-  const rateLimitInfo = useStravaRateLimit();
+  const rateLimitHook = useStravaRateLimit();
+  
+  // Préparer les props pour le composant StravaRateLimitIndicator
+  const rateLimitProps = {
+    requestsUsed: rateLimitHook.requestsUsed,
+    canMakeRequest: rateLimitHook.canMakeRequest,
+    remainingRequests: rateLimitHook.getRemainingRequests(),
+    usagePercentage: rateLimitHook.getUsagePercentage()
+  };
 
   if (loading) {
     return (
@@ -62,7 +69,7 @@ const Index = () => {
             </div>
             
             <div className="flex items-center gap-4">
-              <StravaRateLimitIndicator {...rateLimitInfo} />
+              <StravaRateLimitIndicator {...rateLimitProps} />
               <StravaConnect />
             </div>
           </div>
