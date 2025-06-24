@@ -11,22 +11,11 @@ import RecordsTable from '../components/RecordsTable';
 import ActivitiesView from '../components/ActivitiesView';
 import StravaConnect from '../components/StravaConnect';
 import RunningCalendar from '../components/RunningCalendar';
-import { StravaRateLimitIndicator } from '../components/StravaRateLimitIndicator';
-import { useStravaRateLimit } from '@/hooks/useStravaRateLimit';
 
 const Index = () => {
   const { user, loading, signOut } = useAuth();
   const [currentView, setCurrentView] = useState<'dashboard' | 'records' | 'activities'>('dashboard');
   const { isGlobalSyncing, syncProgress } = useGlobalSync();
-  const rateLimitHook = useStravaRateLimit();
-  
-  // Préparer les props pour le composant StravaRateLimitIndicator
-  const rateLimitProps = {
-    requestsUsed: rateLimitHook.requestsUsed,
-    canMakeRequest: rateLimitHook.canMakeRequest,
-    remainingRequests: rateLimitHook.getRemainingRequests(),
-    usagePercentage: rateLimitHook.getUsagePercentage()
-  };
 
   if (loading) {
     return (
@@ -56,10 +45,7 @@ const Index = () => {
       {currentView === 'dashboard' && (
         <div className="bg-white border-b border-gray-100 py-4">
           <div className="max-w-6xl mx-auto px-6 flex items-center justify-end">
-            <div className="flex items-center gap-4">
-              <StravaRateLimitIndicator {...rateLimitProps} />
-              <StravaConnect />
-            </div>
+            <StravaConnect />
           </div>
         </div>
       )}
