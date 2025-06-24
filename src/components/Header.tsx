@@ -1,4 +1,3 @@
-
 import { Calendar, Trophy, ArrowLeft, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -86,8 +85,7 @@ const Header = ({ currentView, onViewChange, user, onSignOut }: HeaderProps) => 
 
         {currentView === 'activities' && (
           <div className="text-center">
-            <h1 className="text-4xl font-bold mb-2 text-white drop-shadow-lg">Mes Performances</h1>
-            <p className="text-white/90 text-lg font-medium">Toutes vos activités de course synchronisées depuis Strava</p>
+            <h1 className="text-2xl font-bold mb-2 text-white drop-shadow-lg">ACTIVITÉS</h1>
           </div>
         )}
       </div>
