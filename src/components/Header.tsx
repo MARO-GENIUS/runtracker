@@ -27,13 +27,6 @@ const Header = ({ currentView, onViewChange }: HeaderProps) => {
         )}
         
         {/* Titre principal pour les vues spécifiques */}
-        {currentView === 'dashboard' && (
-          <div className="text-center">
-            <h1 className="text-4xl font-bold mb-2 text-white drop-shadow-lg">RunTracker Pro</h1>
-            <p className="text-white/90 text-lg font-medium">Votre compagnon de course personnalisé</p>
-          </div>
-        )}
-
         {currentView === 'records' && (
           <div className="text-center">
             <h1 className="text-4xl font-bold mb-2 text-white drop-shadow-lg">Mes Records Personnels</h1>
