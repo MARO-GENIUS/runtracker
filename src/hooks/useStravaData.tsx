@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useStatsCache } from '@/hooks/useStatsCache';
 import { useStravaRateLimit } from '@/hooks/useStravaRateLimit';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { toast } from 'sonner';
 
 interface StravaStats {
@@ -293,6 +294,13 @@ export const useStravaData = (): UseStravaDataReturn => {
       setIsAutoSyncing(false);
     }
   };
+
+  // Auto-refresh quand les données sont synchronisées
+  useAutoRefresh({
+    onRefresh: loadStats,
+    dependencies: [user, isStravaConnected],
+    enabled: isStravaConnected && isInitialized
+  });
 
   // Effet principal pour initialiser les données
   useEffect(() => {

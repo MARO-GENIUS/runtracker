@@ -3,12 +3,20 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recha
 import { weeklyData } from '../data/mockData';
 import { useStravaData } from '@/hooks/useStravaData';
 import { useWeeklyRunningActivities } from '@/hooks/useWeeklyRunningActivities';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 
 const WeeklySummary = () => {
   const { syncActivities, isStravaConnected } = useStravaData();
   const { stats: weeklyStats, loading: weeklyLoading, error: weeklyError, refetch } = useWeeklyRunningActivities();
+  
+  // Auto-refresh quand les données Strava sont synchronisées
+  useAutoRefresh({
+    onRefresh: refetch,
+    dependencies: [isStravaConnected],
+    enabled: isStravaConnected
+  });
   
   // Utilise les vraies données Strava si disponibles, sinon les données mockées
   const currentWeeklyData = (isStravaConnected && weeklyStats) ? weeklyStats.weeklyData : weeklyData;

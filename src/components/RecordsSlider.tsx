@@ -3,6 +3,7 @@ import { MapPin, Clock, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { usePersonalRecords } from '@/hooks/usePersonalRecords';
 import { useStravaData } from '@/hooks/useStravaData';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { personalRecords } from '../data/mockData';
 import { Button } from '@/components/ui/button';
 import DistanceHistoryPanel from '@/components/DistanceHistoryPanel';
@@ -11,6 +12,13 @@ const RecordsSlider = () => {
   const { records, loading, error, refetch } = usePersonalRecords();
   const { syncActivities, isStravaConnected } = useStravaData();
   const [selectedRecord, setSelectedRecord] = useState<{ distance: number; name: string } | null>(null);
+
+  // Auto-refresh quand les données Strava sont synchronisées
+  useAutoRefresh({
+    onRefresh: refetch,
+    dependencies: [isStravaConnected],
+    enabled: isStravaConnected
+  });
 
   // Utilise les vraies données Strava si disponibles, sinon les données mockées
   const currentRecords = (isStravaConnected && records.length > 0) ? records : personalRecords;

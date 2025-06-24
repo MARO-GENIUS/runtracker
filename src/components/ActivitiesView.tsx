@@ -4,11 +4,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { RefreshCw, TrendingUp, Clock, MapPin } from 'lucide-react';
 import { useStravaData } from '@/hooks/useStravaData';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import ActivitiesTable from './ActivitiesTable';
 
 const ActivitiesView = () => {
   const { stats, loading, error, syncActivities, isStravaConnected } = useStravaData();
   const [refreshing, setRefreshing] = useState(false);
+
+  // Auto-refresh du composant quand les données changent
+  useAutoRefresh({
+    onRefresh: async () => {
+      console.log('Auto-refresh des activités déclenché');
+      // Le composant ActivitiesTable se rafraîchira automatiquement via ses propres hooks
+    },
+    dependencies: [isStravaConnected],
+    enabled: isStravaConnected
+  });
 
   const handleRefresh = async () => {
     setRefreshing(true);

@@ -1,5 +1,7 @@
+
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useGlobalSync } from '@/hooks/useGlobalSync';
 import { Navigate } from 'react-router-dom';
 import { Calendar } from 'lucide-react';
 import Header from '../components/Header';
@@ -10,10 +12,14 @@ import RecordsTable from '../components/RecordsTable';
 import ActivitiesView from '../components/ActivitiesView';
 import StravaConnect from '../components/StravaConnect';
 import RunningCalendar from '../components/RunningCalendar';
+import { StravaRateLimitIndicator } from '../components/StravaRateLimitIndicator';
+import { useStravaRateLimit } from '@/hooks/useStravaRateLimit';
 
 const Index = () => {
   const { user, loading, signOut } = useAuth();
   const [currentView, setCurrentView] = useState<'dashboard' | 'records' | 'activities'>('dashboard');
+  const { isGlobalSyncing, syncProgress } = useGlobalSync();
+  const rateLimitInfo = useStravaRateLimit();
 
   if (loading) {
     return (
@@ -49,10 +55,16 @@ const Index = () => {
               </div>
               <div>
                 <p className="text-gray-700 text-sm font-medium">Semaine du 10-16 Juin 2024</p>
+                {isGlobalSyncing && syncProgress && (
+                  <p className="text-xs text-blue-600 mt-1">{syncProgress}</p>
+                )}
               </div>
             </div>
             
-            <StravaConnect />
+            <div className="flex items-center gap-4">
+              <StravaRateLimitIndicator {...rateLimitInfo} />
+              <StravaConnect />
+            </div>
           </div>
         </div>
       )}
@@ -81,6 +93,12 @@ const Index = () => {
           <p className="text-xs mt-2 text-gray-500">
             Visualisez vos performances • Suivez vos progrès • Atteignez vos objectifs
           </p>
+          {isGlobalSyncing && (
+            <p className="text-xs mt-2 text-blue-600 flex items-center justify-center gap-1">
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+              Synchronisation automatique en cours...
+            </p>
+          )}
         </div>
       </footer>
     </div>
