@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useGlobalSync } from '@/hooks/useGlobalSync';
 import { Navigate } from 'react-router-dom';
+import TopNavigation from '../components/TopNavigation';
 import Header from '../components/Header';
 import WeeklySummary from '../components/WeeklySummary';
 import RecordsSlider from '../components/RecordsSlider';
@@ -34,6 +35,15 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Nouvelle navigation supérieure */}
+      <TopNavigation 
+        currentView={currentView} 
+        onViewChange={setCurrentView}
+        user={user}
+        onSignOut={signOut}
+      />
+      
+      {/* Header principal (simplifié) */}
       <Header 
         currentView={currentView} 
         onViewChange={setCurrentView}
