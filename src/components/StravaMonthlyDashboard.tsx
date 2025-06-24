@@ -1,5 +1,5 @@
 
-import { Clock, MapPin, Calendar } from 'lucide-react';
+import { Clock, Calendar } from 'lucide-react';
 import { useStravaData } from '@/hooks/useStravaData';
 import { getCurrentMonthName } from '@/utils/dateHelpers';
 
@@ -93,75 +93,52 @@ const StravaMonthlyDashboard = () => {
           </div>
         </div>
       ) : hasAnyData ? (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Distance totale */}
-            <div className="text-center">
-              <div className="bg-gradient-to-br from-running-green to-running-green-light p-4 rounded-xl text-white mb-3 relative">
-                {isAutoSyncing && (
-                  <div className="absolute top-2 right-2">
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white/50"></div>
-                  </div>
-                )}
-                <div className="text-2xl font-bold">
-                  {stats.monthly.distance?.toFixed(1) || '0'} km
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Distance totale */}
+          <div className="text-center">
+            <div className="bg-gradient-to-br from-running-green to-running-green-light p-4 rounded-xl text-white mb-3 relative">
+              {isAutoSyncing && (
+                <div className="absolute top-2 right-2">
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white/50"></div>
                 </div>
-                <div className="text-sm opacity-90">Distance parcourue</div>
+              )}
+              <div className="text-2xl font-bold">
+                {stats.monthly.distance?.toFixed(1) || '0'} km
               </div>
-            </div>
-
-            {/* Nombre d'activités */}
-            <div className="text-center">
-              <div className="bg-gradient-to-br from-running-blue to-blue-400 p-4 rounded-xl text-white mb-3 relative">
-                {isAutoSyncing && (
-                  <div className="absolute top-2 right-2">
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white/50"></div>
-                  </div>
-                )}
-                <div className="text-2xl font-bold">
-                  {stats.monthly.activitiesCount || 0}
-                </div>
-                <div className="text-sm opacity-90">Activités</div>
-              </div>
-            </div>
-
-            {/* Durée totale */}
-            <div className="text-center">
-              <div className="bg-gradient-to-br from-running-purple to-purple-400 p-4 rounded-xl text-white mb-3 relative">
-                {isAutoSyncing && (
-                  <div className="absolute top-2 right-2">
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white/50"></div>
-                  </div>
-                )}
-                <div className="text-2xl font-bold">
-                  {stats.monthly.duration ? formatDuration(stats.monthly.duration) : '0h 0min'}
-                </div>
-                <div className="text-sm opacity-90">Temps total</div>
-              </div>
+              <div className="text-sm opacity-90">Distance parcourue</div>
             </div>
           </div>
 
-          {/* Activité la plus longue */}
-          {stats.monthly.longestActivity && (
-            <div className="mt-6 pt-4 border-t border-gray-100">
-              <div className="flex items-center gap-2 mb-2">
-                <MapPin size={16} className="text-gray-500" />
-                <span className="text-sm font-medium text-gray-700">Plus longue sortie du mois</span>
+          {/* Nombre d'activités */}
+          <div className="text-center">
+            <div className="bg-gradient-to-br from-running-blue to-blue-400 p-4 rounded-xl text-white mb-3 relative">
+              {isAutoSyncing && (
+                <div className="absolute top-2 right-2">
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white/50"></div>
+                </div>
+              )}
+              <div className="text-2xl font-bold">
+                {stats.monthly.activitiesCount || 0}
               </div>
-              <div className="bg-gray-50 rounded-lg p-3">
-                <div className="font-semibold text-gray-800">
-                  {stats.monthly.longestActivity.distance} km
-                </div>
-                <div className="text-sm text-gray-600 truncate">
-                  {stats.monthly.longestActivity.name}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {new Date(stats.monthly.longestActivity.date).toLocaleDateString('fr-FR')}
-                </div>
-              </div>
+              <div className="text-sm opacity-90">Activités</div>
             </div>
-          )}
-        </>
+          </div>
+
+          {/* Durée totale */}
+          <div className="text-center">
+            <div className="bg-gradient-to-br from-running-purple to-purple-400 p-4 rounded-xl text-white mb-3 relative">
+              {isAutoSyncing && (
+                <div className="absolute top-2 right-2">
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white/50"></div>
+                </div>
+              )}
+              <div className="text-2xl font-bold">
+                {stats.monthly.duration ? formatDuration(stats.monthly.duration) : '0h 0min'}
+              </div>
+              <div className="text-sm opacity-90">Temps total</div>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="text-center py-8">
           <p className="text-gray-600 mb-4">
