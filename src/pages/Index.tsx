@@ -21,7 +21,7 @@ const Index = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center px-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-running-blue mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
@@ -35,7 +35,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Nouvelle navigation supérieure */}
+      {/* Navigation supérieure responsive */}
       <TopNavigation 
         currentView={currentView} 
         onViewChange={setCurrentView}
@@ -43,7 +43,7 @@ const Index = () => {
         onSignOut={signOut}
       />
       
-      {/* Header principal (simplifié) */}
+      {/* Header principal responsive */}
       <Header 
         currentView={currentView} 
         onViewChange={setCurrentView}
@@ -51,16 +51,17 @@ const Index = () => {
         onSignOut={signOut}
       />
       
-      {/* Barre d'informations dans la zone blanche */}
+      {/* Barre d'informations responsive */}
       {currentView === 'dashboard' && (
-        <div className="bg-white border-b border-gray-100 py-4">
-          <div className="max-w-6xl mx-auto px-6 flex items-center justify-end">
+        <div className="bg-white border-b border-gray-100 py-3 sm:py-4">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-end">
             <StravaConnect />
           </div>
         </div>
       )}
       
-      <main className="max-w-6xl mx-auto p-6 space-y-8">
+      {/* Contenu principal responsive */}
+      <main className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
         {currentView === 'dashboard' && (
           <>
             <WeeklySummary />
@@ -75,9 +76,9 @@ const Index = () => {
         {currentView === 'activities' && <ActivitiesView />}
       </main>
       
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-100 mt-16 py-8">
-        <div className="max-w-6xl mx-auto px-6 text-center text-gray-600">
+      {/* Footer responsive */}
+      <footer className="bg-white border-t border-gray-100 mt-12 sm:mt-16 py-6 sm:py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center text-gray-600">
           <p className="text-sm">
             RunTracker Pro - Votre compagnon de course personnalisé
           </p>

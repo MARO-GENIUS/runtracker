@@ -3,6 +3,7 @@ import { User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { User as SupabaseUser } from '@supabase/supabase-js';
+import MobileMenu from './MobileMenu';
 
 interface TopNavigationProps {
   currentView: 'dashboard' | 'records' | 'activities';
@@ -21,15 +22,15 @@ const TopNavigation = ({ currentView, onViewChange, user, onSignOut }: TopNaviga
             <img 
               src="/lovable-uploads/734bc265-5a79-4eb5-abe6-747a6f0b6e12.png" 
               alt="RunTracker Pro Logo" 
-              className="h-10 w-10"
+              className="h-8 w-8 sm:h-10 sm:w-10"
             />
-            <span className="ml-3 text-xl font-bold text-gray-900 hidden sm:block">
+            <span className="ml-2 sm:ml-3 text-lg sm:text-xl font-bold text-gray-900 hidden sm:block">
               RunTracker Pro
             </span>
           </div>
 
-          {/* Navigation centrale */}
-          <div className="flex space-x-8">
+          {/* Navigation centrale - Cachée sur mobile */}
+          <div className="hidden md:flex space-x-8">
             <button
               onClick={() => onViewChange('dashboard')}
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -69,28 +70,40 @@ const TopNavigation = ({ currentView, onViewChange, user, onSignOut }: TopNaviga
             </button>
           </div>
 
-          {/* Menu profil à droite */}
-          <div className="flex items-center">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className="flex items-center gap-2 text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-                >
-                  <User size={20} />
-                  <span className="hidden sm:block font-medium">Profil</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-3 py-2 border-b border-gray-100">
-                  <p className="text-sm text-gray-600 truncate">{user.email}</p>
-                </div>
-                <DropdownMenuItem onClick={onSignOut} className="text-red-600 hover:text-red-700">
-                  <LogOut className="mr-2" size={16} />
-                  Déconnexion
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {/* Section droite */}
+          <div className="flex items-center gap-2">
+            {/* Menu hamburger mobile */}
+            <MobileMenu 
+              currentView={currentView}
+              onViewChange={onViewChange}
+              user={user}
+              onSignOut={onSignOut}
+            />
+
+            {/* Menu profil desktop */}
+            <div className="hidden md:block">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="flex items-center gap-2 text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                  >
+                    <User size={18} />
+                    <span className="hidden lg:block font-medium">Profil</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-white">
+                  <div className="px-3 py-2 border-b border-gray-100">
+                    <p className="text-sm text-gray-600 truncate">{user.email}</p>
+                  </div>
+                  <DropdownMenuItem onClick={onSignOut} className="text-red-600 hover:text-red-700">
+                    <LogOut className="mr-2" size={16} />
+                    Déconnexion
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </div>
