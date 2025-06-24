@@ -1,8 +1,8 @@
+
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useGlobalSync } from '@/hooks/useGlobalSync';
 import { Navigate } from 'react-router-dom';
-import { Calendar } from 'lucide-react';
 import Header from '../components/Header';
 import WeeklySummary from '../components/WeeklySummary';
 import RecordsSlider from '../components/RecordsSlider';
@@ -55,19 +55,7 @@ const Index = () => {
       {/* Barre d'informations dans la zone blanche */}
       {currentView === 'dashboard' && (
         <div className="bg-white border-b border-gray-100 py-4">
-          <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-gray-100 p-2 rounded-lg">
-                <Calendar size={20} className="text-gray-600" />
-              </div>
-              <div>
-                <p className="text-gray-700 text-sm font-medium">Semaine du 10-16 Juin 2024</p>
-                {isGlobalSyncing && syncProgress && (
-                  <p className="text-xs text-blue-600 mt-1">{syncProgress}</p>
-                )}
-              </div>
-            </div>
-            
+          <div className="max-w-6xl mx-auto px-6 flex items-center justify-end">
             <div className="flex items-center gap-4">
               <StravaRateLimitIndicator {...rateLimitProps} />
               <StravaConnect />
