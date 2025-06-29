@@ -23,7 +23,7 @@ interface TrainingRecommendation {
 }
 
 export const useTrainingRecommendations = () => {
-  const { activities, stats } = useStravaData();
+  const { stats } = useStravaData();
   const [settings, setSettings] = useState<TrainingSettings>({
     targetRace: '10k',
     weeklyFrequency: 3,
@@ -35,11 +35,11 @@ export const useTrainingRecommendations = () => {
   const [recommendations, setRecommendations] = useState<TrainingRecommendation[]>([]);
 
   const generateRecommendations = () => {
-    if (!activities.length || !stats) return;
+    if (!stats) return;
 
     const avgHR = 167; // FC moyenne observée
-    const avgDistance = stats.totalDistance / activities.length / 1000; // km
-    const recentActivities = activities.slice(0, 7); // 7 dernières activités
+    const avgDistance = stats.monthly.activitiesCount > 0 ? 
+      stats.monthly.distance / stats.monthly.activitiesCount : 7.7; // km par sortie
 
     // Calcul des zones de FC
     const zones = {
@@ -51,9 +51,9 @@ export const useTrainingRecommendations = () => {
 
     const newRecommendations: TrainingRecommendation[] = [];
 
-    // Recommandation principale basée sur l'historique
-    const daysSinceLastRun = recentActivities.length > 0 ? 
-      Math.floor((new Date().getTime() - new Date(recentActivities[0].start_date).getTime()) / (1000 * 60 * 60 * 24)) : 3;
+    // Estimation du nombre de jours depuis la dernière sortie basée sur l'activité mensuelle
+    const daysSinceLastRun = stats.latest ? 
+      Math.floor((new Date().getTime() - new Date(stats.latest.date).getTime()) / (1000 * 60 * 60 * 24)) : 2;
 
     if (daysSinceLastRun <= 1) {
       // Repos ou récupération active
@@ -114,7 +114,7 @@ export const useTrainingRecommendations = () => {
 
   useEffect(() => {
     generateRecommendations();
-  }, [activities, settings, stats]);
+  }, [stats, settings]);
 
   return {
     recommendations,
