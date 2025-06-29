@@ -20,15 +20,6 @@ interface StravaActivity {
   type: string;
 }
 
-interface TrainingSettings {
-  targetRace: string;
-  targetDate?: string;
-  weeklyFrequency: number;
-  preferredDays: string[];
-  availableTimeSlots: string[];
-  maxIntensity: string;
-}
-
 interface AIRecommendation {
   type: string;
   title: string;
@@ -53,6 +44,18 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Starting AI coach analysis...')
+
+    // Check if OpenAI API key is available
+    const openAIKey = Deno.env.get('OPENAI_API_KEY')
+    if (!openAIKey) {
+      console.error('OpenAI API key not found')
+      return new Response(
+        JSON.stringify({ error: 'Configuration manquante: clé API OpenAI non trouvée' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -65,24 +68,31 @@ serve(async (req) => {
 
     const { data: { user } } = await supabaseClient.auth.getUser()
     if (!user) {
+      console.error('User not authenticated')
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Non autorisé' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    console.log(`Analyzing data for user: ${user.id}`)
+
     // Get user's training settings
-    const { data: settings } = await supabaseClient
+    const { data: settings, error: settingsError } = await supabaseClient
       .from('training_settings')
       .select('*')
       .eq('user_id', user.id)
       .single()
 
+    if (settingsError) {
+      console.log('No training settings found, using defaults')
+    }
+
     // Get recent activities (last 3 months for analysis)
     const threeMonthsAgo = new Date()
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
 
-    const { data: activities } = await supabaseClient
+    const { data: activities, error: activitiesError } = await supabaseClient
       .from('strava_activities')
       .select('*')
       .eq('user_id', user.id)
@@ -90,21 +100,23 @@ serve(async (req) => {
       .order('start_date', { ascending: false })
       .limit(50)
 
+    if (activitiesError) {
+      console.error('Error fetching activities:', activitiesError)
+      return new Response(
+        JSON.stringify({ error: 'Erreur lors de la récupération des activités' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     if (!activities || activities.length === 0) {
+      console.log('No activities found')
       return new Response(
         JSON.stringify({ error: 'Pas assez de données d\'activités pour l\'analyse' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Prepare data for AI analysis
-    const analysisData = {
-      settings: settings || {},
-      activities: activities,
-      totalActivities: activities.length,
-      recentPerformance: activities.slice(0, 10),
-      currentDate: new Date().toISOString()
-    }
+    console.log(`Found ${activities.length} activities for analysis`)
 
     // Create AI prompt for analysis
     const aiPrompt = `Tu es un coach d'entraînement professionnel spécialisé en course à pied. Analyse les données suivantes d'un coureur et génère des recommandations d'entraînement personnalisées et détaillées.
@@ -118,14 +130,14 @@ DONNÉES DU COUREUR:
 - Intensité max: ${settings?.max_intensity || 'medium'}
 
 HISTORIQUE D'ACTIVITÉS (${activities.length} activités sur 3 mois):
-${activities.slice(0, 20).map(act => 
+${activities.slice(0, 15).map(act => 
   `- ${act.name}: ${(act.distance/1000).toFixed(1)}km en ${Math.floor(act.moving_time/60)}min (${act.start_date.split('T')[0]}) FC moy: ${act.average_heartrate || 'N/A'}`
 ).join('\n')}
 
 STATISTIQUES RÉCENTES:
 - Distance moyenne: ${(activities.reduce((sum, act) => sum + act.distance, 0) / activities.length / 1000).toFixed(1)}km
 - Allure moyenne: ${(activities.reduce((sum, act) => sum + (act.moving_time / (act.distance/1000)), 0) / activities.length / 60).toFixed(1)} min/km
-- FC moyenne: ${activities.filter(act => act.average_heartrate).reduce((sum, act, _, arr) => sum + (act.average_heartrate || 0), 0) / activities.filter(act => act.average_heartrate).length || 'N/A'}
+- FC moyenne: ${activities.filter(act => act.average_heartrate).length > 0 ? (activities.filter(act => act.average_heartrate).reduce((sum, act) => sum + (act.average_heartrate || 0), 0) / activities.filter(act => act.average_heartrate).length).toFixed(0) : 'N/A'}
 
 ANALYSE DEMANDÉE:
 1. Génère exactement 3 recommandations d'entraînement personnalisées
@@ -138,18 +150,18 @@ Réponds UNIQUEMENT avec un JSON valide contenant un tableau "recommendations" a
 {
   "recommendations": [
     {
-      "type": "endurance|tempo|intervals|recovery|long",
+      "type": "endurance",
       "title": "Titre de la séance",
       "description": "Description détaillée",
       "duration": 45,
-      "intensity": "Facile|Modérée|Soutenue|Difficile",
+      "intensity": "Facile",
       "targetPace": "5:30-6:00 min/km",
       "targetHR": {"min": 140, "max": 160},
       "warmup": "10min échauffement progressif",
       "mainSet": "Corps de séance détaillé",
       "cooldown": "5min retour au calme",
-      "scheduledFor": "today|tomorrow|this-week",
-      "priority": "high|medium|low",
+      "scheduledFor": "today",
+      "priority": "high",
       "aiJustification": "Explication basée sur l'analyse des données",
       "nutritionTips": "Conseils nutritionnels",
       "recoveryAdvice": "Conseils de récupération"
@@ -162,7 +174,7 @@ Réponds UNIQUEMENT avec un JSON valide contenant un tableau "recommendations" a
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${openAIKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -183,13 +195,15 @@ Réponds UNIQUEMENT avec un JSON valide contenant un tableau "recommendations" a
     })
 
     if (!openAIResponse.ok) {
+      const errorText = await openAIResponse.text()
+      console.error(`OpenAI API error: ${openAIResponse.status} - ${errorText}`)
       throw new Error(`OpenAI API error: ${openAIResponse.status}`)
     }
 
     const openAIData = await openAIResponse.json()
     const aiContent = openAIData.choices[0].message.content
 
-    console.log('AI Response:', aiContent)
+    console.log('AI Response received:', aiContent.substring(0, 200) + '...')
 
     let recommendations: AIRecommendation[]
     try {
@@ -197,6 +211,8 @@ Réponds UNIQUEMENT avec un JSON valide contenant un tableau "recommendations" a
       recommendations = parsedResponse.recommendations || []
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError)
+      console.error('AI content:', aiContent)
+      
       // Fallback recommendations if AI parsing fails
       recommendations = [
         {
@@ -212,12 +228,14 @@ Réponds UNIQUEMENT avec un JSON valide contenant un tableau "recommendations" a
           cooldown: '5min retour au calme',
           scheduledFor: 'today',
           priority: 'high',
-          aiJustification: 'Recommandation générée automatiquement basée sur vos données',
+          aiJustification: 'Recommandation générée automatiquement basée sur vos données d\'entraînement récentes',
           nutritionTips: 'Hydratation régulière pendant la séance',
           recoveryAdvice: 'Étirements légers après la séance'
         }
       ]
     }
+
+    console.log(`Generated ${recommendations.length} recommendations`)
 
     return new Response(
       JSON.stringify({
@@ -233,9 +251,16 @@ Réponds UNIQUEMENT avec un JSON valide contenant un tableau "recommendations" a
     )
 
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error in AI coach analysis:', error)
+    
+    // Return more detailed error information
+    const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: `Erreur lors de l'analyse IA: ${errorMessage}`,
+        details: error instanceof Error ? error.stack : 'Aucun détail disponible'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
