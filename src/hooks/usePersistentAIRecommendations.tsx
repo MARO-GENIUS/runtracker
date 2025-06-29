@@ -37,7 +37,13 @@ export const usePersistentAIRecommendations = () => {
 
       if (error) throw error;
 
-      setPersistentRecommendations(data || []);
+      // Convertir les données Supabase au format attendu
+      const convertedData = (data || []).map(item => ({
+        ...item,
+        recommendation_data: item.recommendation_data as AIRecommendation
+      })) as PersistentAIRecommendation[];
+
+      setPersistentRecommendations(convertedData);
     } catch (error: any) {
       console.error('Error loading persistent recommendations:', error);
       toast({
@@ -57,7 +63,7 @@ export const usePersistentAIRecommendations = () => {
     try {
       const recommendationsToSave = recommendations.map(rec => ({
         user_id: user.id,
-        recommendation_data: rec,
+        recommendation_data: rec as any, // Conversion explicite pour Supabase
         status: 'pending' as const
       }));
 
