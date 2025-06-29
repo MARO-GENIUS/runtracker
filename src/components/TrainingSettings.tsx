@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,12 +26,18 @@ interface TrainingSettings {
 
 interface TrainingSettingsProps {
   settings: TrainingSettings;
-  onUpdateSettings: (settings: TrainingSettings) => void;
+  onUpdateSettings: (settings: TrainingSettings) => Promise<boolean>;
 }
 
 const TrainingSettings = ({ settings, onUpdateSettings }: TrainingSettingsProps) => {
   const [localSettings, setLocalSettings] = useState<TrainingSettings>(settings);
   const [isOpen, setIsOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Update local settings when props change
+  useEffect(() => {
+    setLocalSettings(settings);
+  }, [settings]);
 
   const raceOptions = [
     { value: 'recuperation', label: 'Récupération/Forme', distance: '' },
@@ -49,9 +55,14 @@ const TrainingSettings = ({ settings, onUpdateSettings }: TrainingSettingsProps)
     { value: 'high', label: 'Élevée - Incluant fractionné' }
   ];
 
-  const handleSave = () => {
-    onUpdateSettings(localSettings);
-    setIsOpen(false);
+  const handleSave = async () => {
+    setIsSaving(true);
+    const success = await onUpdateSettings(localSettings);
+    setIsSaving(false);
+    
+    if (success) {
+      setIsOpen(false);
+    }
   };
 
   const handleDayToggle = (day: string) => {
@@ -230,11 +241,11 @@ const TrainingSettings = ({ settings, onUpdateSettings }: TrainingSettingsProps)
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
+          <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSaving}>
             Annuler
           </Button>
-          <Button onClick={handleSave}>
-            Sauvegarder
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
           </Button>
         </div>
       </DialogContent>

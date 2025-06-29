@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useStravaData } from './useStravaData';
+import { useTrainingSettingsPersistence } from './useTrainingSettingsPersistence';
 
 interface TrainingSettings {
   targetRace: 'recuperation' | '5k' | '10k' | 'semi' | 'marathon';
@@ -24,14 +25,7 @@ interface TrainingRecommendation {
 
 export const useTrainingRecommendations = () => {
   const { stats } = useStravaData();
-  const [settings, setSettings] = useState<TrainingSettings>({
-    targetRace: '10k',
-    weeklyFrequency: 3,
-    preferredDays: ['lundi', 'mercredi', 'samedi'],
-    availableTimeSlots: ['matin'],
-    maxIntensity: 'medium'
-  });
-
+  const { settings, saveSettings, isLoading: settingsLoading } = useTrainingSettingsPersistence();
   const [recommendations, setRecommendations] = useState<TrainingRecommendation[]>([]);
 
   const generateRecommendations = () => {
@@ -113,13 +107,16 @@ export const useTrainingRecommendations = () => {
   };
 
   useEffect(() => {
-    generateRecommendations();
-  }, [stats, settings]);
+    if (!settingsLoading) {
+      generateRecommendations();
+    }
+  }, [stats, settings, settingsLoading]);
 
   return {
     recommendations,
     settings,
-    updateSettings: setSettings,
-    refreshRecommendations: generateRecommendations
+    updateSettings: saveSettings,
+    refreshRecommendations: generateRecommendations,
+    isLoadingSettings: settingsLoading
   };
 };

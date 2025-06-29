@@ -250,6 +250,45 @@ export type Database = {
           },
         ]
       }
+      training_settings: {
+        Row: {
+          available_time_slots: string[]
+          created_at: string
+          id: string
+          max_intensity: string
+          preferred_days: string[]
+          target_date: string | null
+          target_race: string
+          updated_at: string
+          user_id: string
+          weekly_frequency: number
+        }
+        Insert: {
+          available_time_slots?: string[]
+          created_at?: string
+          id?: string
+          max_intensity?: string
+          preferred_days?: string[]
+          target_date?: string | null
+          target_race?: string
+          updated_at?: string
+          user_id: string
+          weekly_frequency?: number
+        }
+        Update: {
+          available_time_slots?: string[]
+          created_at?: string
+          id?: string
+          max_intensity?: string
+          preferred_days?: string[]
+          target_date?: string | null
+          target_race?: string
+          updated_at?: string
+          user_id?: string
+          weekly_frequency?: number
+        }
+        Relationships: []
+      }
       user_stats_cache: {
         Row: {
           id: string
