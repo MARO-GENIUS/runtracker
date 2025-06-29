@@ -40,7 +40,7 @@ export const usePersistentAIRecommendations = () => {
       // Convertir les données Supabase au format attendu
       const convertedData = (data || []).map(item => ({
         ...item,
-        recommendation_data: item.recommendation_data as AIRecommendation
+        recommendation_data: item.recommendation_data as unknown as AIRecommendation
       })) as PersistentAIRecommendation[];
 
       setPersistentRecommendations(convertedData);
