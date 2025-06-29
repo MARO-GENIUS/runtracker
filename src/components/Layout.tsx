@@ -1,23 +1,30 @@
 
-import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useGlobalSync } from '@/hooks/useGlobalSync';
-import { Navigate } from 'react-router-dom';
-import TopNavigation from '../components/TopNavigation';
-import Header from '../components/Header';
-import WeeklySummary from '../components/WeeklySummary';
-import RecordsSlider from '../components/RecordsSlider';
-import MonthlyStats from '../components/MonthlyStats';
-import RecordsTable from '../components/RecordsTable';
-import ActivitiesView from '../components/ActivitiesView';
-import CoachView from '../components/CoachView';
-import StravaConnect from '../components/StravaConnect';
-import RunningCalendar from '../components/RunningCalendar';
+import { Navigate, useLocation } from 'react-router-dom';
+import TopNavigation from './TopNavigation';
+import Header from './Header';
+import StravaConnect from './StravaConnect';
 
-const Index = () => {
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+const Layout = ({ children }: LayoutProps) => {
   const { user, loading, signOut } = useAuth();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'records' | 'activities' | 'coach'>('dashboard');
+  const location = useLocation();
   const { isGlobalSyncing, syncProgress } = useGlobalSync();
+
+  // Détermine la vue actuelle basée sur l'URL
+  const getCurrentView = () => {
+    const path = location.pathname;
+    if (path === '/activities') return 'activities';
+    if (path === '/records') return 'records';
+    if (path === '/coach') return 'coach';
+    return 'dashboard';
+  };
+
+  const currentView = getCurrentView();
 
   if (loading) {
     return (
@@ -39,7 +46,6 @@ const Index = () => {
       {/* Navigation supérieure responsive */}
       <TopNavigation 
         currentView={currentView} 
-        onViewChange={setCurrentView}
         user={user}
         onSignOut={signOut}
       />
@@ -47,12 +53,11 @@ const Index = () => {
       {/* Header principal responsive */}
       <Header 
         currentView={currentView} 
-        onViewChange={setCurrentView}
         user={user}
         onSignOut={signOut}
       />
       
-      {/* Barre d'informations responsive */}
+      {/* Barre d'informations responsive - uniquement sur le dashboard */}
       {currentView === 'dashboard' && (
         <div className="bg-white border-b border-gray-100 py-3 sm:py-4">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-end">
@@ -63,20 +68,7 @@ const Index = () => {
       
       {/* Contenu principal responsive */}
       <main className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
-        {currentView === 'dashboard' && (
-          <>
-            <WeeklySummary />
-            <RunningCalendar />
-            <RecordsSlider />
-            <MonthlyStats />
-          </>
-        )}
-        
-        {currentView === 'records' && <RecordsTable />}
-        
-        {currentView === 'activities' && <ActivitiesView />}
-        
-        {currentView === 'coach' && <CoachView />}
+        {children}
       </main>
       
       {/* Footer responsive */}
@@ -100,4 +92,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Layout;

@@ -3,19 +3,18 @@ import { useState } from 'react';
 import { Menu, X, User, LogOut, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { User as SupabaseUser } from '@supabase/supabase-js';
+import { Link } from 'react-router-dom';
 
 interface MobileMenuProps {
   currentView: 'dashboard' | 'records' | 'activities' | 'coach';
-  onViewChange: (view: 'dashboard' | 'records' | 'activities' | 'coach') => void;
   user: SupabaseUser;
   onSignOut: () => void;
 }
 
-const MobileMenu = ({ currentView, onViewChange, user, onSignOut }: MobileMenuProps) => {
+const MobileMenu = ({ currentView, user, onSignOut }: MobileMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleViewChange = (view: 'dashboard' | 'records' | 'activities' | 'coach') => {
-    onViewChange(view);
+  const handleLinkClick = () => {
     setIsOpen(false);
   };
 
@@ -51,20 +50,22 @@ const MobileMenu = ({ currentView, onViewChange, user, onSignOut }: MobileMenuPr
 
             <div className="p-4 space-y-4">
               {/* Navigation Items */}
-              <button
-                onClick={() => handleViewChange('dashboard')}
-                className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              <Link
+                to="/"
+                onClick={handleLinkClick}
+                className={`block w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                   currentView === 'dashboard'
                     ? 'text-running-blue bg-running-blue/10'
                     : 'text-gray-700 hover:text-running-blue hover:bg-gray-50'
                 }`}
               >
                 Dashboard
-              </button>
+              </Link>
 
-              <button
-                onClick={() => handleViewChange('activities')}
-                className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+              <Link
+                to="/activities"
+                onClick={handleLinkClick}
+                className={`block w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                   currentView === 'activities'
                     ? 'text-running-blue bg-running-blue/10'
                     : 'text-gray-700 hover:text-running-blue hover:bg-gray-50'
@@ -76,22 +77,24 @@ const MobileMenu = ({ currentView, onViewChange, user, onSignOut }: MobileMenuPr
                   className="h-4 w-4"
                 />
                 Mes performances
-              </button>
+              </Link>
 
-              <button
-                onClick={() => handleViewChange('records')}
-                className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              <Link
+                to="/records"
+                onClick={handleLinkClick}
+                className={`block w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                   currentView === 'records'
                     ? 'text-running-blue bg-running-blue/10'
                     : 'text-gray-700 hover:text-running-blue hover:bg-gray-50'
                 }`}
               >
                 Records
-              </button>
+              </Link>
 
-              <button
-                onClick={() => handleViewChange('coach')}
-                className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+              <Link
+                to="/coach"
+                onClick={handleLinkClick}
+                className={`block w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                   currentView === 'coach'
                     ? 'text-running-blue bg-running-blue/10'
                     : 'text-gray-700 hover:text-running-blue hover:bg-gray-50'
@@ -99,7 +102,7 @@ const MobileMenu = ({ currentView, onViewChange, user, onSignOut }: MobileMenuPr
               >
                 <Brain className="h-4 w-4" />
                 Coach IA
-              </button>
+              </Link>
             </div>
 
             {/* User Section */}

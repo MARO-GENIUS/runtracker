@@ -3,36 +3,38 @@ import { User, LogOut, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { User as SupabaseUser } from '@supabase/supabase-js';
+import { Link, useLocation } from 'react-router-dom';
 import MobileMenu from './MobileMenu';
 
 interface TopNavigationProps {
   currentView: 'dashboard' | 'records' | 'activities' | 'coach';
-  onViewChange: (view: 'dashboard' | 'records' | 'activities' | 'coach') => void;
   user: SupabaseUser;
   onSignOut: () => void;
 }
 
-const TopNavigation = ({ currentView, onViewChange, user, onSignOut }: TopNavigationProps) => {
+const TopNavigation = ({ currentView, user, onSignOut }: TopNavigationProps) => {
   return (
     <nav className="bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo à gauche */}
           <div className="flex items-center">
-            <img 
-              src="/lovable-uploads/734bc265-5a79-4eb5-abe6-747a6f0b6e12.png" 
-              alt="RunTracker Pro Logo" 
-              className="h-8 w-8 sm:h-10 sm:w-10"
-            />
-            <span className="ml-2 sm:ml-3 text-lg sm:text-xl font-bold text-gray-900 hidden sm:block">
-              RunTracker Pro
-            </span>
+            <Link to="/" className="flex items-center">
+              <img 
+                src="/lovable-uploads/734bc265-5a79-4eb5-abe6-747a6f0b6e12.png" 
+                alt="RunTracker Pro Logo" 
+                className="h-8 w-8 sm:h-10 sm:w-10"
+              />
+              <span className="ml-2 sm:ml-3 text-lg sm:text-xl font-bold text-gray-900 hidden sm:block">
+                RunTracker Pro
+              </span>
+            </Link>
           </div>
 
           {/* Navigation centrale - Cachée sur mobile */}
           <div className="hidden md:flex space-x-8">
-            <button
-              onClick={() => onViewChange('dashboard')}
+            <Link
+              to="/"
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 currentView === 'dashboard'
                   ? 'text-running-blue bg-running-blue/10'
@@ -40,10 +42,10 @@ const TopNavigation = ({ currentView, onViewChange, user, onSignOut }: TopNaviga
               }`}
             >
               Dashboard
-            </button>
+            </Link>
             
-            <button
-              onClick={() => onViewChange('activities')}
+            <Link
+              to="/activities"
               className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 currentView === 'activities'
                   ? 'text-running-blue bg-running-blue/10'
@@ -56,10 +58,10 @@ const TopNavigation = ({ currentView, onViewChange, user, onSignOut }: TopNaviga
                 className="h-4 w-4"
               />
               Mes performances
-            </button>
+            </Link>
 
-            <button
-              onClick={() => onViewChange('records')}
+            <Link
+              to="/records"
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 currentView === 'records'
                   ? 'text-running-blue bg-running-blue/10'
@@ -67,10 +69,10 @@ const TopNavigation = ({ currentView, onViewChange, user, onSignOut }: TopNaviga
               }`}
             >
               Records
-            </button>
+            </Link>
 
-            <button
-              onClick={() => onViewChange('coach')}
+            <Link
+              to="/coach"
               className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 currentView === 'coach'
                   ? 'text-running-blue bg-running-blue/10'
@@ -79,7 +81,7 @@ const TopNavigation = ({ currentView, onViewChange, user, onSignOut }: TopNaviga
             >
               <Brain className="h-4 w-4" />
               Coach IA
-            </button>
+            </Link>
           </div>
 
           {/* Section droite */}
@@ -87,7 +89,6 @@ const TopNavigation = ({ currentView, onViewChange, user, onSignOut }: TopNaviga
             {/* Menu hamburger mobile */}
             <MobileMenu 
               currentView={currentView}
-              onViewChange={onViewChange}
               user={user}
               onSignOut={onSignOut}
             />

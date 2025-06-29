@@ -1,15 +1,15 @@
 
 import { ArrowLeft } from 'lucide-react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
+import { Link } from 'react-router-dom';
 
 interface HeaderProps {
   currentView: 'dashboard' | 'records' | 'activities' | 'coach';
-  onViewChange: (view: 'dashboard' | 'records' | 'activities' | 'coach') => void;
   user: SupabaseUser;
   onSignOut: () => void;
 }
 
-const Header = ({ currentView, onViewChange }: HeaderProps) => {
+const Header = ({ currentView }: HeaderProps) => {
   return (
     <header className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-600 text-white shadow-lg animate-fade-in">
       <div className="max-w-6xl mx-auto p-4 sm:p-6">
@@ -24,13 +24,13 @@ const Header = ({ currentView, onViewChange }: HeaderProps) => {
         {/* Vue activities - Layout optimisé sur une ligne */}
         {currentView === 'activities' && (
           <div className="flex items-center justify-between">
-            <button 
-              onClick={() => onViewChange('dashboard')}
+            <Link 
+              to="/"
               className="flex items-center gap-2 text-white/80 hover:text-white transition-all duration-200 hover:scale-105 min-h-[44px] min-w-[44px] p-2"
             >
               <ArrowLeft size={20} />
               <span className="font-medium hidden sm:inline">Retour au dashboard</span>
-            </button>
+            </Link>
             
             <h1 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">ACTIVITÉS</h1>
             
@@ -42,13 +42,13 @@ const Header = ({ currentView, onViewChange }: HeaderProps) => {
         {/* Vue coach */}
         {currentView === 'coach' && (
           <div className="flex items-center justify-between">
-            <button 
-              onClick={() => onViewChange('dashboard')}
+            <Link 
+              to="/"
               className="flex items-center gap-2 text-white/80 hover:text-white transition-all duration-200 hover:scale-105 min-h-[44px] min-w-[44px] p-2"
             >
               <ArrowLeft size={20} />
               <span className="font-medium hidden sm:inline">Retour au dashboard</span>
-            </button>
+            </Link>
             
             <h1 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">COACH IA</h1>
             
