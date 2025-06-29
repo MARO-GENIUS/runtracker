@@ -1,8 +1,8 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { usePersistentAIRecommendations } from './usePersistentAIRecommendations';
 
 export interface AIRecommendation {
   type: 'endurance' | 'tempo' | 'intervals' | 'recovery' | 'long';
@@ -35,6 +35,9 @@ export const useAICoach = () => {
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Intégrer le hook de persistance
+  const { saveRecommendations } = usePersistentAIRecommendations();
 
   const generateRecommendations = async () => {
     if (!user) {
@@ -67,9 +70,12 @@ export const useAICoach = () => {
         setRecommendations(data.recommendations);
         setAnalysisData(data.analysisData || null);
         
+        // Sauvegarder les recommandations de façon persistante
+        await saveRecommendations(data.recommendations);
+        
         toast({
           title: "Analyse IA terminée",
-          description: `${data.recommendations.length} recommandations générées sur la base de ${data.analysisData?.totalActivities || 0} activités`,
+          description: `${data.recommendations.length} recommandations générées et sauvegardées`,
         });
       } else {
         throw new Error('Aucune recommandation générée');

@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_recommendations: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          generated_at: string
+          id: string
+          matching_activity_id: number | null
+          recommendation_data: Json
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          generated_at?: string
+          id?: string
+          matching_activity_id?: number | null
+          recommendation_data: Json
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          generated_at?: string
+          id?: string
+          matching_activity_id?: number | null
+          recommendation_data?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       monthly_goals: {
         Row: {
           created_at: string

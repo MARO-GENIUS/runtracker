@@ -5,9 +5,12 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import PersonalizedRecommendations from './PersonalizedRecommendations';
 import AIPersonalizedRecommendations from './AIPersonalizedRecommendations';
+import PersistentAIRecommendations from './PersistentAIRecommendations';
 import TrainingSettings from './TrainingSettings';
 import { useTrainingRecommendations } from '@/hooks/useTrainingRecommendations';
 import { useAICoach } from '@/hooks/useAICoach';
+import { usePersistentAIRecommendations } from '@/hooks/usePersistentAIRecommendations';
+import { useActivityMatching } from '@/hooks/useActivityMatching';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const CoachView = () => {
@@ -20,7 +23,17 @@ const CoachView = () => {
     generateRecommendations 
   } = useAICoach();
   
-  const [activeTab, setActiveTab] = useState('ai');
+  // Hook pour les recommandations persistantes
+  const {
+    persistentRecommendations,
+    isLoading: persistentLoading,
+    checkActivityMatches
+  } = usePersistentAIRecommendations();
+  
+  // Hook pour la vérification automatique des correspondances
+  useActivityMatching();
+  
+  const [activeTab, setActiveTab] = useState('persistent-ai');
 
   const handleStartSession = (recommendation: any) => {
     toast({
@@ -89,21 +102,30 @@ const CoachView = () => {
         </div>
       </div>
 
-      {/* Onglets pour basculer entre IA et recommandations basiques */}
+      {/* Onglets pour basculer entre les différents types de recommandations */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="ai" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="persistent-ai" className="flex items-center gap-2">
             <Brain className="h-4 w-4" />
-            Coach IA
-            {aiRecommendations.length > 0 && (
+            Suivi IA
+            {persistentRecommendations.length > 0 && (
               <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
+                {persistentRecommendations.filter(r => r.status === 'pending').length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="ai" className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            Nouvelles IA
+            {aiRecommendations.length > 0 && (
+              <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full">
                 {aiRecommendations.length}
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger value="basic" className="flex items-center gap-2">
             <RefreshCw className="h-4 w-4" />
-            Recommandations basiques
+            Basiques
             {recommendations.length > 0 && (
               <span className="bg-gray-100 text-gray-800 text-xs px-2 py-0.5 rounded-full">
                 {recommendations.length}
@@ -111,6 +133,15 @@ const CoachView = () => {
             )}
           </TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="persistent-ai" className="mt-6">
+          <div className="max-w-4xl mx-auto">
+            <PersistentAIRecommendations 
+              recommendations={persistentRecommendations}
+              isLoading={persistentLoading}
+            />
+          </div>
+        </TabsContent>
         
         <TabsContent value="ai" className="mt-6">
           <div className="max-w-4xl mx-auto">
@@ -144,10 +175,12 @@ const CoachView = () => {
           }</span>
           {' • '}
           <span className="font-medium">{settings.weeklyFrequency} séances/semaine</span>
-          {analysisData && (
+          {persistentRecommendations.length > 0 && (
             <>
               {' • '}
-              <span className="text-blue-600 font-medium">IA: {analysisData.totalActivities} activités analysées</span>
+              <span className="text-blue-600 font-medium">
+                IA: {persistentRecommendations.filter(r => r.status === 'completed').length}/{persistentRecommendations.length} réalisées
+              </span>
             </>
           )}
         </p>
