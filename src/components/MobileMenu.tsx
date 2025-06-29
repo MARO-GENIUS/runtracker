@@ -1,12 +1,12 @@
 
 import { useState } from 'react';
-import { Menu, X, User, LogOut } from 'lucide-react';
+import { Menu, X, User, LogOut, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface MobileMenuProps {
-  currentView: 'dashboard' | 'records' | 'activities';
-  onViewChange: (view: 'dashboard' | 'records' | 'activities') => void;
+  currentView: 'dashboard' | 'records' | 'activities' | 'coach';
+  onViewChange: (view: 'dashboard' | 'records' | 'activities' | 'coach') => void;
   user: SupabaseUser;
   onSignOut: () => void;
 }
@@ -14,7 +14,7 @@ interface MobileMenuProps {
 const MobileMenu = ({ currentView, onViewChange, user, onSignOut }: MobileMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleViewChange = (view: 'dashboard' | 'records' | 'activities') => {
+  const handleViewChange = (view: 'dashboard' | 'records' | 'activities' | 'coach') => {
     onViewChange(view);
     setIsOpen(false);
   };
@@ -87,6 +87,18 @@ const MobileMenu = ({ currentView, onViewChange, user, onSignOut }: MobileMenuPr
                 }`}
               >
                 Records
+              </button>
+
+              <button
+                onClick={() => handleViewChange('coach')}
+                className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                  currentView === 'coach'
+                    ? 'text-running-blue bg-running-blue/10'
+                    : 'text-gray-700 hover:text-running-blue hover:bg-gray-50'
+                }`}
+              >
+                <Brain className="h-4 w-4" />
+                Coach IA
               </button>
             </div>
 

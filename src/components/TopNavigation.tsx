@@ -1,13 +1,13 @@
 
-import { User, LogOut } from 'lucide-react';
+import { User, LogOut, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import MobileMenu from './MobileMenu';
 
 interface TopNavigationProps {
-  currentView: 'dashboard' | 'records' | 'activities';
-  onViewChange: (view: 'dashboard' | 'records' | 'activities') => void;
+  currentView: 'dashboard' | 'records' | 'activities' | 'coach';
+  onViewChange: (view: 'dashboard' | 'records' | 'activities' | 'coach') => void;
   user: SupabaseUser;
   onSignOut: () => void;
 }
@@ -67,6 +67,18 @@ const TopNavigation = ({ currentView, onViewChange, user, onSignOut }: TopNaviga
               }`}
             >
               Records
+            </button>
+
+            <button
+              onClick={() => onViewChange('coach')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                currentView === 'coach'
+                  ? 'text-running-blue bg-running-blue/10'
+                  : 'text-gray-700 hover:text-running-blue hover:bg-gray-50'
+              }`}
+            >
+              <Brain className="h-4 w-4" />
+              Coach IA
             </button>
           </div>
 

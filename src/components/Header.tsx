@@ -3,8 +3,8 @@ import { ArrowLeft } from 'lucide-react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface HeaderProps {
-  currentView: 'dashboard' | 'records' | 'activities';
-  onViewChange: (view: 'dashboard' | 'records' | 'activities') => void;
+  currentView: 'dashboard' | 'records' | 'activities' | 'coach';
+  onViewChange: (view: 'dashboard' | 'records' | 'activities' | 'coach') => void;
   user: SupabaseUser;
   onSignOut: () => void;
 }
@@ -33,6 +33,24 @@ const Header = ({ currentView, onViewChange }: HeaderProps) => {
             </button>
             
             <h1 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">ACTIVITÉS</h1>
+            
+            {/* Espace vide pour équilibrer le layout */}
+            <div className="w-[44px]"></div>
+          </div>
+        )}
+
+        {/* Vue coach */}
+        {currentView === 'coach' && (
+          <div className="flex items-center justify-between">
+            <button 
+              onClick={() => onViewChange('dashboard')}
+              className="flex items-center gap-2 text-white/80 hover:text-white transition-all duration-200 hover:scale-105 min-h-[44px] min-w-[44px] p-2"
+            >
+              <ArrowLeft size={20} />
+              <span className="font-medium hidden sm:inline">Retour au dashboard</span>
+            </button>
+            
+            <h1 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">COACH IA</h1>
             
             {/* Espace vide pour équilibrer le layout */}
             <div className="w-[44px]"></div>

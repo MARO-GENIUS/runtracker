@@ -10,12 +10,13 @@ import RecordsSlider from '../components/RecordsSlider';
 import MonthlyStats from '../components/MonthlyStats';
 import RecordsTable from '../components/RecordsTable';
 import ActivitiesView from '../components/ActivitiesView';
+import CoachView from '../components/CoachView';
 import StravaConnect from '../components/StravaConnect';
 import RunningCalendar from '../components/RunningCalendar';
 
 const Index = () => {
   const { user, loading, signOut } = useAuth();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'records' | 'activities'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'records' | 'activities' | 'coach'>('dashboard');
   const { isGlobalSyncing, syncProgress } = useGlobalSync();
 
   if (loading) {
@@ -74,6 +75,8 @@ const Index = () => {
         {currentView === 'records' && <RecordsTable />}
         
         {currentView === 'activities' && <ActivitiesView />}
+        
+        {currentView === 'coach' && <CoachView />}
       </main>
       
       {/* Footer responsive */}
