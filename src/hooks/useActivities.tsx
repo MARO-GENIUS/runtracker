@@ -23,6 +23,8 @@ interface StravaActivity {
   max_heartrate: number | null;
   suffer_score: number | null;
   calories: number | null;
+  effort_rating: number | null;
+  effort_notes: string | null;
 }
 
 interface UseActivitiesOptions {

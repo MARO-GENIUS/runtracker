@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -26,6 +27,9 @@ interface AnalysisData {
   totalActivities: number;
   averageDistance: string;
   lastActivity: string;
+  fatigueScore?: string;
+  workoutBalance?: string;
+  recentTypes?: string[];
 }
 
 export const useAICoach = () => {
