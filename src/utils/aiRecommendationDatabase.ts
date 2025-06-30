@@ -50,3 +50,12 @@ export const markRecommendationAsCompleted = async (recommendationId: string, ac
 
   if (error) throw error;
 };
+
+export const deleteRecommendation = async (recommendationId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('ai_recommendations')
+    .delete()
+    .eq('id', recommendationId);
+
+  if (error) throw error;
+};

@@ -7,7 +7,8 @@ import { AIRecommendation } from './useAICoach';
 import { 
   loadPersistentRecommendations, 
   saveRecommendationsToDatabase, 
-  markRecommendationAsCompleted 
+  markRecommendationAsCompleted,
+  deleteRecommendation
 } from '@/utils/aiRecommendationDatabase';
 import { isActivityMatching } from '@/utils/activityMatcher';
 
@@ -61,6 +62,32 @@ export const usePersistentAIRecommendations = () => {
     }
   }, [user, loadRecommendations, toast]);
 
+  // Supprimer une recommandation
+  const removeRecommendation = useCallback(async (recommendationId: string) => {
+    if (!user) return;
+    
+    try {
+      await deleteRecommendation(recommendationId);
+      
+      // Mettre à jour localement
+      setPersistentRecommendations(prev => 
+        prev.filter(rec => rec.id !== recommendationId)
+      );
+      
+      toast({
+        title: "Recommandation supprimée",
+        description: "La séance proposée a été retirée de votre suivi",
+      });
+    } catch (error: any) {
+      console.error('Error deleting recommendation:', error);
+      toast({
+        title: "Erreur de suppression",
+        description: "Impossible de supprimer la recommandation",
+        variant: "destructive"
+      });
+    }
+  }, [user, toast]);
+
   // Vérifier les correspondances avec les activités
   const checkActivityMatches = useCallback(async (activities: any[]) => {
     if (!user || !activities.length || !persistentRecommendations.length) return;
@@ -108,6 +135,7 @@ export const usePersistentAIRecommendations = () => {
     persistentRecommendations,
     isLoading,
     saveRecommendations,
+    removeRecommendation,
     checkActivityMatches,
     loadRecommendations
   };

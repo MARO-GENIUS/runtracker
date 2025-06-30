@@ -2,13 +2,24 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, Target, Calendar, Heart, Brain, Utensils, Bed } from 'lucide-react';
+import { CheckCircle, Clock, Target, Calendar, Heart, Brain, Utensils, Bed, Trash2 } from 'lucide-react';
 import { AIRecommendation } from '@/hooks/useAICoach';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useState } from 'react';
 
 interface PersistentRecommendation {
@@ -23,9 +34,10 @@ interface PersistentRecommendation {
 interface PersistentAIRecommendationsProps {
   recommendations: PersistentRecommendation[];
   isLoading: boolean;
+  onRemoveRecommendation?: (id: string) => void;
 }
 
-const PersistentAIRecommendations = ({ recommendations, isLoading }: PersistentAIRecommendationsProps) => {
+const PersistentAIRecommendations = ({ recommendations, isLoading, onRemoveRecommendation }: PersistentAIRecommendationsProps) => {
   const [expandedCards, setExpandedCards] = useState<number[]>([]);
 
   const toggleExpanded = (index: number) => {
@@ -143,6 +155,7 @@ const PersistentAIRecommendations = ({ recommendations, isLoading }: PersistentA
       {recommendations.map((persistentRec, index) => {
         const rec = persistentRec.recommendation_data;
         const isCompleted = persistentRec.status === 'completed';
+        const isPending = persistentRec.status === 'pending';
         
         return (
           <Card 
@@ -170,6 +183,37 @@ const PersistentAIRecommendations = ({ recommendations, isLoading }: PersistentA
                     {rec.type.charAt(0).toUpperCase() + rec.type.slice(1)}
                   </Badge>
                   {getStatusBadge(persistentRec.status, persistentRec.completed_at)}
+                  {isPending && onRemoveRecommendation && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Supprimer cette recommandation ?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Cette action supprimera définitivement la séance "{rec.title}" de votre suivi. 
+                            Cette action ne peut pas être annulée.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => onRemoveRecommendation(persistentRec.id)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Supprimer
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -264,7 +308,7 @@ const PersistentAIRecommendations = ({ recommendations, isLoading }: PersistentA
                 </CollapsibleContent>
               </Collapsible>
 
-              {/* Section de suivi - remplace le bouton Planifier */}
+              {/* Section de suivi */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">

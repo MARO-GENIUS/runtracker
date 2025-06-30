@@ -32,6 +32,7 @@ const CoachView = () => {
   const {
     persistentRecommendations,
     isLoading: persistentLoading,
+    removeRecommendation,
     loadRecommendations
   } = usePersistentAIRecommendations();
   
@@ -80,6 +81,10 @@ const CoachView = () => {
       title: "Ressenti mis à jour",
       description: "Vos prochaines analyses IA tiendront compte de ce ressenti",
     });
+  };
+
+  const handleRemoveRecommendation = async (recommendationId: string) => {
+    await removeRecommendation(recommendationId);
   };
 
   const daysSinceLastActivity = analysisData?.daysSinceLastActivity;
@@ -207,6 +212,7 @@ const CoachView = () => {
             <PersistentAIRecommendations 
               recommendations={persistentRecommendations}
               isLoading={persistentLoading}
+              onRemoveRecommendation={handleRemoveRecommendation}
             />
           </div>
         </TabsContent>
