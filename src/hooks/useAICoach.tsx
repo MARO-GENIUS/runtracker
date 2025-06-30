@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -31,6 +32,19 @@ interface AnalysisData {
   recentTypes?: string[];
   daysSinceLastActivity?: number;
   daysUntilPlanned?: number;
+  weeksUntilRace?: number;
+  raceGoal?: string;
+  targetPaces?: {
+    easy: string;
+    tempo: string;
+    threshold: string;
+    intervals: string;
+  };
+  periodization?: {
+    phase: string;
+    intensityFocus: string;
+    volumeFocus: string;
+  };
 }
 
 export const useAICoach = () => {
