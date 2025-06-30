@@ -88,6 +88,8 @@ const CoachView = () => {
   };
 
   const daysSinceLastActivity = analysisData?.daysSinceLastActivity;
+  const raceGoal = analysisData?.raceGoal;
+  const weeksUntilRace = analysisData?.weeksUntilRace;
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -108,13 +110,18 @@ const CoachView = () => {
                   • {daysSinceLastActivity} jour{daysSinceLastActivity > 1 ? 's' : ''} depuis la dernière séance
                 </span>
               )}
+              {raceGoal && (
+                <span className="ml-2 text-purple-600 font-medium">
+                  • {raceGoal}
+                </span>
+              )}
               {analysisData?.fatigueScore && (
                 <span className="ml-2 text-blue-600">
                   • Fatigue: {analysisData.fatigueScore}/10
                 </span>
               )}
               {analysisData?.workoutBalance && (
-                <span className="ml-2 text-purple-600">
+                <span className="ml-2 text-gray-600">
                   • {analysisData.workoutBalance}
                 </span>
               )}
@@ -237,7 +244,7 @@ const CoachView = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Résumé enrichi */}
+      {/* Résumé enrichi avec objectifs personnels */}
       <div className="text-center text-sm text-gray-500 pt-4 border-t">
         <p>
           Objectif actuel : <span className="font-medium">{
@@ -247,6 +254,11 @@ const CoachView = () => {
             settings.targetRace === 'marathon' ? 'Marathon' :
             'Récupération/Forme'
           }</span>
+          {weeksUntilRace && (
+            <span className="text-purple-600 font-medium">
+              {' '}dans {weeksUntilRace} semaine{weeksUntilRace > 1 ? 's' : ''}
+            </span>
+          )}
           {' • '}
           <span className="font-medium">{settings.weeklyFrequency} séances/semaine</span>
           {persistentRecommendations.length > 0 && (

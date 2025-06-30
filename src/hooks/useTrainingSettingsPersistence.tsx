@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 interface TrainingSettings {
   targetRace: 'recuperation' | '5k' | '10k' | 'semi' | 'marathon';
   targetDate?: Date;
+  targetTimeMinutes?: number;
   weeklyFrequency: number;
   preferredDays: string[];
   availableTimeSlots: string[];
@@ -51,6 +52,7 @@ export const useTrainingSettingsPersistence = () => {
           const loadedSettings: TrainingSettings = {
             targetRace: data.target_race as TrainingSettings['targetRace'],
             targetDate: data.target_date ? new Date(data.target_date) : undefined,
+            targetTimeMinutes: data.target_time_minutes || undefined,
             weeklyFrequency: data.weekly_frequency,
             preferredDays: data.preferred_days || [],
             availableTimeSlots: data.available_time_slots || [],
@@ -84,6 +86,7 @@ export const useTrainingSettingsPersistence = () => {
         user_id: user.id,
         target_race: newSettings.targetRace,
         target_date: newSettings.targetDate?.toISOString(),
+        target_time_minutes: newSettings.targetTimeMinutes || null,
         weekly_frequency: newSettings.weeklyFrequency,
         preferred_days: newSettings.preferredDays,
         available_time_slots: newSettings.availableTimeSlots,

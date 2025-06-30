@@ -295,6 +295,7 @@ export type Database = {
           preferred_days: string[]
           target_date: string | null
           target_race: string
+          target_time_minutes: number | null
           updated_at: string
           user_id: string
           weekly_frequency: number
@@ -307,6 +308,7 @@ export type Database = {
           preferred_days?: string[]
           target_date?: string | null
           target_race?: string
+          target_time_minutes?: number | null
           updated_at?: string
           user_id: string
           weekly_frequency?: number
@@ -319,6 +321,7 @@ export type Database = {
           preferred_days?: string[]
           target_date?: string | null
           target_race?: string
+          target_time_minutes?: number | null
           updated_at?: string
           user_id?: string
           weekly_frequency?: number

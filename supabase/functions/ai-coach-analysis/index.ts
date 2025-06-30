@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -102,13 +103,76 @@ function analyzeWorkoutPattern(activities: StravaActivity[]): { balance: string;
   return { balance, lastTypes: recentTypes };
 }
 
+// Calcul de l'allure objectif basée sur le temps visé
+function calculateTargetPaces(targetTimeMinutes: number, raceDistance: string): { easy: string; tempo: string; threshold: string; intervals: string } {
+  let raceDistanceKm = 10; // défaut 10K
+  
+  switch (raceDistance) {
+    case '5k': raceDistanceKm = 5; break;
+    case '10k': raceDistanceKm = 10; break;
+    case 'semi': raceDistanceKm = 21.1; break;
+    case 'marathon': raceDistanceKm = 42.2; break;
+  }
+  
+  // Allure de course en min/km
+  const racePaceMinPerKm = targetTimeMinutes / raceDistanceKm;
+  
+  // Calcul des allures d'entraînement
+  const easyPace = racePaceMinPerKm + (racePaceMinPerKm * 0.2); // +20%
+  const tempoPace = racePaceMinPerKm + (racePaceMinPerKm * 0.05); // +5%
+  const thresholdPace = racePaceMinPerKm - (racePaceMinPerKm * 0.02); // -2%
+  const intervalsPace = racePaceMinPerKm - (racePaceMinPerKm * 0.05); // -5%
+  
+  const formatPace = (pace: number) => {
+    const minutes = Math.floor(pace);
+    const seconds = Math.round((pace - minutes) * 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+  
+  return {
+    easy: formatPace(easyPace),
+    tempo: formatPace(tempoPace),
+    threshold: formatPace(thresholdPace),
+    intervals: formatPace(intervalsPace)
+  };
+}
+
+// Analyse de la périodisation selon l'objectif
+function analyzePeriodization(weeksUntilRace: number, targetRace: string): { phase: string; intensityFocus: string; volumeFocus: string } {
+  if (weeksUntilRace > 16) {
+    return {
+      phase: 'Base',
+      intensityFocus: 'faible - développement aérobie',
+      volumeFocus: 'progression graduelle du volume'
+    };
+  } else if (weeksUntilRace > 8) {
+    return {
+      phase: 'Build',
+      intensityFocus: 'modérée - seuil et tempo',
+      volumeFocus: 'maintien du volume avec intensité'
+    };
+  } else if (weeksUntilRace > 3) {
+    return {
+      phase: 'Peak',
+      intensityFocus: 'élevée - spécifique à l\'objectif',
+      volumeFocus: 'réduction progressive du volume'
+    };
+  } else {
+    return {
+      phase: 'Taper',
+      intensityFocus: 'maintien de la vivacité',
+      volumeFocus: 'réduction significative du volume'
+    };
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    console.log('Starting enhanced AI coach analysis...')
+    console.log('Starting enhanced AI coach analysis with personal goals...')
 
     const openAIKey = Deno.env.get('OPENAI_API_KEY')
     if (!openAIKey) {
@@ -151,7 +215,7 @@ serve(async (req) => {
 
     console.log(`Enhanced analysis for user: ${user.id}, planned date: ${plannedDate}`)
 
-    // Récupérer les paramètres d'entraînement
+    // Récupérer les paramètres d'entraînement avec objectifs personnels
     const { data: settings } = await supabaseClient
       .from('training_settings')
       .select('*')
@@ -174,7 +238,7 @@ serve(async (req) => {
       )
     }
 
-    console.log(`Analyzing ${activities.length} recent activities with effort ratings`)
+    console.log(`Analyzing ${activities.length} recent activities with personal goals integration`)
 
     // Calculer les jours depuis la dernière activité
     const lastActivityDate = new Date(activities[0].start_date);
@@ -187,6 +251,38 @@ serve(async (req) => {
       daysUntilPlanned = Math.floor((plannedDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     }
 
+    // Analyse des objectifs personnels
+    let weeksUntilRace = null;
+    let targetPaces = null;
+    let periodization = null;
+    let raceAnalysis = '';
+
+    if (settings?.target_date && settings?.target_race !== 'recuperation') {
+      const raceDate = new Date(settings.target_date);
+      const daysUntilRace = Math.floor((raceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      weeksUntilRace = Math.floor(daysUntilRace / 7);
+      
+      if (settings.target_time_minutes) {
+        targetPaces = calculateTargetPaces(settings.target_time_minutes, settings.target_race);
+      }
+      
+      if (weeksUntilRace > 0) {
+        periodization = analyzePeriodization(weeksUntilRace, settings.target_race);
+        
+        const raceInfo = {
+          '5k': '5 kilomètres',
+          '10k': '10 kilomètres', 
+          'semi': 'Semi-marathon',
+          'marathon': 'Marathon'
+        }[settings.target_race] || settings.target_race;
+        
+        const timeInfo = settings.target_time_minutes ? 
+          ` en ${Math.floor(settings.target_time_minutes / 60)}h${(settings.target_time_minutes % 60).toString().padStart(2, '0')}` : '';
+        
+        raceAnalysis = `OBJECTIF PERSONNEL: ${raceInfo} le ${raceDate.toLocaleDateString()}${timeInfo} (dans ${weeksUntilRace} semaines)`;
+      }
+    }
+
     // Analyse des patterns et de la fatigue
     const fatigueScore = calculateFatigueScore(activities);
     const { balance, lastTypes } = analyzeWorkoutPattern(activities);
@@ -195,19 +291,29 @@ serve(async (req) => {
       detectedType: detectWorkoutType(a)
     }));
 
-    // Création du prompt IA amélioré avec contexte temporel
-    const enhancedPrompt = `Tu es un coach d'entraînement expert en course à pied avec une approche adaptative et personnalisée. Analyse les données suivantes et génère 3 recommandations intelligentes qui tiennent compte de la fatigue, des patterns récents, du timing et de la planification.
+    // Création du prompt IA amélioré avec objectifs personnels
+    const enhancedPrompt = `Tu es un coach d'entraînement expert en course à pied avec une approche adaptative et personnalisée. Analyse les données suivantes et génère 3 recommandations intelligentes qui tiennent compte de la fatigue, des patterns récents, du timing ET DES OBJECTIFS PERSONNELS.
 
 DONNÉES DU COUREUR:
 - Objectif: ${settings?.target_race || '10k'}
-- Date objectif: ${settings?.target_date || 'Non définie'}
 - Fréquence hebdomadaire: ${settings?.weekly_frequency || 3} séances
+
+${raceAnalysis ? `
+🎯 ${raceAnalysis}
+${periodization ? `📅 PHASE D'ENTRAÎNEMENT: ${periodization.phase} (${periodization.intensityFocus}, ${periodization.volumeFocus})` : ''}
+${targetPaces ? `🏃 ALLURES CIBLES basées sur l'objectif temps:
+- Endurance facile: ${targetPaces.easy} min/km
+- Tempo: ${targetPaces.tempo} min/km  
+- Seuil: ${targetPaces.threshold} min/km
+- Fractionné: ${targetPaces.intervals} min/km` : ''}
+` : ''}
 
 CONTEXTE TEMPOREL CRUCIAL:
 - Jours écoulés depuis la dernière séance: ${daysSinceLastActivity} jours
 - Date de la dernière activité: ${lastActivityDate.toLocaleDateString()}
 ${plannedDate ? `- Date prévue de la prochaine séance: ${plannedDate.toLocaleDateString()}` : ''}
 ${daysUntilPlanned !== null ? `- Jours jusqu'à la séance planifiée: ${daysUntilPlanned} jours` : ''}
+${weeksUntilRace ? `- Semaines jusqu'à l'objectif personnel: ${weeksUntilRace} semaines` : ''}
 
 ANALYSE DE LA FATIGUE ET DES PATTERNS:
 - Score de fatigue récent: ${fatigueScore.toFixed(1)}/10 (${fatigueScore < 4 ? 'Faible fatigue' : fatigueScore > 7 ? 'Fatigue élevée' : 'Fatigue modérée'})
@@ -221,56 +327,64 @@ ${activitiesWithTypes.slice(0, 15).map(act => {
   return `- ${act.name}: ${(act.distance/1000).toFixed(1)}km en ${Math.floor(act.moving_time/60)}min | Type détecté: ${act.detectedType} | FC: ${act.average_heartrate || 'N/A'}${effortText}${notesText} (${act.start_date.split('T')[0]})`;
 }).join('\n')}
 
-CONSIGNES POUR L'IA ADAPTATIVE AVEC CONTEXTE TEMPOREL:
-1. PRIORITÉ AU TIMING: 
+CONSIGNES PRIORITAIRES POUR L'IA ADAPTATIVE AVEC OBJECTIFS PERSONNELS:
+
+1. 🎯 ADAPTATION À L'OBJECTIF PERSONNEL (PRIORITÉ ABSOLUE):
+${weeksUntilRace ? `
+   - PHASE ${periodization?.phase.toUpperCase()}: ${periodization?.intensityFocus}
+   - Adapter l'intensité selon les ${weeksUntilRace} semaines restantes
+   - ${weeksUntilRace > 12 ? 'Focus développement de base' : weeksUntilRace > 8 ? 'Intensification progressive' : weeksUntilRace > 3 ? 'Spécificité maximale' : 'Affûtage et récupération'}
+   ${targetPaces ? `- Utiliser les allures cibles calculées: Facile ${targetPaces.easy}, Tempo ${targetPaces.tempo}, Seuil ${targetPaces.threshold}, VMA ${targetPaces.intervals}` : ''}
+` : '- Pas d\'objectif spécifique: recommandations générales adaptatives'}
+
+2. PRIORITÉ AU TIMING IMMÉDIAT: 
    - Si >5 jours sans activité → recommandations de reprise progressive obligatoires
    - Si >10 jours → déconditionnement probable, recommandations très progressives
    - Si <2 jours → tenir compte de la récupération nécessaire
-   
-2. ADAPTATION À LA DATE PLANIFIÉE:
-   ${daysUntilPlanned !== null ? `
-   - Séance prévue dans ${daysUntilPlanned} jour(s): adapter l'intensité et la progressivité
-   - Si c'est aujourd'hui (0 jour) → recommandation immédiate et pratique
-   - Si c'est demain (1 jour) → préparation et échauffement renforcé
-   - Si c'est dans plusieurs jours → recommandation progressive avec build-up
-   ` : '- Pas de date planifiée: recommandations générales avec flexibilité temporelle'}
 
-3. Si fatigue élevée (>7) + longue pause → priorité absolue à la récupération active
-4. Si pattern déséquilibré + pause longue → correction progressive du déséquilibre
-5. Tenir compte des notes de ressenti ET du temps écoulé pour ajuster l'intensité
-6. Expliquer clairement POURQUOI chaque recommandation maintenant, en tenant compte du timing
+3. PÉRIODISATION INTELLIGENTE:
+   ${weeksUntilRace ? `
+   - ${weeksUntilRace > 12 ? 'Phase de base: Volume progressif, intensité faible à modérée' : ''}
+   - ${weeksUntilRace <= 12 && weeksUntilRace > 8 ? 'Phase de développement: Introduction du travail spécifique' : ''}
+   - ${weeksUntilRace <= 8 && weeksUntilRace > 3 ? 'Phase de pic: Travail intensif et spécifique' : ''}
+   - ${weeksUntilRace <= 3 ? 'Phase d\'affûtage: Réduction volume, maintien qualité' : ''}
+   ` : '- Planification générale équilibrée'}
+
+4. Si fatigue élevée (>7) → priorité absolue à la récupération même proche de l'objectif
+5. Expliquer clairement POURQUOI chaque recommandation maintenant, en tenant compte de l'objectif personnel ET du timing
 
 ANALYSE DEMANDÉE:
 Génère exactement 3 recommandations personnalisées qui:
 - Tiennent compte des ${daysSinceLastActivity} jours écoulés depuis la dernière séance
-- S'adaptent à la date planifiée ${plannedDate ? `(${plannedDate.toLocaleDateString()})` : '(non spécifiée)'}
-- Corrigent les déséquilibres détectés progressivement
-- Incluent une justification détaillée basée sur l'analyse temporelle et adaptative
+- S'adaptent à l'objectif personnel ${raceAnalysis ? `(${raceAnalysis})` : '(aucun)'}
+- Respectent la phase d'entraînement ${periodization ? `(${periodization.phase})` : '(générale)'}
+- Utilisent les allures cibles ${targetPaces ? 'calculées' : 'génériques'}
+- Incluent une justification détaillée basée sur l'analyse complète
 
 Réponds UNIQUEMENT avec un JSON valide:
 {
   "recommendations": [
     {
       "type": "recovery/endurance/tempo/intervals/long",
-      "title": "Titre adaptatif tenant compte du timing",
-      "description": "Description tenant compte du contexte temporel",
+      "title": "Titre adaptatif tenant compte de l'objectif personnel",
+      "description": "Description intégrant objectif et timing",
       "duration": 45,
-      "intensity": "Adaptée à la fatigue ET au timing",
-      "targetPace": "Ajustée selon l'analyse temporelle",
+      "intensity": "Adaptée à la fatigue, timing ET phase d'entraînement",
+      "targetPace": "${targetPaces ? 'Allure spécifique calculée' : 'Allure adaptée'}",
       "targetHR": {"min": 140, "max": 160},
-      "warmup": "Échauffement personnalisé selon la pause",
-      "mainSet": "Corps de séance contextualisé temporellement",
+      "warmup": "Échauffement personnalisé selon la phase",
+      "mainSet": "Corps de séance contextualisé à l'objectif",
       "cooldown": "Retour au calme adapté",
       "scheduledFor": "today/tomorrow/this-week",
       "priority": "high/medium/low",
-      "aiJustification": "Explication détaillée du POURQUOI cette recommandation maintenant, en tenant compte des ${daysSinceLastActivity} jours écoulés, de la fatigue (${fatigueScore.toFixed(1)}/10), du pattern récent (${balance})${daysUntilPlanned !== null ? `, et de la planification dans ${daysUntilPlanned} jour(s)` : ''}",
-      "nutritionTips": "Conseils nutritionnels adaptés au timing",
-      "recoveryAdvice": "Conseils de récupération personnalisés selon la pause"
+      "aiJustification": "Explication détaillée du POURQUOI cette recommandation maintenant, en tenant compte: 1) des ${daysSinceLastActivity} jours écoulés, 2) de la fatigue (${fatigueScore.toFixed(1)}/10), 3) du pattern récent (${balance}), 4) de l'objectif personnel${weeksUntilRace ? ` dans ${weeksUntilRace} semaines` : ''}, 5) de la phase d'entraînement${periodization ? ` (${periodization.phase})` : ''}",
+      "nutritionTips": "Conseils nutritionnels adaptés à la phase d'entraînement",
+      "recoveryAdvice": "Conseils de récupération selon l'objectif et le timing"
     }
   ]
 }`
 
-    console.log('Calling enhanced OpenAI analysis with temporal context...')
+    console.log('Calling enhanced OpenAI analysis with personal goals integration...')
     
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -283,7 +397,7 @@ Réponds UNIQUEMENT avec un JSON valide:
         messages: [
           {
             role: 'system',
-            content: 'Tu es un coach d\'entraînement expert et adaptatif en course à pied. Tu analyses les patterns, la fatigue et les ressentis pour générer des recommandations intelligentes et personnalisées. Réponds toujours en JSON valide avec des justifications détaillées.'
+            content: 'Tu es un coach d\'entraînement expert et adaptatif en course à pied spécialisé dans la périodisation et les objectifs personnels. Tu analyses les patterns, la fatigue, les ressentis ET les objectifs de course pour générer des recommandations intelligentes et personnalisées avec des allures précises. Réponds toujours en JSON valide avec des justifications détaillées.'
           },
           {
             role: 'user',
@@ -291,7 +405,7 @@ Réponds UNIQUEMENT avec un JSON valide:
           }
         ],
         temperature: 0.7,
-        max_tokens: 2500,
+        max_tokens: 3000,
       }),
     })
 
@@ -304,38 +418,43 @@ Réponds UNIQUEMENT avec un JSON valide:
     const openAIData = await openAIResponse.json()
     const aiContent = openAIData.choices[0].message.content
 
-    console.log('Enhanced AI response received')
+    console.log('Enhanced AI response with personal goals received')
 
     let recommendations: AIRecommendation[]
     try {
-      const parsedResponse = JSON.parse(aiContent)
+      // Nettoyer la réponse AI des balises markdown si présentes
+      const cleanedContent = aiContent.replace(/```json\n?|\n?```/g, '').trim();
+      const parsedResponse = JSON.parse(cleanedContent)
       recommendations = parsedResponse.recommendations || []
     } catch (parseError) {
       console.error('Failed to parse enhanced AI response:', parseError)
       
-      // Recommandations de fallback adaptatives
+      // Recommandations de fallback adaptées aux objectifs
+      const fallbackIntensity = weeksUntilRace && weeksUntilRace <= 8 ? 'spécifique' : 'modérée';
+      const fallbackDuration = fatigueScore > 7 ? 30 : weeksUntilRace && weeksUntilRace <= 3 ? 40 : 45;
+      
       recommendations = [
         {
-          type: fatigueScore > 7 ? 'recovery' : 'endurance',
-          title: fatigueScore > 7 ? 'Récupération adaptative nécessaire' : 'Endurance équilibrante',
-          description: `Séance adaptée à votre fatigue actuelle (${fatigueScore.toFixed(1)}/10) et au pattern récent`,
-          duration: fatigueScore > 7 ? 30 : 45,
-          intensity: fatigueScore > 7 ? 'Très facile' : 'Modérée',
-          targetPace: fatigueScore > 7 ? '6:30-7:00 min/km' : '5:30-6:00 min/km',
-          targetHR: fatigueScore > 7 ? { min: 120, max: 140 } : { min: 140, max: 160 },
-          warmup: '10min échauffement progressif adapté',
-          mainSet: fatigueScore > 7 ? '15min très facile' : '30min allure régulière',
+          type: fatigueScore > 7 ? 'recovery' : weeksUntilRace && weeksUntilRace <= 8 ? 'tempo' : 'endurance',
+          title: `Séance ${fallbackIntensity} adaptée${raceAnalysis ? ' à votre objectif' : ''}`,
+          description: `Séance adaptée à votre fatigue (${fatigueScore.toFixed(1)}/10)${weeksUntilRace ? ` et à votre objectif dans ${weeksUntilRace} semaines` : ''}`,
+          duration: fallbackDuration,
+          intensity: fallbackIntensity,
+          targetPace: targetPaces ? (fatigueScore > 7 ? targetPaces.easy : targetPaces.tempo) : '5:30-6:00 min/km',
+          targetHR: fatigueScore > 7 ? { min: 120, max: 140 } : { min: 140, max: 170 },
+          warmup: '10min échauffement progressif',
+          mainSet: `${fallbackDuration - 15}min selon objectif personnel`,
           cooldown: '5min retour au calme',
           scheduledFor: 'today',
           priority: 'high',
-          aiJustification: `Recommandation générée automatiquement basée sur votre fatigue (${fatigueScore.toFixed(1)}/10) et l'équilibre récent (${balance})`,
+          aiJustification: `Recommandation générée automatiquement basée sur votre fatigue (${fatigueScore.toFixed(1)}/10), l'équilibre récent (${balance})${raceAnalysis ? ` et votre objectif personnel (${raceAnalysis})` : ''}`,
           nutritionTips: 'Hydratation et récupération prioritaires',
           recoveryAdvice: 'Étirements et sommeil de qualité'
         }
       ]
     }
 
-    console.log(`Generated ${recommendations.length} adaptive recommendations`)
+    console.log(`Generated ${recommendations.length} personalized recommendations with goals integration`)
 
     return new Response(
       JSON.stringify({
@@ -349,20 +468,24 @@ Réponds UNIQUEMENT avec un JSON valide:
           workoutBalance: balance,
           recentTypes: lastTypes.slice(0, 3),
           daysSinceLastActivity,
-          daysUntilPlanned
+          daysUntilPlanned,
+          weeksUntilRace,
+          raceGoal: raceAnalysis || null,
+          targetPaces,
+          periodization
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
-    console.error('Error in enhanced AI coach analysis:', error)
+    console.error('Error in enhanced AI coach analysis with personal goals:', error)
     
     const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
     
     return new Response(
       JSON.stringify({ 
-        error: `Erreur lors de l'analyse IA adaptative: ${errorMessage}`,
+        error: `Erreur lors de l'analyse IA avec objectifs personnels: ${errorMessage}`,
         details: error instanceof Error ? error.stack : 'Aucun détail disponible'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -6,6 +6,7 @@ import { useTrainingSettingsPersistence } from './useTrainingSettingsPersistence
 interface TrainingSettings {
   targetRace: 'recuperation' | '5k' | '10k' | 'semi' | 'marathon';
   targetDate?: Date;
+  targetTimeMinutes?: number;
   weeklyFrequency: number;
   preferredDays: string[];
   availableTimeSlots: string[];
@@ -49,6 +50,16 @@ export const useTrainingRecommendations = () => {
     const daysSinceLastRun = stats.latest ? 
       Math.floor((new Date().getTime() - new Date(stats.latest.date).getTime()) / (1000 * 60 * 60 * 24)) : 2;
 
+    // Analyser la proximité de l'objectif personnel
+    let weeksUntilRace = null;
+    let isCloseToRace = false;
+    if (settings.targetDate && settings.targetRace !== 'recuperation') {
+      const raceDate = new Date(settings.targetDate);
+      const daysUntilRace = Math.floor((raceDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+      weeksUntilRace = Math.floor(daysUntilRace / 7);
+      isCloseToRace = weeksUntilRace <= 8 && weeksUntilRace > 0;
+    }
+
     if (daysSinceLastRun <= 1) {
       // Repos ou récupération active
       newRecommendations.push({
@@ -62,11 +73,17 @@ export const useTrainingRecommendations = () => {
         priority: 'high'
       });
     } else if (daysSinceLastRun >= 2) {
-      // Séance d'endurance
+      // Séance d'endurance adaptée à l'objectif
+      const enduranceTitle = isCloseToRace ? 
+        `Endurance spécifique (objectif dans ${weeksUntilRace} sem.)` : 
+        'Sortie endurance fondamentale';
+      
       newRecommendations.push({
         type: 'endurance',
-        title: 'Sortie endurance fondamentale',
-        description: 'Développement de la capacité aérobie, allure conversationnelle',
+        title: enduranceTitle,
+        description: isCloseToRace ? 
+          'Développement de l\'endurance spécifique à votre objectif' : 
+          'Développement de la capacité aérobie, allure conversationnelle',
         duration: Math.min(60, Math.round(avgDistance * 8)), // Basé sur la distance moyenne
         intensity: 'Modérée',
         targetHR: zones.endurance,
@@ -75,31 +92,43 @@ export const useTrainingRecommendations = () => {
       });
     }
 
-    // Recommandation de travail spécifique selon l'objectif
+    // Recommandation de travail spécifique selon l'objectif et la proximité
     if (settings.targetRace === '5k' || settings.targetRace === '10k') {
+      const intensityTitle = isCloseToRace ? 
+        `Séance spécifique ${settings.targetRace.toUpperCase()}` : 
+        'Séance au seuil';
+      
       newRecommendations.push({
-        type: 'tempo',
-        title: 'Séance au seuil',
-        description: 'Amélioration de la vitesse seuil pour les distances courtes',
+        type: isCloseToRace ? 'intervals' : 'tempo',
+        title: intensityTitle,
+        description: isCloseToRace ? 
+          'Travail spécifique à l\'allure de course' : 
+          'Amélioration de la vitesse seuil pour les distances courtes',
         duration: 45,
-        intensity: 'Soutenue',
-        targetHR: zones.tempo,
+        intensity: isCloseToRace ? 'Élevée - spécifique' : 'Soutenue',
+        targetHR: isCloseToRace ? zones.threshold : zones.tempo,
         scheduledFor: 'this-week',
-        priority: 'medium'
+        priority: isCloseToRace ? 'high' : 'medium'
       });
     }
 
     // Sortie longue pour les objectifs plus longs
     if (settings.targetRace === 'semi' || settings.targetRace === 'marathon') {
+      const longTitle = isCloseToRace ? 
+        `Sortie longue spécifique (${settings.targetRace})` : 
+        'Sortie longue';
+      
       newRecommendations.push({
         type: 'long',
-        title: 'Sortie longue',
-        description: 'Développement de l\'endurance pour les longues distances',
+        title: longTitle,
+        description: isCloseToRace ? 
+          'Sortie longue avec passages à l\'allure objectif' : 
+          'Développement de l\'endurance pour les longues distances',
         duration: Math.min(120, Math.round(avgDistance * 12)),
-        intensity: 'Facile à modérée',
+        intensity: isCloseToRace ? 'Modérée avec intensité ciblée' : 'Facile à modérée',
         targetHR: zones.endurance,
         scheduledFor: 'this-week',
-        priority: 'medium'
+        priority: isCloseToRace ? 'high' : 'medium'
       });
     }
 

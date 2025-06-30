@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -13,11 +14,17 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Settings, Target, Calendar, Clock } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Settings, Target, Calendar as CalendarIcon, Clock, Trophy } from 'lucide-react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface TrainingSettings {
   targetRace: 'recuperation' | '5k' | '10k' | 'semi' | 'marathon';
   targetDate?: Date;
+  targetTimeMinutes?: number;
   weeklyFrequency: number;
   preferredDays: string[];
   availableTimeSlots: string[];
@@ -33,10 +40,23 @@ const TrainingSettings = ({ settings, onUpdateSettings }: TrainingSettingsProps)
   const [localSettings, setLocalSettings] = useState<TrainingSettings>(settings);
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [targetHours, setTargetHours] = useState<string>('');
+  const [targetMinutes, setTargetMinutes] = useState<string>('');
 
   // Update local settings when props change
   useEffect(() => {
     setLocalSettings(settings);
+    
+    // Convert target time to hours and minutes for display
+    if (settings.targetTimeMinutes) {
+      const hours = Math.floor(settings.targetTimeMinutes / 60);
+      const minutes = settings.targetTimeMinutes % 60;
+      setTargetHours(hours.toString());
+      setTargetMinutes(minutes.toString().padStart(2, '0'));
+    } else {
+      setTargetHours('');
+      setTargetMinutes('');
+    }
   }, [settings]);
 
   const raceOptions = [
@@ -55,13 +75,55 @@ const TrainingSettings = ({ settings, onUpdateSettings }: TrainingSettingsProps)
     { value: 'high', label: 'Élevée - Incluant fractionné' }
   ];
 
+  const hasRaceGoal = localSettings.targetRace !== 'recuperation';
+
   const handleSave = async () => {
     setIsSaving(true);
-    const success = await onUpdateSettings(localSettings);
+    
+    // Convert hours and minutes to total minutes
+    let targetTimeMinutes: number | undefined;
+    if (hasRaceGoal && targetHours && targetMinutes) {
+      const hours = parseInt(targetHours) || 0;
+      const minutes = parseInt(targetMinutes) || 0;
+      targetTimeMinutes = hours * 60 + minutes;
+    }
+
+    const settingsToSave = {
+      ...localSettings,
+      targetTimeMinutes,
+      // Clear target date and time if no race goal
+      targetDate: hasRaceGoal ? localSettings.targetDate : undefined
+    };
+
+    const success = await onUpdateSettings(settingsToSave);
     setIsSaving(false);
     
     if (success) {
       setIsOpen(false);
+    }
+  };
+
+  const handleRaceChange = (value: string) => {
+    const newSettings = { 
+      ...localSettings, 
+      targetRace: value as TrainingSettings['targetRace']
+    };
+    
+    // Clear target date and time if switching to recovery mode
+    if (value === 'recuperation') {
+      newSettings.targetDate = undefined;
+      setTargetHours('');
+      setTargetMinutes('');
+    }
+    
+    setLocalSettings(newSettings);
+  };
+
+  const handleTimeChange = (field: 'hours' | 'minutes', value: string) => {
+    if (field === 'hours') {
+      setTargetHours(value);
+    } else {
+      setTargetMinutes(value);
     }
   };
 
@@ -82,6 +144,21 @@ const TrainingSettings = ({ settings, onUpdateSettings }: TrainingSettingsProps)
   const getCurrentRaceLabel = () => {
     const race = raceOptions.find(r => r.value === settings.targetRace);
     return race ? race.label : 'Non défini';
+  };
+
+  const formatTargetInfo = () => {
+    if (settings.targetRace === 'recuperation') return '';
+    
+    let info = '';
+    if (settings.targetDate) {
+      info += ` le ${format(settings.targetDate, 'dd/MM/yyyy', { locale: fr })}`;
+    }
+    if (settings.targetTimeMinutes) {
+      const hours = Math.floor(settings.targetTimeMinutes / 60);
+      const minutes = settings.targetTimeMinutes % 60;
+      info += ` en ${hours}h${minutes.toString().padStart(2, '0')}`;
+    }
+    return info;
   };
 
   return (
@@ -116,7 +193,7 @@ const TrainingSettings = ({ settings, onUpdateSettings }: TrainingSettingsProps)
             <CardContent>
               <Select 
                 value={localSettings.targetRace} 
-                onValueChange={(value) => setLocalSettings({ ...localSettings, targetRace: value as any })}
+                onValueChange={handleRaceChange}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Choisir un objectif" />
@@ -139,11 +216,91 @@ const TrainingSettings = ({ settings, onUpdateSettings }: TrainingSettingsProps)
             </CardContent>
           </Card>
 
+          {/* Date et temps objectif - Affiché uniquement si un objectif de course est sélectionné */}
+          {hasRaceGoal && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Trophy className="h-4 w-4" />
+                  Objectif spécifique
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Date de l'objectif */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Date de la course</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !localSettings.targetDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {localSettings.targetDate ? (
+                          format(localSettings.targetDate, "dd/MM/yyyy", { locale: fr })
+                        ) : (
+                          <span>Choisir une date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={localSettings.targetDate}
+                        onSelect={(date) => setLocalSettings({ ...localSettings, targetDate: date })}
+                        disabled={(date) => date < new Date()}
+                        initialFocus
+                        locale={fr}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Temps objectif */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Temps objectif (optionnel)</label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        placeholder="2"
+                        value={targetHours}
+                        onChange={(e) => handleTimeChange('hours', e.target.value)}
+                        className="w-16 text-center"
+                        min="0"
+                        max="12"
+                      />
+                      <span className="text-sm text-gray-500">h</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        placeholder="30"
+                        value={targetMinutes}
+                        onChange={(e) => handleTimeChange('minutes', e.target.value)}
+                        className="w-16 text-center"
+                        min="0"
+                        max="59"
+                      />
+                      <span className="text-sm text-gray-500">min</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Ex: 2h00 pour un semi-marathon, 4h30 pour un marathon
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Fréquence d'entraînement */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
+                <CalendarIcon className="h-4 w-4" />
                 Fréquence d'entraînement
               </CardTitle>
             </CardHeader>
