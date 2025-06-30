@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -139,7 +138,18 @@ serve(async (req) => {
       )
     }
 
-    console.log(`Enhanced analysis for user: ${user.id}`)
+    // Récupérer la date planifiée depuis le body de la requête
+    let plannedDate = null;
+    try {
+      const body = await req.json();
+      if (body.plannedDate) {
+        plannedDate = new Date(body.plannedDate);
+      }
+    } catch (e) {
+      // Body vide ou invalide, continuer sans date planifiée
+    }
+
+    console.log(`Enhanced analysis for user: ${user.id}, planned date: ${plannedDate}`)
 
     // Récupérer les paramètres d'entraînement
     const { data: settings } = await supabaseClient
@@ -166,6 +176,17 @@ serve(async (req) => {
 
     console.log(`Analyzing ${activities.length} recent activities with effort ratings`)
 
+    // Calculer les jours depuis la dernière activité
+    const lastActivityDate = new Date(activities[0].start_date);
+    const today = new Date();
+    const daysSinceLastActivity = Math.floor((today.getTime() - lastActivityDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Calculer les jours jusqu'à la date planifiée
+    let daysUntilPlanned = null;
+    if (plannedDate) {
+      daysUntilPlanned = Math.floor((plannedDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
     // Analyse des patterns et de la fatigue
     const fatigueScore = calculateFatigueScore(activities);
     const { balance, lastTypes } = analyzeWorkoutPattern(activities);
@@ -174,70 +195,82 @@ serve(async (req) => {
       detectedType: detectWorkoutType(a)
     }));
 
-    // Création du prompt IA amélioré
-    const enhancedPrompt = `Tu es un coach d'entraînement expert en course à pied avec une approche adaptative et personnalisée. Analyse les données suivantes et génère 3 recommandations intelligentes qui tiennent compte de la fatigue, des patterns récents et de l'équilibrage.
+    // Création du prompt IA amélioré avec contexte temporel
+    const enhancedPrompt = `Tu es un coach d'entraînement expert en course à pied avec une approche adaptative et personnalisée. Analyse les données suivantes et génère 3 recommandations intelligentes qui tiennent compte de la fatigue, des patterns récents, du timing et de la planification.
 
 DONNÉES DU COUREUR:
 - Objectif: ${settings?.target_race || '10k'}
 - Date objectif: ${settings?.target_date || 'Non définie'}
 - Fréquence hebdomadaire: ${settings?.weekly_frequency || 3} séances
 
+CONTEXTE TEMPOREL CRUCIAL:
+- Jours écoulés depuis la dernière séance: ${daysSinceLastActivity} jours
+- Date de la dernière activité: ${lastActivityDate.toLocaleDateString()}
+${plannedDate ? `- Date prévue de la prochaine séance: ${plannedDate.toLocaleDateString()}` : ''}
+${daysUntilPlanned !== null ? `- Jours jusqu'à la séance planifiée: ${daysUntilPlanned} jours` : ''}
+
 ANALYSE DE LA FATIGUE ET DES PATTERNS:
 - Score de fatigue récent: ${fatigueScore.toFixed(1)}/10 (${fatigueScore < 4 ? 'Faible fatigue' : fatigueScore > 7 ? 'Fatigue élevée' : 'Fatigue modérée'})
 - Équilibre des séances: ${balance}
 - Types des 5 dernières séances: ${lastTypes.join(', ')}
 
-HISTORIQUE DÉTAILLÉ (20 dernières activités avec ressentis):
+HISTORIQUE DÉTAILLÉ (15 dernières activités avec ressentis):
 ${activitiesWithTypes.slice(0, 15).map(act => {
   const effortText = act.effort_rating ? ` | Ressenti: ${act.effort_rating}/10` : '';
   const notesText = act.effort_notes ? ` | Notes: "${act.effort_notes}"` : '';
   return `- ${act.name}: ${(act.distance/1000).toFixed(1)}km en ${Math.floor(act.moving_time/60)}min | Type détecté: ${act.detectedType} | FC: ${act.average_heartrate || 'N/A'}${effortText}${notesText} (${act.start_date.split('T')[0]})`;
 }).join('\n')}
 
-STATISTIQUES RÉCENTES:
-- Distance moyenne: ${(activities.reduce((sum, act) => sum + act.distance, 0) / activities.length / 1000).toFixed(1)}km
-- Allure moyenne: ${(activities.reduce((sum, act) => sum + (act.moving_time / (act.distance/1000)), 0) / activities.length / 60).toFixed(1)} min/km
-- FC moyenne: ${activities.filter(act => act.average_heartrate).length > 0 ? (activities.filter(act => act.average_heartrate).reduce((sum, act) => sum + (act.average_heartrate || 0), 0) / activities.filter(act => act.average_heartrate).length).toFixed(0) : 'N/A'}
+CONSIGNES POUR L'IA ADAPTATIVE AVEC CONTEXTE TEMPOREL:
+1. PRIORITÉ AU TIMING: 
+   - Si >5 jours sans activité → recommandations de reprise progressive obligatoires
+   - Si >10 jours → déconditionnement probable, recommandations très progressives
+   - Si <2 jours → tenir compte de la récupération nécessaire
+   
+2. ADAPTATION À LA DATE PLANIFIÉE:
+   ${daysUntilPlanned !== null ? `
+   - Séance prévue dans ${daysUntilPlanned} jour(s): adapter l'intensité et la progressivité
+   - Si c'est aujourd'hui (0 jour) → recommandation immédiate et pratique
+   - Si c'est demain (1 jour) → préparation et échauffement renforcé
+   - Si c'est dans plusieurs jours → recommandation progressive avec build-up
+   ` : '- Pas de date planifiée: recommandations générales avec flexibilité temporelle'}
 
-CONSIGNES POUR L'IA ADAPTATIVE:
-1. Si fatigue élevée (>7) → privilégier récupération et endurance facile
-2. Si trop d'intensité récente → équilibrer avec endurance ou récupération
-3. Si pattern déséquilibré → corriger avec le type manquant
-4. Tenir compte des notes de ressenti pour ajuster l'intensité
-5. Expliquer clairement POURQUOI chaque recommandation maintenant
-6. Adapter les zones cardiaques selon la fatigue ressentie
+3. Si fatigue élevée (>7) + longue pause → priorité absolue à la récupération active
+4. Si pattern déséquilibré + pause longue → correction progressive du déséquilibre
+5. Tenir compte des notes de ressenti ET du temps écoulé pour ajuster l'intensité
+6. Expliquer clairement POURQUOI chaque recommandation maintenant, en tenant compte du timing
 
 ANALYSE DEMANDÉE:
 Génère exactement 3 recommandations personnalisées qui:
-- Corrigent les déséquilibres détectés
-- Tiennent compte du niveau de fatigue
-- S'adaptent aux ressentis récents
-- Incluent une justification détaillée basée sur l'analyse adaptative
+- Tiennent compte des ${daysSinceLastActivity} jours écoulés depuis la dernière séance
+- S'adaptent à la date planifiée ${plannedDate ? `(${plannedDate.toLocaleDateString()})` : '(non spécifiée)'}
+- Corrigent les déséquilibres détectés progressivement
+- Incluent une justification détaillée basée sur l'analyse temporelle et adaptative
 
 Réponds UNIQUEMENT avec un JSON valide:
 {
   "recommendations": [
     {
       "type": "recovery/endurance/tempo/intervals/long",
-      "title": "Titre adaptatif",
-      "description": "Description tenant compte du contexte",
+      "title": "Titre adaptatif tenant compte du timing",
+      "description": "Description tenant compte du contexte temporel",
       "duration": 45,
-      "intensity": "Adaptée à la fatigue",
-      "targetPace": "Ajustée selon l'analyse",
+      "intensity": "Adaptée à la fatigue ET au timing",
+      "targetPace": "Ajustée selon l'analyse temporelle",
       "targetHR": {"min": 140, "max": 160},
-      "warmup": "Échauffement personnalisé",
-      "mainSet": "Corps de séance contextualisé",
+      "warmup": "Échauffement personnalisé selon la pause",
+      "mainSet": "Corps de séance contextualisé temporellement",
       "cooldown": "Retour au calme adapté",
       "scheduledFor": "today/tomorrow/this-week",
       "priority": "high/medium/low",
-      "aiJustification": "Explication détaillée du POURQUOI cette recommandation maintenant, en tenant compte de la fatigue (${fatigueScore.toFixed(1)}/10), du pattern récent (${balance}), et des ressentis",
-      "nutritionTips": "Conseils nutritionnels adaptés",
-      "recoveryAdvice": "Conseils de récupération personnalisés"
+      "aiJustification": "Explication détaillée du POURQUOI cette recommandation maintenant, en tenant compte des ${daysSinceLastActivity} jours écoulés, de la fatigue (${fatigueScore.toFixed(1)}/10), du pattern récent (${balance})${daysUntilPlanned !== null ? `, et de la planification dans ${daysUntilPlanned} jour(s)` : ''}",
+      "nutritionTips": "Conseils nutritionnels adaptés au timing",
+      "recoveryAdvice": "Conseils de récupération personnalisés selon la pause"
     }
   ]
 }`
 
-    console.log('Calling enhanced OpenAI analysis...')
+    console.log('Calling enhanced OpenAI analysis with temporal context...')
     
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -314,7 +347,9 @@ Réponds UNIQUEMENT avec un JSON valide:
           lastActivity: activities[0]?.start_date.split('T')[0],
           fatigueScore: fatigueScore.toFixed(1),
           workoutBalance: balance,
-          recentTypes: lastTypes.slice(0, 3)
+          recentTypes: lastTypes.slice(0, 3),
+          daysSinceLastActivity,
+          daysUntilPlanned
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -30,6 +29,8 @@ interface AnalysisData {
   fatigueScore?: string;
   workoutBalance?: string;
   recentTypes?: string[];
+  daysSinceLastActivity?: number;
+  daysUntilPlanned?: number;
 }
 
 export const useAICoach = () => {
@@ -39,11 +40,12 @@ export const useAICoach = () => {
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
   
   // Intégrer le hook de persistance
   const { saveRecommendations } = usePersistentAIRecommendations();
 
-  const generateRecommendations = async () => {
+  const generateRecommendations = async (plannedDate?: Date) => {
     if (!user) {
       toast({
         title: "Erreur",
@@ -57,9 +59,13 @@ export const useAICoach = () => {
     setError(null);
 
     try {
-      console.log('Calling AI coach analysis...');
+      console.log('Calling AI coach analysis with planned date:', plannedDate);
       
-      const { data, error: functionError } = await supabase.functions.invoke('ai-coach-analysis');
+      const requestBody = plannedDate ? { plannedDate: plannedDate.toISOString() } : {};
+      
+      const { data, error: functionError } = await supabase.functions.invoke('ai-coach-analysis', {
+        body: requestBody
+      });
 
       if (functionError) {
         console.error('Function error:', functionError);
@@ -74,12 +80,22 @@ export const useAICoach = () => {
         setRecommendations(data.recommendations);
         setAnalysisData(data.analysisData || null);
         
-        // Sauvegarder les recommandations de façon persistante
-        await saveRecommendations(data.recommendations);
+        // Sauvegarder la date planifiée si fournie
+        if (plannedDate) {
+          setScheduledDate(plannedDate);
+        }
+        
+        // Sauvegarder les recommandations de façon persistante avec la date
+        const recommendationsWithDate = data.recommendations.map((rec: AIRecommendation) => ({
+          ...rec,
+          scheduledDate: plannedDate?.toISOString()
+        }));
+        
+        await saveRecommendations(recommendationsWithDate);
         
         toast({
           title: "Analyse IA terminée",
-          description: `${data.recommendations.length} recommandations générées et sauvegardées`,
+          description: `${data.recommendations.length} recommandations générées${plannedDate ? ' pour le ' + plannedDate.toLocaleDateString() : ''}`,
         });
       } else {
         throw new Error('Aucune recommandation générée');
@@ -100,11 +116,24 @@ export const useAICoach = () => {
     }
   };
 
+  const updateScheduledDate = (newDate: Date) => {
+    setScheduledDate(newDate);
+  };
+
+  const reanalyzeWithNewDate = async () => {
+    if (scheduledDate) {
+      await generateRecommendations(scheduledDate);
+    }
+  };
+
   return {
     recommendations,
     analysisData,
     isLoading,
     error,
-    generateRecommendations
+    scheduledDate,
+    generateRecommendations,
+    updateScheduledDate,
+    reanalyzeWithNewDate
   };
 };

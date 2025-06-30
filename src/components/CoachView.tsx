@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Brain, RefreshCw, Sparkles, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +13,8 @@ import { useAICoach } from '@/hooks/useAICoach';
 import { usePersistentAIRecommendations } from '@/hooks/usePersistentAIRecommendations';
 import { useActivityMatching } from '@/hooks/useActivityMatching';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import SchedulingModal from './SchedulingModal';
+import ScheduledDateManager from './ScheduledDateManager';
 
 const CoachView = () => {
   const { toast } = useToast();
@@ -22,7 +23,10 @@ const CoachView = () => {
     recommendations: aiRecommendations, 
     analysisData, 
     isLoading: aiLoading, 
-    generateRecommendations 
+    scheduledDate,
+    generateRecommendations,
+    updateScheduledDate,
+    reanalyzeWithNewDate
   } = useAICoach();
   
   const {
@@ -35,6 +39,7 @@ const CoachView = () => {
   
   const [activeTab, setActiveTab] = useState('persistent-ai');
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [isSchedulingModalOpen, setIsSchedulingModalOpen] = useState(false);
 
   const handleStartSession = (recommendation: any) => {
     toast({
@@ -52,8 +57,20 @@ const CoachView = () => {
   };
 
   const handleAIAnalysis = async () => {
+    setIsSchedulingModalOpen(true);
+  };
+
+  const handleScheduledAnalysis = async (plannedDate: Date) => {
     setShowAnalysis(true);
-    await generateRecommendations();
+    await generateRecommendations(plannedDate);
+  };
+
+  const handleDateChange = (newDate: Date) => {
+    updateScheduledDate(newDate);
+  };
+
+  const handleReanalyze = async () => {
+    await reanalyzeWithNewDate();
   };
 
   const handleRatingUpdated = () => {
@@ -64,6 +81,8 @@ const CoachView = () => {
       description: "Vos prochaines analyses IA tiendront compte de ce ressenti",
     });
   };
+
+  const daysSinceLastActivity = analysisData?.daysSinceLastActivity;
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -79,6 +98,11 @@ const CoachView = () => {
             </h2>
             <p className="text-gray-600 text-sm">
               Analyse intelligente de vos {analysisData?.totalActivities || 'dernières'} courses
+              {daysSinceLastActivity !== undefined && (
+                <span className="ml-2 text-orange-600 font-medium">
+                  • {daysSinceLastActivity} jour{daysSinceLastActivity > 1 ? 's' : ''} depuis la dernière séance
+                </span>
+              )}
               {analysisData?.fatigueScore && (
                 <span className="ml-2 text-blue-600">
                   • Fatigue: {analysisData.fatigueScore}/10
@@ -126,6 +150,16 @@ const CoachView = () => {
           </Button>
         </div>
       </div>
+
+      {/* Gestionnaire de date planifiée */}
+      {scheduledDate && (
+        <ScheduledDateManager
+          scheduledDate={scheduledDate.toISOString()}
+          onDateChange={handleDateChange}
+          onReanalyze={handleReanalyze}
+          isReanalyzing={aiLoading}
+        />
+      )}
 
       {/* Affichage de l'analyse adaptative */}
       <AdaptiveAnalysisDisplay 
@@ -217,6 +251,14 @@ const CoachView = () => {
               </span>
             </>
           )}
+          {daysSinceLastActivity !== undefined && (
+            <>
+              {' • '}
+              <span className="text-orange-600 font-medium">
+                Dernière séance: il y a {daysSinceLastActivity} jour{daysSinceLastActivity > 1 ? 's' : ''}
+              </span>
+            </>
+          )}
           {analysisData?.fatigueScore && (
             <>
               {' • '}
@@ -227,6 +269,14 @@ const CoachView = () => {
           )}
         </p>
       </div>
+
+      {/* Modal de planification */}
+      <SchedulingModal
+        isOpen={isSchedulingModalOpen}
+        onClose={() => setIsSchedulingModalOpen(false)}
+        onSchedule={handleScheduledAnalysis}
+        daysSinceLastActivity={daysSinceLastActivity}
+      />
     </div>
   );
 };
