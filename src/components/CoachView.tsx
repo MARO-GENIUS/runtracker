@@ -1,11 +1,13 @@
 
 import { useState } from 'react';
-import { Brain, RefreshCw, Sparkles } from 'lucide-react';
+import { Brain, RefreshCw, Sparkles, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import PersonalizedRecommendations from './PersonalizedRecommendations';
 import AIPersonalizedRecommendations from './AIPersonalizedRecommendations';
 import PersistentAIRecommendations from './PersistentAIRecommendations';
+import QuickEffortRating from './QuickEffortRating';
+import AdaptiveAnalysisDisplay from './AdaptiveAnalysisDisplay';
 import TrainingSettings from './TrainingSettings';
 import { useTrainingRecommendations } from '@/hooks/useTrainingRecommendations';
 import { useAICoach } from '@/hooks/useAICoach';
@@ -23,17 +25,16 @@ const CoachView = () => {
     generateRecommendations 
   } = useAICoach();
   
-  // Hook pour les recommandations persistantes
   const {
     persistentRecommendations,
     isLoading: persistentLoading,
-    checkActivityMatches
+    loadRecommendations
   } = usePersistentAIRecommendations();
   
-  // Hook pour la vérification automatique des correspondances
   useActivityMatching();
   
   const [activeTab, setActiveTab] = useState('persistent-ai');
+  const [showAnalysis, setShowAnalysis] = useState(false);
 
   const handleStartSession = (recommendation: any) => {
     toast({
@@ -51,12 +52,22 @@ const CoachView = () => {
   };
 
   const handleAIAnalysis = async () => {
+    setShowAnalysis(true);
     await generateRecommendations();
+  };
+
+  const handleRatingUpdated = () => {
+    // Recharger les recommandations persistantes pour voir les changements
+    loadRecommendations();
+    toast({
+      title: "Ressenti mis à jour",
+      description: "Vos prochaines analyses IA tiendront compte de ce ressenti",
+    });
   };
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* En-tête avec analyse IA */}
+      {/* En-tête avec analyse IA adaptative */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg">
@@ -64,13 +75,18 @@ const CoachView = () => {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
-              Coach IA
+              Coach IA Adaptatif
             </h2>
             <p className="text-gray-600 text-sm">
-              Recommandations personnalisées basées sur vos {analysisData?.totalActivities || 85} activités
-              {analysisData && (
+              Analyse intelligente de vos {analysisData?.totalActivities || 'dernières'} courses
+              {analysisData?.fatigueScore && (
                 <span className="ml-2 text-blue-600">
-                  • Moy: {analysisData.averageDistance}km • Dernière: {analysisData.lastActivity}
+                  • Fatigue: {analysisData.fatigueScore}/10
+                </span>
+              )}
+              {analysisData?.workoutBalance && (
+                <span className="ml-2 text-purple-600">
+                  • {analysisData.workoutBalance}
                 </span>
               )}
             </p>
@@ -83,12 +99,21 @@ const CoachView = () => {
             onUpdateSettings={updateSettings}
           />
           <Button 
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAnalysis(!showAnalysis)}
+            className="hidden sm:flex"
+          >
+            <TrendingUp className="h-4 w-4 mr-2" />
+            {showAnalysis ? 'Masquer analyse' : 'Voir analyse'}
+          </Button>
+          <Button 
             onClick={handleAIAnalysis}
             disabled={aiLoading}
             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
           >
             <Sparkles className="h-4 w-4 mr-2" />
-            {aiLoading ? 'Analyse en cours...' : 'Analyser avec l\'IA'}
+            {aiLoading ? 'Analyse adaptative...' : 'Analyser avec l\'IA'}
           </Button>
           <Button 
             variant="ghost" 
@@ -102,7 +127,16 @@ const CoachView = () => {
         </div>
       </div>
 
-      {/* Onglets pour basculer entre les différents types de recommandations */}
+      {/* Affichage de l'analyse adaptative */}
+      <AdaptiveAnalysisDisplay 
+        analysisData={analysisData} 
+        isVisible={showAnalysis && !!analysisData} 
+      />
+
+      {/* Widget de ressenti rapide */}
+      <QuickEffortRating onRatingUpdated={handleRatingUpdated} />
+
+      {/* Onglets pour les recommandations */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="persistent-ai" className="flex items-center gap-2">
@@ -163,7 +197,7 @@ const CoachView = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Résumé discret en bas */}
+      {/* Résumé enrichi */}
       <div className="text-center text-sm text-gray-500 pt-4 border-t">
         <p>
           Objectif actuel : <span className="font-medium">{
@@ -180,6 +214,14 @@ const CoachView = () => {
               {' • '}
               <span className="text-blue-600 font-medium">
                 IA: {persistentRecommendations.filter(r => r.status === 'completed').length}/{persistentRecommendations.length} réalisées
+              </span>
+            </>
+          )}
+          {analysisData?.fatigueScore && (
+            <>
+              {' • '}
+              <span className="text-purple-600 font-medium">
+                Fatigue: {analysisData.fatigueScore}/10
               </span>
             </>
           )}
