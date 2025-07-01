@@ -125,6 +125,11 @@ const ActivitySelectionDialog = ({
     onClose();
   };
 
+  const handleActivityClick = (activityId: number) => {
+    console.log('Activity clicked:', activityId);
+    setSelectedActivityId(activityId);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
@@ -171,60 +176,60 @@ const ActivitySelectionDialog = ({
 
         {/* Activities List */}
         <div className="flex-1 min-h-0">
-          <Command className="h-full">
-            <CommandList className="max-h-[400px]">
-              <CommandEmpty>Aucune activité trouvée.</CommandEmpty>
-              <CommandGroup>
-                {filteredActivities.map((activity) => (
-                  <CommandItem
-                    key={activity.id}
-                    value={activity.id.toString()}
-                    onSelect={() => setSelectedActivityId(activity.id)}
-                    className={`p-4 cursor-pointer border rounded-lg mb-2 ${
-                      selectedActivityId === activity.id
-                        ? 'bg-blue-50 border-blue-300'
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium">{activity.name}</h4>
-                          <Badge className={getTypeColor(activity.type)}>
-                            {activity.type}
-                          </Badge>
-                          {selectedActivityId === activity.id && (
-                            <CheckCircle className="h-4 w-4 text-blue-600" />
-                          )}
+          <div className="max-h-[400px] overflow-y-auto space-y-2">
+            {filteredActivities.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                Aucune activité trouvée.
+              </div>
+            ) : (
+              filteredActivities.map((activity) => (
+                <div
+                  key={activity.id}
+                  onClick={() => handleActivityClick(activity.id)}
+                  className={`p-4 cursor-pointer border rounded-lg transition-colors ${
+                    selectedActivityId === activity.id
+                      ? 'bg-blue-50 border-blue-300'
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-medium">{activity.name}</h4>
+                        <Badge className={getTypeColor(activity.type)}>
+                          {activity.type}
+                        </Badge>
+                        {selectedActivityId === activity.id && (
+                          <CheckCircle className="h-4 w-4 text-blue-600" />
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <div className="flex items-center gap-1">
+                          <Target className="h-3 w-3" />
+                          <span>{formatDistance(activity.distance)}</span>
                         </div>
-                        
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <Target className="h-3 w-3" />
-                            <span>{formatDistance(activity.distance)}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>{formatDuration(activity.moving_time)}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            <span>{formatDate(activity.start_date_local)}</span>
-                          </div>
-                          {activity.location_city && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              <span>{activity.location_city}</span>
-                            </div>
-                          )}
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{formatDuration(activity.moving_time)}</span>
                         </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>{formatDate(activity.start_date_local)}</span>
+                        </div>
+                        {activity.location_city && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            <span>{activity.location_city}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         {/* Selected Activity Details */}
