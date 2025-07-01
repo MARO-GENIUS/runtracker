@@ -119,18 +119,20 @@ const PersistentAIRecommendations = ({ recommendations, isLoading, onRemoveRecom
         />
       ))}
 
-      {/* Activity Selection Dialog */}
-      <ActivitySelectionDialog
-        isOpen={activityDialogOpen}
-        onClose={() => {
-          setActivityDialogOpen(false);
-          setSelectedRecommendation(null);
-        }}
-        onConfirm={handleActivityAssociation}
-        activities={activities}
-        recommendation={selectedRecommendation?.recommendation_data || {} as AIRecommendation}
-        isLoading={isAssociating}
-      />
+      {/* Activity Selection Dialog - seulement si on a une recommandation sélectionnée */}
+      {selectedRecommendation && (
+        <ActivitySelectionDialog
+          isOpen={activityDialogOpen}
+          onClose={() => {
+            setActivityDialogOpen(false);
+            setSelectedRecommendation(null);
+          }}
+          onConfirm={handleActivityAssociation}
+          activities={activities}
+          recommendation={selectedRecommendation.recommendation_data}
+          isLoading={isAssociating}
+        />
+      )}
     </div>
   );
 };
