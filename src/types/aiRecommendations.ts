@@ -9,6 +9,7 @@ export interface PersistentAIRecommendation {
   completed_at?: string;
   matching_activity_id?: number;
   status: 'pending' | 'completed' | 'expired';
+  is_manual_match?: boolean;
   created_at: string;
   updated_at: string;
 }

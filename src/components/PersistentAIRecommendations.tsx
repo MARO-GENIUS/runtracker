@@ -1,8 +1,7 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, Target, Calendar, Heart, Brain, Utensils, Bed, Trash2 } from 'lucide-react';
+import { CheckCircle, Clock, Target, Calendar, Heart, Brain, Utensils, Bed, Trash2, Link, Unlink } from 'lucide-react';
 import { AIRecommendation } from '@/hooks/useAICoach';
 import {
   Collapsible,
@@ -21,6 +20,9 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useState } from 'react';
+import ActivitySelectionDialog from './ActivitySelectionDialog';
+import { useActivities } from '@/hooks/useActivities';
+import { useManualActivityAssociation } from '@/hooks/useManualActivityAssociation';
 
 interface PersistentRecommendation {
   id: string;
@@ -29,6 +31,7 @@ interface PersistentRecommendation {
   completed_at?: string;
   matching_activity_id?: number;
   status: 'pending' | 'completed' | 'expired';
+  is_manual_match?: boolean;
 }
 
 interface PersistentAIRecommendationsProps {
@@ -39,6 +42,16 @@ interface PersistentAIRecommendationsProps {
 
 const PersistentAIRecommendations = ({ recommendations, isLoading, onRemoveRecommendation }: PersistentAIRecommendationsProps) => {
   const [expandedCards, setExpandedCards] = useState<number[]>([]);
+  const [activityDialogOpen, setActivityDialogOpen] = useState(false);
+  const [selectedRecommendation, setSelectedRecommendation] = useState<PersistentRecommendation | null>(null);
+  
+  // Get activities for association
+  const { activities } = useActivities({ limit: 100 }); // Get more activities for better selection
+  const { 
+    associateActivityToRecommendation, 
+    dissociateActivityFromRecommendation, 
+    isAssociating 
+  } = useManualActivityAssociation();
 
   const toggleExpanded = (index: number) => {
     setExpandedCards(prev => 
@@ -46,6 +59,43 @@ const PersistentAIRecommendations = ({ recommendations, isLoading, onRemoveRecom
         ? prev.filter(i => i !== index)
         : [...prev, index]
     );
+  };
+
+  const handleAssociateClick = (rec: PersistentRecommendation) => {
+    setSelectedRecommendation(rec);
+    setActivityDialogOpen(true);
+  };
+
+  const handleActivityAssociation = async (activityId: number) => {
+    if (!selectedRecommendation) return;
+    
+    const activity = activities.find(a => a.id === activityId);
+    if (!activity) return;
+
+    const success = await associateActivityToRecommendation(
+      selectedRecommendation.id,
+      activityId,
+      activity.name,
+      selectedRecommendation.recommendation_data.title
+    );
+
+    if (success) {
+      setActivityDialogOpen(false);
+      setSelectedRecommendation(null);
+      // The parent component should refetch recommendations
+      window.location.reload(); // Simple refresh for now
+    }
+  };
+
+  const handleDissociation = async (rec: PersistentRecommendation) => {
+    const success = await dissociateActivityFromRecommendation(
+      rec.id,
+      rec.recommendation_data.title
+    );
+
+    if (success) {
+      window.location.reload(); // Simple refresh for now
+    }
   };
 
   const getTypeColor = (type: string) => {
@@ -72,19 +122,26 @@ const PersistentAIRecommendations = ({ recommendations, isLoading, onRemoveRecom
     return priority === 'high' ? <Target className="h-4 w-4 text-red-500" /> : null;
   };
 
-  const getStatusBadge = (status: string, completedAt?: string) => {
+  const getStatusBadge = (status: string, completedAt?: string, isManualMatch?: boolean) => {
     switch (status) {
       case 'completed':
         return (
-          <Badge className="bg-green-100 text-green-800 flex items-center gap-1">
-            <CheckCircle className="h-3 w-3" />
-            Réalisée
-            {completedAt && (
-              <span className="text-xs ml-1">
-                ({new Date(completedAt).toLocaleDateString()})
-              </span>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-green-100 text-green-800 flex items-center gap-1">
+              <CheckCircle className="h-3 w-3" />
+              Réalisée
+              {completedAt && (
+                <span className="text-xs ml-1">
+                  ({new Date(completedAt).toLocaleDateString()})
+                </span>
+              )}
+            </Badge>
+            {isManualMatch && (
+              <Badge variant="outline" className="text-xs border-blue-200 text-blue-600">
+                Association manuelle
+              </Badge>
             )}
-          </Badge>
+          </div>
         );
       case 'pending':
         return (
@@ -182,38 +239,86 @@ const PersistentAIRecommendations = ({ recommendations, isLoading, onRemoveRecom
                   <Badge className={getTypeColor(rec.type)}>
                     {rec.type.charAt(0).toUpperCase() + rec.type.slice(1)}
                   </Badge>
-                  {getStatusBadge(persistentRec.status, persistentRec.completed_at)}
-                  {isPending && onRemoveRecommendation && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Supprimer cette recommandation ?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Cette action supprimera définitivement la séance "{rec.title}" de votre suivi. 
-                            Cette action ne peut pas être annulée.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Annuler</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => onRemoveRecommendation(persistentRec.id)}
-                            className="bg-red-600 hover:bg-red-700"
+                  {getStatusBadge(persistentRec.status, persistentRec.completed_at, persistentRec.is_manual_match)}
+                  
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-1">
+                    {isPending && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAssociateClick(persistentRec)}
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        disabled={isAssociating}
+                      >
+                        <Link className="h-4 w-4" />
+                      </Button>
+                    )}
+                    
+                    {isCompleted && persistentRec.is_manual_match && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                           >
-                            Supprimer
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
+                            <Unlink className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Supprimer l'association ?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Cette action supprimera l'association manuelle et remettra la recommandation 
+                              "{rec.title}" en attente.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDissociation(persistentRec)}
+                              className="bg-orange-600 hover:bg-orange-700"
+                            >
+                              Supprimer l'association
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                    
+                    {isPending && onRemoveRecommendation && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Supprimer cette recommandation ?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Cette action supprimera définitivement la séance "{rec.title}" de votre suivi. 
+                              Cette action ne peut pas être annulée.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => onRemoveRecommendation(persistentRec.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Supprimer
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardHeader>
@@ -332,7 +437,10 @@ const PersistentAIRecommendations = ({ recommendations, isLoading, onRemoveRecom
                       </span>
                     </div>
                     <p className="text-green-700 text-sm">
-                      Correspondance détectée automatiquement avec votre activité Strava
+                      {persistentRec.is_manual_match 
+                        ? "Association créée manuellement"
+                        : "Correspondance détectée automatiquement avec votre activité Strava"
+                      }
                     </p>
                   </div>
                 ) : (
@@ -342,7 +450,7 @@ const PersistentAIRecommendations = ({ recommendations, isLoading, onRemoveRecom
                       <span className="font-medium text-sm">En attente de réalisation</span>
                     </div>
                     <p className="text-yellow-700 text-sm">
-                      Une fois votre séance effectuée, elle sera automatiquement détectée via Strava
+                      Réalisez votre séance ou utilisez le bouton d'association pour la lier manuellement
                     </p>
                   </div>
                 )}
@@ -351,6 +459,19 @@ const PersistentAIRecommendations = ({ recommendations, isLoading, onRemoveRecom
           </Card>
         );
       })}
+
+      {/* Activity Selection Dialog */}
+      <ActivitySelectionDialog
+        isOpen={activityDialogOpen}
+        onClose={() => {
+          setActivityDialogOpen(false);
+          setSelectedRecommendation(null);
+        }}
+        onConfirm={handleActivityAssociation}
+        activities={activities}
+        recommendation={selectedRecommendation?.recommendation_data || {} as AIRecommendation}
+        isLoading={isAssociating}
+      />
     </div>
   );
 };

@@ -15,6 +15,7 @@ export type Database = {
           created_at: string
           generated_at: string
           id: string
+          is_manual_match: boolean | null
           matching_activity_id: number | null
           recommendation_data: Json
           status: string
@@ -26,6 +27,7 @@ export type Database = {
           created_at?: string
           generated_at?: string
           id?: string
+          is_manual_match?: boolean | null
           matching_activity_id?: number | null
           recommendation_data: Json
           status?: string
@@ -37,6 +39,7 @@ export type Database = {
           created_at?: string
           generated_at?: string
           id?: string
+          is_manual_match?: boolean | null
           matching_activity_id?: number | null
           recommendation_data?: Json
           status?: string
