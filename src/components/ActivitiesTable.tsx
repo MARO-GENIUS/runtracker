@@ -51,6 +51,11 @@ const ActivitiesTable = () => {
     setSelectedActivityId(null);
   };
 
+  const handleActivityDeleted = () => {
+    // Rafraîchir les données après une suppression
+    refetch();
+  };
+
   const totalPages = Math.ceil(totalCount / 20);
 
   if (loading && activities.length === 0) {
@@ -112,6 +117,7 @@ const ActivitiesTable = () => {
             <ActivitiesTableMobile
               activities={activities}
               onActivityClick={handleActivityClick}
+              onActivityDeleted={handleActivityDeleted}
             />
             
             <ActivitiesTableDesktop
@@ -120,6 +126,7 @@ const ActivitiesTable = () => {
               sortOrder={sortOrder}
               onSort={handleSort}
               onActivityClick={handleActivityClick}
+              onActivityDeleted={handleActivityDeleted}
             />
           </CardContent>
         </Card>
