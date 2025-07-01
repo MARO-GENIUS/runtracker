@@ -132,8 +132,8 @@ const ActivitySelectionDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col z-50">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Target className="h-5 w-5 text-blue-600" />
             Associer une activité à la recommandation
@@ -144,7 +144,7 @@ const ActivitySelectionDialog = ({
         </DialogHeader>
 
         {/* Recommendation Summary */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold text-blue-900">{recommendation.title}</h3>
             <Badge className={getRecommendationTypeColor(recommendation.type)}>
@@ -165,7 +165,7 @@ const ActivitySelectionDialog = ({
         </div>
 
         {/* Search */}
-        <div className="mb-4">
+        <div className="flex-shrink-0">
           <Input
             placeholder="Rechercher par nom, type d'activité ou lieu..."
             value={searchTerm}
@@ -174,9 +174,9 @@ const ActivitySelectionDialog = ({
           />
         </div>
 
-        {/* Activities List */}
-        <div className="flex-1 min-h-0">
-          <div className="max-h-[400px] overflow-y-auto space-y-2">
+        {/* Activities List - Conteneur avec hauteur fixe et scroll */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="h-full overflow-y-auto space-y-2 pr-2">
             {filteredActivities.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 Aucune activité trouvée.
@@ -186,10 +186,10 @@ const ActivitySelectionDialog = ({
                 <div
                   key={activity.id}
                   onClick={() => handleActivityClick(activity.id)}
-                  className={`p-4 cursor-pointer border rounded-lg transition-colors ${
+                  className={`p-4 cursor-pointer border rounded-lg transition-colors hover:shadow-md ${
                     selectedActivityId === activity.id
-                      ? 'bg-blue-50 border-blue-300'
-                      : 'hover:bg-gray-50'
+                      ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200'
+                      : 'hover:bg-gray-50 border-gray-200'
                   }`}
                 >
                   <div className="flex items-center justify-between w-full">
@@ -234,7 +234,7 @@ const ActivitySelectionDialog = ({
 
         {/* Selected Activity Details */}
         {selectedActivity && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex-shrink-0">
             <h4 className="font-medium text-green-900 mb-2">Activité sélectionnée :</h4>
             <div className="flex items-center justify-between">
               <div>
@@ -250,7 +250,7 @@ const ActivitySelectionDialog = ({
           </div>
         )}
 
-        <DialogFooter className="pt-4">
+        <DialogFooter className="flex-shrink-0 pt-4 z-10 relative bg-white">
           <Button variant="outline" onClick={handleClose}>
             Annuler
           </Button>
