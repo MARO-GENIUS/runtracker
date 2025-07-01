@@ -75,7 +75,6 @@ const CoachView = () => {
   };
 
   const handleRatingUpdated = () => {
-    // Recharger les recommandations persistantes pour voir les changements
     loadRecommendations();
     toast({
       title: "Ressenti mis à jour",
@@ -85,6 +84,10 @@ const CoachView = () => {
 
   const handleRemoveRecommendation = async (recommendationId: string) => {
     await removeRecommendation(recommendationId);
+  };
+
+  const handleRecommendationUpdate = () => {
+    loadRecommendations();
   };
 
   const daysSinceLastActivity = analysisData?.daysSinceLastActivity;
@@ -220,6 +223,7 @@ const CoachView = () => {
               recommendations={persistentRecommendations}
               isLoading={persistentLoading}
               onRemoveRecommendation={handleRemoveRecommendation}
+              onRecommendationUpdate={handleRecommendationUpdate}
             />
           </div>
         </TabsContent>

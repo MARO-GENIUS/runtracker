@@ -23,15 +23,21 @@ interface PersistentAIRecommendationsProps {
   recommendations: PersistentRecommendation[];
   isLoading: boolean;
   onRemoveRecommendation?: (id: string) => void;
+  onRecommendationUpdate?: () => void;
 }
 
-const PersistentAIRecommendations = ({ recommendations, isLoading, onRemoveRecommendation }: PersistentAIRecommendationsProps) => {
+const PersistentAIRecommendations = ({ 
+  recommendations, 
+  isLoading, 
+  onRemoveRecommendation,
+  onRecommendationUpdate 
+}: PersistentAIRecommendationsProps) => {
   const [expandedCards, setExpandedCards] = useState<number[]>([]);
   const [activityDialogOpen, setActivityDialogOpen] = useState(false);
   const [selectedRecommendation, setSelectedRecommendation] = useState<PersistentRecommendation | null>(null);
   
   // Get activities for association
-  const { activities } = useActivities({ limit: 100 }); // Get more activities for better selection
+  const { activities } = useActivities({ limit: 100 });
   const { 
     associateActivityToRecommendation, 
     dissociateActivityFromRecommendation, 
@@ -67,8 +73,10 @@ const PersistentAIRecommendations = ({ recommendations, isLoading, onRemoveRecom
     if (success) {
       setActivityDialogOpen(false);
       setSelectedRecommendation(null);
-      // The parent component should refetch recommendations
-      window.location.reload(); // Simple refresh for now
+      // Trigger parent to refresh recommendations
+      if (onRecommendationUpdate) {
+        onRecommendationUpdate();
+      }
     }
   };
 
@@ -78,8 +86,8 @@ const PersistentAIRecommendations = ({ recommendations, isLoading, onRemoveRecom
       rec.recommendation_data.title
     );
 
-    if (success) {
-      window.location.reload(); // Simple refresh for now
+    if (success && onRecommendationUpdate) {
+      onRecommendationUpdate();
     }
   };
 
@@ -97,14 +105,12 @@ const PersistentAIRecommendations = ({ recommendations, isLoading, onRemoveRecom
 
   return (
     <div className="space-y-4">
-      {/* Statistiques de suivi */}
       <RecommendationStatsCard 
         completedCount={completedCount}
         totalCount={totalCount}
         completionRate={completionRate}
       />
 
-      {/* Liste des recommandations avec tous les détails */}
       {recommendations.map((persistentRec, index) => (
         <RecommendationCard
           key={persistentRec.id}
@@ -119,7 +125,6 @@ const PersistentAIRecommendations = ({ recommendations, isLoading, onRemoveRecom
         />
       ))}
 
-      {/* Activity Selection Dialog - seulement si on a une recommandation sélectionnée */}
       {selectedRecommendation && (
         <ActivitySelectionDialog
           isOpen={activityDialogOpen}

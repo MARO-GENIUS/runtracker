@@ -1,7 +1,6 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { markRecommendationAsCompleted } from '@/utils/aiRecommendationDatabase';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useManualActivityAssociation = () => {
@@ -17,7 +16,6 @@ export const useManualActivityAssociation = () => {
     setIsAssociating(true);
     
     try {
-      // Update the recommendation with manual association flag
       const { error } = await supabase
         .from('ai_recommendations')
         .update({
