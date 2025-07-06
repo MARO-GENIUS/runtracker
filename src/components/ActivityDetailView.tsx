@@ -8,6 +8,7 @@ import { ActivitySplits } from './ActivitySplits';
 import { HeartRateChart } from './HeartRateChart';
 import { HeartRateTimeSeries } from './HeartRateTimeSeries';
 import { EffortRating } from './EffortRating';
+import { NextSessionSuggestion } from './NextSessionSuggestion';
 import { useEffortRating } from '@/hooks/useEffortRating';
 import { formatDate, formatDateTime } from '@/utils/activityHelpers';
 
@@ -83,11 +84,12 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="effort">Ressenti</TabsTrigger>
           <TabsTrigger value="charts">Graphiques</TabsTrigger>
           <TabsTrigger value="details">Détails</TabsTrigger>
+          <TabsTrigger value="ai-analysis">Prochaine séance</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -170,6 +172,10 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="ai-analysis" className="space-y-6">
+          <NextSessionSuggestion activityId={activity.id} />
         </TabsContent>
       </Tabs>
     </div>
