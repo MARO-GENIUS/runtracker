@@ -58,10 +58,15 @@ serve(async (req) => {
       throw new Error('Activity not found');
     }
 
-    // Get last 20 activities for context
-    const { data: recentActivities, error: recentError } = await supabase
+    // Get last 20 activities with their AI recommendation types (joined query)
+    const { data: recentActivitiesRaw, error: recentError } = await supabase
       .from('strava_activities')
-      .select('*')
+      .select(`
+        *,
+        ai_recommendations!matching_activity_id (
+          recommendation_data
+        )
+      `)
       .eq('user_id', user.id)
       .order('start_date', { ascending: false })
       .limit(20);
@@ -71,9 +76,34 @@ serve(async (req) => {
       throw new Error('Failed to fetch recent activities');
     }
 
-    console.log(`Found ${recentActivities?.length || 0} recent activities for context`);
+    console.log(`Found ${recentActivitiesRaw?.length || 0} recent activities for context`);
 
-    // Format current activity data
+    // Function to determine session type from AI recommendations
+    const getSessionType = (activity: any) => {
+      if (activity.ai_recommendations && activity.ai_recommendations.length > 0) {
+        const recommendationData = activity.ai_recommendations[0].recommendation_data;
+        const type = recommendationData?.type;
+        
+        // Translate AI recommendation types to French descriptions
+        switch (type) {
+          case 'endurance':
+            return 'Endurance fondamentale';
+          case 'tempo':
+            return 'Séance tempo';
+          case 'intervals':
+            return 'Fractionné';
+          case 'recovery':
+            return 'Récupération active';
+          case 'long':
+            return 'Sortie longue';
+          default:
+            return 'Course libre';
+        }
+      }
+      return 'Course libre';
+    };
+
+    // Format activity data with enhanced session type detection
     const formatActivity = (activity: any) => {
       const distance = (activity.distance / 1000).toFixed(1);
       const duration = Math.round(activity.moving_time / 60);
@@ -82,9 +112,11 @@ serve(async (req) => {
         String(Math.round(((activity.moving_time / 60) / (activity.distance / 1000) % 1) * 60)).padStart(2, '0') 
         : 'N/A';
       
+      const sessionType = getSessionType(activity);
+      
       return {
         date: new Date(activity.start_date_local).toLocaleDateString('fr-FR'),
-        type: activity.type,
+        type: sessionType, // Now using the real AI recommendation type
         duration: `${duration} min`,
         distance: `${distance} km`,
         pace: `${pace} min/km`,
@@ -92,20 +124,27 @@ serve(async (req) => {
         maxHeartRate: activity.max_heartrate || 'Non disponible',
         elevation: `${Math.round(activity.total_elevation_gain || 0)} m`,
         location: [activity.location_city, activity.location_state, activity.location_country]
-          .filter(Boolean).join(', ') || 'Non spécifié'
+          .filter(Boolean).join(', ') || 'Non spécifié',
+        effortNotes: activity.effort_notes || ''
       };
     };
 
     const currentActivityFormatted = formatActivity(currentActivity);
-    const recentActivitiesFormatted = recentActivities?.map(formatActivity) || [];
+    
+    // Sort activities chronologically (oldest to newest) for better progression analysis
+    const sortedActivities = recentActivitiesRaw?.sort((a, b) => 
+      new Date(a.start_date_local).getTime() - new Date(b.start_date_local).getTime()
+    ) || [];
+    
+    const recentActivitiesFormatted = sortedActivities.map(formatActivity);
 
-    // Create context about recent training
+    // Create enhanced context about recent training with real session types
     const contextText = recentActivitiesFormatted.length > 0 ? 
-      `Contexte des 20 dernières activités :\n${recentActivitiesFormatted.map((act, i) => 
-        `${i + 1}. ${act.date} - ${act.type} - ${act.distance} en ${act.duration} (${act.pace})`
+      `Contexte des 20 dernières activités (ordre chronologique - de la plus ancienne à la plus récente) :\n${recentActivitiesFormatted.map((act, i) => 
+        `${i + 1}. ${act.date} - ${act.type} - ${act.distance} en ${act.duration} (${act.pace})${act.effortNotes ? ` - Notes: ${act.effortNotes}` : ''}`
       ).join('\n')}\n\n` : '';
 
-    // Construct the specialized prompt
+    // Enhanced prompt with real session types and better periodization understanding
     const prompt = `Tu es un coach expert en course à pied, spécialisé en préparation sur 5 km, 10 km, semi-marathon et marathon. 
 
 ${contextText}Voici mes données issues de ma dernière séance Strava :
@@ -114,24 +153,24 @@ Type de séance : ${currentActivityFormatted.type}
 Durée : ${currentActivityFormatted.duration}
 Distance : ${currentActivityFormatted.distance}
 Allure moyenne : ${currentActivityFormatted.pace}
-Puissance moyenne : Non disponible
 Fréquence cardiaque moyenne : ${currentActivityFormatted.avgHeartRate}
 Fréquence cardiaque max : ${currentActivityFormatted.maxHeartRate}
 Dénivelé positif : ${currentActivityFormatted.elevation}
-Conditions météo : Non disponible
-Sensations : ${currentActivity.effort_notes || 'Non renseignées'}
+Notes d'effort : ${currentActivityFormatted.effortNotes || 'Non renseignées'}
 Objectif actuel : Semi-marathon
 
-En analysant cette séance dans le contexte de mes capacités actuelles et de mes dernières courses, donne-moi UNIQUEMENT une suggestion précise de la prochaine séance sous ce format exact :
+IMPORTANT : Analyse bien la progression chronologique de mes séances ci-dessus. Tu peux voir les vrais types d'entraînement que j'ai fait (Endurance fondamentale, Récupération active, Séance tempo, Fractionné, Sortie longue, Course libre).
 
-**Type :** [type d'entraînement]
+En analysant cette séance dans le contexte de ma progression d'entraînement récente et en tenant compte de l'alternance intensité/récupération, donne-moi UNIQUEMENT une suggestion précise de la prochaine séance sous ce format exact :
+
+**Type :** [type d'entraînement précis]
 **Durée :** [durée précise]
 **Allure :** [allure ou zones de travail]
 **Récupération :** [temps de récupération recommandé]
 
-Sois directif, pertinent et adapte ta réponse à mon niveau. Réponds uniquement avec ces 4 lignes, rien d'autre.`;
+Sois directif, pertinent et adapte ta réponse à ma progression récente. Si j'ai fait plusieurs séances faciles d'affilée, propose une séance de qualité. Si j'ai fait de l'intensité, propose de la récupération. Réponds uniquement avec ces 4 lignes, rien d'autre.`;
 
-    console.log('Calling OpenAI API...');
+    console.log('Calling OpenAI API with enhanced context...');
 
     // Call OpenAI API
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -166,7 +205,7 @@ Sois directif, pertinent et adapte ta réponse à mon niveau. Réponds uniquemen
       throw new Error('No suggestion received from OpenAI');
     }
 
-    console.log('Analysis completed successfully');
+    console.log('Analysis completed successfully with enhanced session types');
 
     return new Response(JSON.stringify({
       success: true,
