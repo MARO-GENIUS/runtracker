@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Brain, RefreshCw, Sparkles, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import PersistentAIRecommendations from './PersistentAIRecommendations';
 import QuickEffortRating from './QuickEffortRating';
 import AdaptiveAnalysisDisplay from './AdaptiveAnalysisDisplay';
 import TrainingSettings from './TrainingSettings';
+import WeeklyCoachView from './WeeklyCoachView';
 import { useTrainingRecommendations } from '@/hooks/useTrainingRecommendations';
 import { useAICoach } from '@/hooks/useAICoach';
 import { usePersistentAIRecommendations } from '@/hooks/usePersistentAIRecommendations';
@@ -38,7 +40,7 @@ const CoachView = () => {
   
   useActivityMatching();
   
-  const [activeTab, setActiveTab] = useState('persistent-ai');
+  const [activeTab, setActiveTab] = useState('weekly-view');
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [isSchedulingModalOpen, setIsSchedulingModalOpen] = useState(false);
 
@@ -187,7 +189,11 @@ const CoachView = () => {
 
       {/* Onglets pour les recommandations */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="weekly-view" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            Vue Semaine
+          </TabsTrigger>
           <TabsTrigger value="persistent-ai" className="flex items-center gap-2">
             <Brain className="h-4 w-4" />
             Suivi IA
@@ -216,6 +222,12 @@ const CoachView = () => {
             )}
           </TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="weekly-view" className="mt-6">
+          <div className="max-w-6xl mx-auto">
+            <WeeklyCoachView />
+          </div>
+        </TabsContent>
         
         <TabsContent value="persistent-ai" className="mt-6">
           <div className="max-w-4xl mx-auto">
