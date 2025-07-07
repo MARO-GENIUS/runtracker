@@ -4,7 +4,7 @@ import { Brain, TrendingUp, Sparkles, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TrainingSettings from '../TrainingSettings';
 
-interface TrainingSettings {
+interface TrainingSettingsData {
   targetRace: 'recuperation' | '5k' | '10k' | 'semi' | 'marathon';
   targetDate?: Date;
   targetTimeMinutes?: number;
@@ -16,10 +16,10 @@ interface TrainingSettings {
 
 interface CoachHeaderProps {
   analysisData: any;
-  settings: TrainingSettings;
+  settings: TrainingSettingsData;
   showAnalysis: boolean;
   aiLoading: boolean;
-  onUpdateSettings: (settings: TrainingSettings) => Promise<boolean>;
+  onUpdateSettings: (settings: TrainingSettingsData) => Promise<boolean>;
   onToggleAnalysis: () => void;
   onAIAnalysis: () => void;
   onRefresh: () => void;
