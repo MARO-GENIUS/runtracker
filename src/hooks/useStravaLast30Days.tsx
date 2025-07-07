@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -35,7 +36,7 @@ interface Last30DaysData {
   lastSessionType: string | null;
   loading: boolean;
   error: string | null;
-  updateLastSessionType: (newType: string) => void;
+  updateLastSessionType: (newType: string) => Promise<void>;
 }
 
 export const useStravaLast30Days = (): Last30DaysData => {
@@ -46,7 +47,7 @@ export const useStravaLast30Days = (): Last30DaysData => {
     lastSessionType: null,
     loading: true,
     error: null,
-    updateLastSessionType: () => {}
+    updateLastSessionType: async () => {}
   });
   
   const { user } = useAuth();
@@ -71,11 +72,30 @@ export const useStravaLast30Days = (): Last30DaysData => {
     return 'footing';
   };
 
-  const updateLastSessionType = (newType: string) => {
-    setData(prev => ({
-      ...prev,
-      lastSessionType: newType
-    }));
+  const updateLastSessionType = async (newType: string) => {
+    if (!user) return;
+
+    try {
+      // Stocker le type dans les paramètres d'entraînement
+      const { error } = await supabase
+        .from('training_settings')
+        .upsert({
+          user_id: user.id,
+          last_session_type: newType,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) throw error;
+
+      setData(prev => ({
+        ...prev,
+        lastSessionType: newType
+      }));
+    } catch (error: any) {
+      console.error('Erreur lors de la mise à jour du type de séance:', error);
+    }
   };
 
   const fetchLast30DaysData = async () => {
@@ -103,7 +123,7 @@ export const useStravaLast30Days = (): Last30DaysData => {
         average_pace_min_per_km: formatPace(activity.distance, activity.moving_time),
         average_heart_rate: activity.average_heartrate,
         max_heart_rate: activity.max_heartrate,
-        average_power: null, // Strava ne fournit pas toujours la puissance pour la course
+        average_power: null,
         effort_type: determineEffortType(activity),
         training_load: activity.suffer_score,
         rpe: activity.effort_rating
@@ -134,6 +154,8 @@ export const useStravaLast30Days = (): Last30DaysData => {
         .single();
 
       let currentGoal: CurrentGoal | null = null;
+      let lastSessionType: string | null = null;
+
       if (trainingSettings) {
         const raceLabels = {
           '5k': '5 kilomètres',
@@ -152,9 +174,15 @@ export const useStravaLast30Days = (): Last30DaysData => {
             new Date(trainingSettings.target_date).toLocaleDateString('fr-FR') : 
             'Non définie'
         };
+
+        // Récupérer le type de dernière séance stocké
+        lastSessionType = (trainingSettings as any).last_session_type || null;
       }
 
-      const lastSessionType = formattedActivities.length > 0 ? formattedActivities[0].effort_type : null;
+      // Si pas de type stocké, utiliser le type de la dernière activité
+      if (!lastSessionType && formattedActivities.length > 0) {
+        lastSessionType = formattedActivities[0].effort_type;
+      }
 
       setData({
         activities: formattedActivities,

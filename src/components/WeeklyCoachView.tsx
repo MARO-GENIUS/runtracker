@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Activity, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { DaySessionDetail } from './DaySessionDetail';
+import LastSessionTypeSelector from './LastSessionTypeSelector';
+import { useStravaLast30Days } from '@/hooks/useStravaLast30Days';
 
 interface WeeklyActivity {
   id: number;
@@ -42,6 +43,7 @@ const WeeklyCoachView: React.FC = () => {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
+  const stravaData = useStravaLast30Days();
 
   const getDaysOfWeek = (weekStart: Date) => {
     const days = [];
@@ -159,6 +161,14 @@ const WeeklyCoachView: React.FC = () => {
 
   return (
     <div className="space-y-4">
+      {/* Sélecteur de type de dernière séance en haut */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <LastSessionTypeSelector
+          currentType={stravaData.lastSessionType}
+          onTypeChange={stravaData.updateLastSessionType}
+        />
+      </div>
+
       {/* Week Navigation */}
       <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg">
         <div className="flex items-center gap-4">

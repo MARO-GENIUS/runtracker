@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { X, Activity, Brain, Clock, MapPin, Heart, Zap, Calendar } from 'lucide-react';
+import LastSessionTypeSelector from './LastSessionTypeSelector';
+import { useStravaLast30Days } from '@/hooks/useStravaLast30Days';
 
 interface WeeklyActivity {
   id: number;
@@ -36,6 +38,8 @@ export const DaySessionDetail: React.FC<DaySessionDetailProps> = ({
   recommendations,
   onClose
 }) => {
+  const stravaData = useStravaLast30Days();
+
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('fr-FR', { 
       weekday: 'long', 
@@ -81,6 +85,13 @@ export const DaySessionDetail: React.FC<DaySessionDetailProps> = ({
     return 'bg-red-100 text-red-800';
   };
 
+  // Check if this is today or the most recent activity
+  const isToday = new Date().toDateString() === date.toDateString();
+  const isMostRecentActivity = activities.length > 0 && activities.some(activity => {
+    const activityDate = new Date(activity.start_date_local);
+    return activityDate.toDateString() === date.toDateString();
+  });
+
   return (
     <Card className="mt-4">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
@@ -98,6 +109,16 @@ export const DaySessionDetail: React.FC<DaySessionDetailProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Sélecteur de type de séance si c'est aujourd'hui ou la séance la plus récente */}
+        {(isToday || isMostRecentActivity) && activities.length > 0 && (
+          <div className="border-b pb-4">
+            <LastSessionTypeSelector
+              currentType={stravaData.lastSessionType}
+              onTypeChange={stravaData.updateLastSessionType}
+            />
+          </div>
+        )}
+
         {/* Séances réalisées */}
         {activities.length > 0 && (
           <div className="space-y-3">
