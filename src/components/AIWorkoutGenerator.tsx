@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -117,12 +118,6 @@ const AIWorkoutGenerator: React.FC = () => {
               </p>
             </div>
           </div>
-
-          {/* Sélecteur de type de dernière séance */}
-          <LastSessionTypeSelector
-            currentType={stravaData.lastSessionType}
-            onTypeChange={stravaData.updateLastSessionType}
-          />
           
           {!workout && (
             <div className="text-center pt-4">
@@ -167,6 +162,14 @@ const AIWorkoutGenerator: React.FC = () => {
           </CardHeader>
           
           <CardContent className="space-y-6">
+            {/* Sélecteur de type de dernière séance intégré */}
+            <div className="border-t pt-4">
+              <LastSessionTypeSelector
+                currentType={stravaData.lastSessionType}
+                onTypeChange={stravaData.updateLastSessionType}
+              />
+            </div>
+
             {/* Variantes */}
             <Tabs value={selectedVariant} onValueChange={(v) => setSelectedVariant(v as any)}>
               <TabsList className="grid w-full grid-cols-3">
