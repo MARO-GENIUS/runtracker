@@ -1,20 +1,15 @@
 
 import { useState } from 'react';
-import { Brain, RefreshCw, Sparkles, TrendingUp } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import PersonalizedRecommendations from './PersonalizedRecommendations';
-import AIPersonalizedRecommendations from './AIPersonalizedRecommendations';
-import PersistentAIRecommendations from './PersistentAIRecommendations';
-import QuickEffortRating from './QuickEffortRating';
-import AdaptiveAnalysisDisplay from './AdaptiveAnalysisDisplay';
-import TrainingSettings from './TrainingSettings';
-import WeeklyCoachView from './WeeklyCoachView';
 import { useTrainingRecommendations } from '@/hooks/useTrainingRecommendations';
 import { useAICoach } from '@/hooks/useAICoach';
 import { usePersistentAIRecommendations } from '@/hooks/usePersistentAIRecommendations';
 import { useActivityMatching } from '@/hooks/useActivityMatching';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CoachHeader } from './coach/CoachHeader';
+import { CoachTabs } from './coach/CoachTabs';
+import { CoachSummary } from './coach/CoachSummary';
+import QuickEffortRating from './QuickEffortRating';
+import AdaptiveAnalysisDisplay from './AdaptiveAnalysisDisplay';
 import SchedulingModal from './SchedulingModal';
 import ScheduledDateManager from './ScheduledDateManager';
 
@@ -92,81 +87,19 @@ const CoachView = () => {
     loadRecommendations();
   };
 
-  const daysSinceLastActivity = analysisData?.daysSinceLastActivity;
-  const raceGoal = analysisData?.raceGoal;
-  const weeksUntilRace = analysisData?.weeksUntilRace;
-
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* En-tête avec analyse IA adaptative */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg">
-            <Brain className="h-6 w-6 text-blue-600" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Coach IA Adaptatif
-            </h2>
-            <p className="text-gray-600 text-sm">
-              Analyse intelligente de vos {analysisData?.totalActivities || 'dernières'} courses
-              {daysSinceLastActivity !== undefined && (
-                <span className="ml-2 text-orange-600 font-medium">
-                  • {daysSinceLastActivity} jour{daysSinceLastActivity > 1 ? 's' : ''} depuis la dernière séance
-                </span>
-              )}
-              {raceGoal && (
-                <span className="ml-2 text-purple-600 font-medium">
-                  • {raceGoal}
-                </span>
-              )}
-              {analysisData?.fatigueScore && (
-                <span className="ml-2 text-blue-600">
-                  • Fatigue: {analysisData.fatigueScore}/10
-                </span>
-              )}
-              {analysisData?.workoutBalance && (
-                <span className="ml-2 text-gray-600">
-                  • {analysisData.workoutBalance}
-                </span>
-              )}
-            </p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <TrainingSettings 
-            settings={settings}
-            onUpdateSettings={updateSettings}
-          />
-          <Button 
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAnalysis(!showAnalysis)}
-            className="hidden sm:flex"
-          >
-            <TrendingUp className="h-4 w-4 mr-2" />
-            {showAnalysis ? 'Masquer analyse' : 'Voir analyse'}
-          </Button>
-          <Button 
-            onClick={handleAIAnalysis}
-            disabled={aiLoading}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-          >
-            <Sparkles className="h-4 w-4 mr-2" />
-            {aiLoading ? 'Analyse adaptative...' : 'Analyser avec l\'IA'}
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={handleRefresh}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Actualiser
-          </Button>
-        </div>
-      </div>
+      <CoachHeader
+        analysisData={analysisData}
+        settings={settings}
+        showAnalysis={showAnalysis}
+        aiLoading={aiLoading}
+        onUpdateSettings={updateSettings}
+        onToggleAnalysis={() => setShowAnalysis(!showAnalysis)}
+        onAIAnalysis={handleAIAnalysis}
+        onRefresh={handleRefresh}
+      />
 
       {/* Gestionnaire de date planifiée */}
       {scheduledDate && (
@@ -188,128 +121,32 @@ const CoachView = () => {
       <QuickEffortRating onRatingUpdated={handleRatingUpdated} />
 
       {/* Onglets pour les recommandations */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="weekly-view" className="flex items-center gap-2">
-            <Brain className="h-4 w-4" />
-            Vue Semaine
-          </TabsTrigger>
-          <TabsTrigger value="persistent-ai" className="flex items-center gap-2">
-            <Brain className="h-4 w-4" />
-            Suivi IA
-            {persistentRecommendations.length > 0 && (
-              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
-                {persistentRecommendations.filter(r => r.status === 'pending').length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="ai" className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4" />
-            Nouvelles IA
-            {aiRecommendations.length > 0 && (
-              <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full">
-                {aiRecommendations.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="basic" className="flex items-center gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Basiques
-            {recommendations.length > 0 && (
-              <span className="bg-gray-100 text-gray-800 text-xs px-2 py-0.5 rounded-full">
-                {recommendations.length}
-              </span>
-            )}
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="weekly-view" className="mt-6">
-          <div className="max-w-6xl mx-auto">
-            <WeeklyCoachView />
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="persistent-ai" className="mt-6">
-          <div className="max-w-4xl mx-auto">
-            <PersistentAIRecommendations 
-              recommendations={persistentRecommendations}
-              isLoading={persistentLoading}
-              onRemoveRecommendation={handleRemoveRecommendation}
-              onRecommendationUpdate={handleRecommendationUpdate}
-            />
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="ai" className="mt-6">
-          <div className="max-w-4xl mx-auto">
-            <AIPersonalizedRecommendations 
-              recommendations={aiRecommendations}
-              onStartSession={handleStartSession}
-              isLoading={aiLoading}
-            />
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="basic" className="mt-6">
-          <div className="max-w-4xl mx-auto">
-            <PersonalizedRecommendations 
-              recommendations={recommendations}
-              onStartSession={handleStartSession}
-            />
-          </div>
-        </TabsContent>
-      </Tabs>
+      <CoachTabs
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        persistentRecommendations={persistentRecommendations}
+        aiRecommendations={aiRecommendations}
+        recommendations={recommendations}
+        aiLoading={aiLoading}
+        persistentLoading={persistentLoading}
+        onStartSession={handleStartSession}
+        onRemoveRecommendation={handleRemoveRecommendation}
+        onRecommendationUpdate={handleRecommendationUpdate}
+      />
 
       {/* Résumé enrichi avec objectifs personnels */}
-      <div className="text-center text-sm text-gray-500 pt-4 border-t">
-        <p>
-          Objectif actuel : <span className="font-medium">{
-            settings.targetRace === '5k' ? '5 kilomètres' :
-            settings.targetRace === '10k' ? '10 kilomètres' :
-            settings.targetRace === 'semi' ? 'Semi-marathon' :
-            settings.targetRace === 'marathon' ? 'Marathon' :
-            'Récupération/Forme'
-          }</span>
-          {weeksUntilRace && (
-            <span className="text-purple-600 font-medium">
-              {' '}dans {weeksUntilRace} semaine{weeksUntilRace > 1 ? 's' : ''}
-            </span>
-          )}
-          {' • '}
-          <span className="font-medium">{settings.weeklyFrequency} séances/semaine</span>
-          {persistentRecommendations.length > 0 && (
-            <>
-              {' • '}
-              <span className="text-blue-600 font-medium">
-                IA: {persistentRecommendations.filter(r => r.status === 'completed').length}/{persistentRecommendations.length} réalisées
-              </span>
-            </>
-          )}
-          {daysSinceLastActivity !== undefined && (
-            <>
-              {' • '}
-              <span className="text-orange-600 font-medium">
-                Dernière séance: il y a {daysSinceLastActivity} jour{daysSinceLastActivity > 1 ? 's' : ''}
-              </span>
-            </>
-          )}
-          {analysisData?.fatigueScore && (
-            <>
-              {' • '}
-              <span className="text-purple-600 font-medium">
-                Fatigue: {analysisData.fatigueScore}/10
-              </span>
-            </>
-          )}
-        </p>
-      </div>
+      <CoachSummary
+        settings={settings}
+        analysisData={analysisData}
+        persistentRecommendations={persistentRecommendations}
+      />
 
       {/* Modal de planification */}
       <SchedulingModal
         isOpen={isSchedulingModalOpen}
         onClose={() => setIsSchedulingModalOpen(false)}
         onSchedule={handleScheduledAnalysis}
-        daysSinceLastActivity={daysSinceLastActivity}
+        daysSinceLastActivity={analysisData?.daysSinceLastActivity}
       />
     </div>
   );
