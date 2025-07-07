@@ -1,11 +1,12 @@
 
 import React from 'react';
-import { Brain, Sparkles, RefreshCw } from 'lucide-react';
+import { Brain, Sparkles, RefreshCw, Zap } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import WeeklyCoachView from '../WeeklyCoachView';
 import PersistentAIRecommendations from '../PersistentAIRecommendations';
 import AIPersonalizedRecommendations from '../AIPersonalizedRecommendations';
 import PersonalizedRecommendations from '../PersonalizedRecommendations';
+import AIWorkoutGenerator from '../AIWorkoutGenerator';
 
 interface CoachTabsProps {
   activeTab: string;
@@ -34,12 +35,16 @@ export const CoachTabs: React.FC<CoachTabsProps> = ({
 }) => {
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="weekly-view" className="flex items-center gap-2">
+      <TabsList className="grid w-full grid-cols-5">
+        <TabsTrigger value="ai-generator" className="flex items-center gap-2">
+          <Zap className="h-4 w-4" />
+          Séance IA
+        </TabsTrigger>
+        <TabsTrigger value="weekly-view" className="flex items-center gap-2 text-xs">
           <Brain className="h-4 w-4" />
           Vue Semaine
         </TabsTrigger>
-        <TabsTrigger value="persistent-ai" className="flex items-center gap-2">
+        <TabsTrigger value="persistent-ai" className="flex items-center gap-2 text-xs">
           <Brain className="h-4 w-4" />
           Suivi IA
           {persistentRecommendations.length > 0 && (
@@ -48,7 +53,7 @@ export const CoachTabs: React.FC<CoachTabsProps> = ({
             </span>
           )}
         </TabsTrigger>
-        <TabsTrigger value="ai" className="flex items-center gap-2">
+        <TabsTrigger value="ai" className="flex items-center gap-2 text-xs">
           <Sparkles className="h-4 w-4" />
           Nouvelles IA
           {aiRecommendations.length > 0 && (
@@ -57,7 +62,7 @@ export const CoachTabs: React.FC<CoachTabsProps> = ({
             </span>
           )}
         </TabsTrigger>
-        <TabsTrigger value="basic" className="flex items-center gap-2">
+        <TabsTrigger value="basic" className="flex items-center gap-2 text-xs">
           <RefreshCw className="h-4 w-4" />
           Basiques
           {recommendations.length > 0 && (
@@ -67,6 +72,12 @@ export const CoachTabs: React.FC<CoachTabsProps> = ({
           )}
         </TabsTrigger>
       </TabsList>
+      
+      <TabsContent value="ai-generator" className="mt-6">
+        <div className="max-w-4xl mx-auto">
+          <AIWorkoutGenerator />
+        </div>
+      </TabsContent>
       
       <TabsContent value="weekly-view" className="mt-6">
         <div className="max-w-6xl mx-auto">

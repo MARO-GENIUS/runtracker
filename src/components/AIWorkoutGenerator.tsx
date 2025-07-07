@@ -1,0 +1,291 @@
+
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { 
+  Brain, 
+  Play, 
+  RefreshCw, 
+  CheckCircle, 
+  Target, 
+  Timer, 
+  Heart, 
+  Zap,
+  ChevronDown,
+  ChevronUp,
+  Activity
+} from 'lucide-react';
+import { useStravaLast30Days } from '@/hooks/useStravaLast30Days';
+import { useAIWorkoutGenerator } from '@/hooks/useAIWorkoutGenerator';
+
+const AIWorkoutGenerator: React.FC = () => {
+  const [selectedVariant, setSelectedVariant] = useState<'normal' | 'facile' | 'difficile'>('normal');
+  const [isExplanationOpen, setIsExplanationOpen] = useState(false);
+  
+  const stravaData = useStravaLast30Days();
+  const { workout, loading, error, generateWorkout, markAsCompleted, generateNewWorkout } = useAIWorkoutGenerator();
+
+  const handleGenerateWorkout = () => {
+    if (!stravaData.loading && stravaData.activities.length > 0) {
+      generateWorkout(stravaData);
+    }
+  };
+
+  const handleGenerateNewWorkout = () => {
+    if (!stravaData.loading && stravaData.activities.length > 0) {
+      generateNewWorkout(stravaData);
+    }
+  };
+
+  const getRPEColor = (rpe: number) => {
+    if (rpe <= 3) return 'bg-green-100 text-green-800';
+    if (rpe <= 6) return 'bg-yellow-100 text-yellow-800';
+    if (rpe <= 8) return 'bg-orange-100 text-orange-800';
+    return 'bg-red-100 text-red-800';
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'interval':
+      case 'intervals':
+        return <Zap className="h-4 w-4" />;
+      case 'tempo':
+      case 'threshold':
+        return <Target className="h-4 w-4" />;
+      case 'long run':
+      case 'easy run':
+        return <Timer className="h-4 w-4" />;
+      default:
+        return <Activity className="h-4 w-4" />;
+    }
+  };
+
+  if (stravaData.loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-8">
+          <div className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4 animate-spin" />
+            <span>Chargement de vos données Strava...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (stravaData.error) {
+    return (
+      <Card>
+        <CardContent className="py-8">
+          <div className="text-center text-red-600">
+            <p>Erreur lors du chargement des données: {stravaData.error}</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Section informations contextuelles */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-blue-600" />
+            Coach IA - Générateur de séances personnalisées
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-gray-600">Activités (30j)</p>
+              <p className="text-2xl font-bold text-blue-600">{stravaData.activities.length}</p>
+            </div>
+            <div className="text-center p-3 bg-green-50 rounded-lg">
+              <p className="text-sm text-gray-600">Dernière séance</p>
+              <p className="text-lg font-semibold text-green-600">
+                {stravaData.lastSessionType || 'Aucune'}
+              </p>
+            </div>
+            <div className="text-center p-3 bg-purple-50 rounded-lg">
+              <p className="text-sm text-gray-600">Objectif actuel</p>
+              <p className="text-lg font-semibold text-purple-600">
+                {stravaData.currentGoal?.distance || 'Non défini'}
+              </p>
+            </div>
+          </div>
+          
+          {!workout && (
+            <div className="text-center pt-4">
+              <Button 
+                onClick={handleGenerateWorkout}
+                disabled={loading || stravaData.activities.length === 0}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Génération en cours...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="h-4 w-4 mr-2" />
+                    Générer ma séance du jour
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Séance générée */}
+      {workout && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  {getTypeIcon(workout.type)}
+                  {workout.nom_seance}
+                </CardTitle>
+                <p className="text-gray-600 mt-1">{workout.objectif}</p>
+              </div>
+              <Badge variant="outline" className="flex items-center gap-1">
+                {workout.type}
+              </Badge>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="space-y-6">
+            {/* Variantes */}
+            <Tabs value={selectedVariant} onValueChange={(v) => setSelectedVariant(v as any)}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="facile">Facile</TabsTrigger>
+                <TabsTrigger value="normal">Normal</TabsTrigger>
+                <TabsTrigger value="difficile">Difficile</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="normal" className="mt-6">
+                <div className="space-y-4">
+                  {workout.blocs.map((bloc, index) => (
+                    <Card key={index} className="border-l-4 border-l-blue-500">
+                      <CardContent className="pt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">Description</p>
+                            <p className="font-semibold">{bloc.description}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">Allure</p>
+                            <p className="font-semibold flex items-center gap-1">
+                              <Timer className="h-4 w-4" />
+                              {bloc.allure_min_per_km}/km
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">FC Cible</p>
+                            <p className="font-semibold flex items-center gap-1">
+                              <Heart className="h-4 w-4 text-red-500" />
+                              {bloc.frequence_cardiaque_cible || 'N/A'} bpm
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">RPE</p>
+                            <Badge className={getRPEColor(bloc.rpe)}>
+                              {bloc.rpe}/10
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="mt-3 p-2 bg-gray-50 rounded">
+                          <p className="text-sm">
+                            <span className="font-medium">Récupération:</span> {bloc.recuperation}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="facile" className="mt-6">
+                <Card className="border-l-4 border-l-green-500">
+                  <CardContent className="pt-4">
+                    <p className="text-green-800 font-medium">Variante facile :</p>
+                    <p className="mt-2">{workout.variante_facile}</p>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="difficile" className="mt-6">
+                <Card className="border-l-4 border-l-red-500">
+                  <CardContent className="pt-4">
+                    <p className="text-red-800 font-medium">Variante difficile :</p>
+                    <p className="mt-2">{workout.variante_difficile}</p>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+
+            {/* Explication du coach */}
+            <Collapsible open={isExplanationOpen} onOpenChange={setIsExplanationOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full flex items-center justify-between">
+                  <span>Explication du coach</span>
+                  {isExplanationOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-4">
+                <Card className="bg-blue-50">
+                  <CardContent className="pt-4">
+                    <p className="text-blue-900">{workout.explication}</p>
+                  </CardContent>
+                </Card>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Boutons d'action */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+              <Button 
+                onClick={markAsCompleted}
+                className="bg-green-600 hover:bg-green-700 flex-1"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Marquer comme effectuée
+              </Button>
+              <Button 
+                onClick={handleGenerateNewWorkout}
+                variant="outline"
+                disabled={loading}
+                className="flex-1"
+              >
+                {loading ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                Proposer une autre séance
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {error && (
+        <Card className="border-red-200">
+          <CardContent className="pt-4">
+            <div className="text-red-600">
+              <p className="font-medium">Erreur lors de la génération :</p>
+              <p className="mt-1">{error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+export default AIWorkoutGenerator;

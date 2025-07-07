@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useTrainingRecommendations } from '@/hooks/useTrainingRecommendations';
@@ -35,7 +34,7 @@ const CoachView = () => {
   
   useActivityMatching();
   
-  const [activeTab, setActiveTab] = useState('weekly-view');
+  const [activeTab, setActiveTab] = useState('ai-generator');
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [isSchedulingModalOpen, setIsSchedulingModalOpen] = useState(false);
 
