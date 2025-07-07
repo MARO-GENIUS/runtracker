@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -36,6 +35,7 @@ interface Last30DaysData {
   lastSessionType: string | null;
   loading: boolean;
   error: string | null;
+  updateLastSessionType: (newType: string) => void;
 }
 
 export const useStravaLast30Days = (): Last30DaysData => {
@@ -45,7 +45,8 @@ export const useStravaLast30Days = (): Last30DaysData => {
     currentGoal: null,
     lastSessionType: null,
     loading: true,
-    error: null
+    error: null,
+    updateLastSessionType: () => {}
   });
   
   const { user } = useAuth();
@@ -70,13 +71,19 @@ export const useStravaLast30Days = (): Last30DaysData => {
     return 'footing';
   };
 
+  const updateLastSessionType = (newType: string) => {
+    setData(prev => ({
+      ...prev,
+      lastSessionType: newType
+    }));
+  };
+
   const fetchLast30DaysData = async () => {
     if (!user) return;
 
     try {
       setData(prev => ({ ...prev, loading: true, error: null }));
 
-      // Récupérer les activités des 30 derniers jours
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -89,7 +96,6 @@ export const useStravaLast30Days = (): Last30DaysData => {
 
       if (activitiesError) throw activitiesError;
 
-      // Formater les données selon vos spécifications
       const formattedActivities: StravaData30Days[] = (activities || []).map(activity => ({
         date: new Date(activity.start_date_local).toISOString().split('T')[0],
         distance_km: parseFloat((activity.distance / 1000).toFixed(2)),
@@ -103,7 +109,6 @@ export const useStravaLast30Days = (): Last30DaysData => {
         rpe: activity.effort_rating
       }));
 
-      // Récupérer les records personnels
       const { data: records } = await supabase
         .from('personal_records')
         .select('*')
@@ -122,7 +127,6 @@ export const useStravaLast30Days = (): Last30DaysData => {
         if (record.distance_meters === 42195) personalRecords['Marathon'] = timeString;
       });
 
-      // Récupérer l'objectif actuel
       const { data: trainingSettings } = await supabase
         .from('training_settings')
         .select('*')
@@ -150,7 +154,6 @@ export const useStravaLast30Days = (): Last30DaysData => {
         };
       }
 
-      // Déterminer le type de la dernière séance
       const lastSessionType = formattedActivities.length > 0 ? formattedActivities[0].effort_type : null;
 
       setData({
@@ -159,7 +162,8 @@ export const useStravaLast30Days = (): Last30DaysData => {
         currentGoal,
         lastSessionType,
         loading: false,
-        error: null
+        error: null,
+        updateLastSessionType
       });
 
     } catch (error: any) {
@@ -167,7 +171,8 @@ export const useStravaLast30Days = (): Last30DaysData => {
       setData(prev => ({
         ...prev,
         loading: false,
-        error: error.message || 'Erreur lors de la récupération des données'
+        error: error.message || 'Erreur lors de la récupération des données',
+        updateLastSessionType
       }));
     }
   };

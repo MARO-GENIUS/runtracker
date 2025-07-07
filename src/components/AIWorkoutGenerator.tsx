@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useStravaLast30Days } from '@/hooks/useStravaLast30Days';
 import { useAIWorkoutGenerator } from '@/hooks/useAIWorkoutGenerator';
+import LastSessionTypeSelector from './LastSessionTypeSelector';
 
 const AIWorkoutGenerator: React.FC = () => {
   const [selectedVariant, setSelectedVariant] = useState<'normal' | 'facile' | 'difficile'>('normal');
@@ -105,18 +105,24 @@ const AIWorkoutGenerator: React.FC = () => {
               <p className="text-2xl font-bold text-blue-600">{stravaData.activities.length}</p>
             </div>
             <div className="text-center p-3 bg-green-50 rounded-lg">
-              <p className="text-sm text-gray-600">Dernière séance</p>
-              <p className="text-lg font-semibold text-green-600">
-                {stravaData.lastSessionType || 'Aucune'}
-              </p>
-            </div>
-            <div className="text-center p-3 bg-purple-50 rounded-lg">
               <p className="text-sm text-gray-600">Objectif actuel</p>
-              <p className="text-lg font-semibold text-purple-600">
+              <p className="text-lg font-semibold text-green-600">
                 {stravaData.currentGoal?.distance || 'Non défini'}
               </p>
             </div>
+            <div className="text-center p-3 bg-purple-50 rounded-lg">
+              <p className="text-sm text-gray-600">Distance totale</p>
+              <p className="text-lg font-semibold text-purple-600">
+                {stravaData.activities.reduce((sum, activity) => sum + activity.distance_km, 0).toFixed(1)} km
+              </p>
+            </div>
           </div>
+
+          {/* Sélecteur de type de dernière séance */}
+          <LastSessionTypeSelector
+            currentType={stravaData.lastSessionType}
+            onTypeChange={stravaData.updateLastSessionType}
+          />
           
           {!workout && (
             <div className="text-center pt-4">
