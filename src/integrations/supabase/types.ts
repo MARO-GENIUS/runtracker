@@ -299,6 +299,7 @@ export type Database = {
           available_time_slots: string[]
           created_at: string
           id: string
+          last_session_type: string | null
           max_intensity: string
           preferred_days: string[]
           target_date: string | null
@@ -312,6 +313,7 @@ export type Database = {
           available_time_slots?: string[]
           created_at?: string
           id?: string
+          last_session_type?: string | null
           max_intensity?: string
           preferred_days?: string[]
           target_date?: string | null
@@ -325,6 +327,7 @@ export type Database = {
           available_time_slots?: string[]
           created_at?: string
           id?: string
+          last_session_type?: string | null
           max_intensity?: string
           preferred_days?: string[]
           target_date?: string | null
