@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 
 interface LastSessionTypeSelectorProps {
   currentType: string | null;
-  onTypeChange: (newType: string) => void;
+  onTypeChange: (newType: string) => Promise<void>;
 }
 
 const LastSessionTypeSelector: React.FC<LastSessionTypeSelectorProps> = ({
@@ -18,6 +18,12 @@ const LastSessionTypeSelector: React.FC<LastSessionTypeSelectorProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedType, setSelectedType] = useState(currentType || '');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Synchronize selectedType with currentType when it changes
+  useEffect(() => {
+    setSelectedType(currentType || '');
+  }, [currentType]);
 
   const sessionTypes = [
     { value: 'footing', label: 'Footing' },
@@ -30,17 +36,40 @@ const LastSessionTypeSelector: React.FC<LastSessionTypeSelectorProps> = ({
     { value: 'fartlek', label: 'Fartlek' }
   ];
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (selectedType && selectedType !== currentType) {
-      onTypeChange(selectedType);
-      toast.success(`Type de séance mis à jour : ${selectedType}`);
+      setIsLoading(true);
+      try {
+        await onTypeChange(selectedType);
+        setIsEditing(false);
+        toast.success(`Type de séance mis à jour : ${selectedType}`);
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour:', error);
+        toast.error('Erreur lors de la mise à jour du type de séance');
+        // Reset to current value on error
+        setSelectedType(currentType || '');
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      setIsEditing(false);
     }
-    setIsEditing(false);
   };
 
   const handleCancel = () => {
     setSelectedType(currentType || '');
     setIsEditing(false);
+  };
+
+  const handleEdit = () => {
+    setSelectedType(currentType || '');
+    setIsEditing(true);
+  };
+
+  const getSessionLabel = (type: string | null) => {
+    if (!type) return 'Non défini';
+    const sessionType = sessionTypes.find(t => t.value === type);
+    return sessionType ? sessionType.label : type;
   };
 
   return (
@@ -52,7 +81,7 @@ const LastSessionTypeSelector: React.FC<LastSessionTypeSelectorProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsEditing(true)}
+              onClick={handleEdit}
               className="h-6 px-2 text-blue-600 hover:text-blue-800"
             >
               <Edit className="h-3 w-3" />
@@ -63,7 +92,7 @@ const LastSessionTypeSelector: React.FC<LastSessionTypeSelectorProps> = ({
       <CardContent className="pt-0">
         {!isEditing ? (
           <Badge variant="outline" className="bg-white text-blue-700 border-blue-300">
-            {currentType || 'Non défini'}
+            {getSessionLabel(currentType)}
           </Badge>
         ) : (
           <div className="space-y-3">
@@ -83,15 +112,17 @@ const LastSessionTypeSelector: React.FC<LastSessionTypeSelectorProps> = ({
               <Button
                 size="sm"
                 onClick={handleSave}
+                disabled={isLoading}
                 className="bg-green-600 hover:bg-green-700"
               >
                 <Check className="h-3 w-3 mr-1" />
-                Valider
+                {isLoading ? 'Enregistrement...' : 'Valider'}
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={handleCancel}
+                disabled={isLoading}
               >
                 <X className="h-3 w-3 mr-1" />
                 Annuler

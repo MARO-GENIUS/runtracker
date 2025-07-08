@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -73,9 +72,13 @@ export const useStravaLast30Days = (): Last30DaysData => {
   };
 
   const updateLastSessionType = async (newType: string) => {
-    if (!user) return;
+    if (!user) {
+      throw new Error('Utilisateur non connecté');
+    }
 
     try {
+      console.log('Mise à jour du type de séance:', newType);
+      
       // Stocker le type dans les paramètres d'entraînement
       const { error } = await supabase
         .from('training_settings')
@@ -87,14 +90,21 @@ export const useStravaLast30Days = (): Last30DaysData => {
           onConflict: 'user_id'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur Supabase:', error);
+        throw error;
+      }
 
+      // Mettre à jour immédiatement l'état local
       setData(prev => ({
         ...prev,
         lastSessionType: newType
       }));
+
+      console.log('Type de séance mis à jour avec succès:', newType);
     } catch (error: any) {
       console.error('Erreur lors de la mise à jour du type de séance:', error);
+      throw error;
     }
   };
 
