@@ -1,10 +1,13 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { X, Activity, Brain, Clock, MapPin, Heart, Zap, Calendar } from 'lucide-react';
-import LastSessionTypeSelector from './LastSessionTypeSelector';
-import { useStravaLast30Days } from '@/hooks/useStravaLast30Days';
+import SessionTypeSelector from './SessionTypeSelector';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 interface WeeklyActivity {
   id: number;
@@ -15,6 +18,7 @@ interface WeeklyActivity {
   average_speed: number | null;
   effort_rating: number | null;
   effort_notes: string | null;
+  session_type?: string | null;
 }
 
 interface AIRecommendation {
@@ -30,15 +34,17 @@ interface DaySessionDetailProps {
   activities: WeeklyActivity[];
   recommendations: AIRecommendation[];
   onClose: () => void;
+  onActivityUpdate?: () => void;
 }
 
 export const DaySessionDetail: React.FC<DaySessionDetailProps> = ({
   date,
   activities,
   recommendations,
-  onClose
+  onClose,
+  onActivityUpdate
 }) => {
-  const stravaData = useStravaLast30Days();
+  const { user } = useAuth();
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('fr-FR', { 
@@ -66,6 +72,36 @@ export const DaySessionDetail: React.FC<DaySessionDetailProps> = ({
     return `${minutes}:${seconds.toString().padStart(2, '0')} min/km`;
   };
 
+  const handleSessionTypeChange = async (activityId: number, newType: string) => {
+    if (!user) {
+      throw new Error('Utilisateur non connecté');
+    }
+
+    try {
+      // Mettre à jour le type de session pour l'activité spécifique
+      const { error } = await supabase
+        .from('strava_activities')
+        .update({ session_type: newType })
+        .eq('id', activityId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Erreur Supabase:', error);
+        throw error;
+      }
+
+      // Notifier le parent pour rafraîchir les données
+      if (onActivityUpdate) {
+        onActivityUpdate();
+      }
+
+      console.log('Type de séance mis à jour avec succès pour l\'activité:', activityId);
+    } catch (error: any) {
+      console.error('Erreur lors de la mise à jour du type de séance:', error);
+      throw error;
+    }
+  };
+
   const getRecommendationType = (recData: any) => {
     const type = recData?.type || 'unknown';
     const typeLabels = {
@@ -85,13 +121,6 @@ export const DaySessionDetail: React.FC<DaySessionDetailProps> = ({
     return 'bg-red-100 text-red-800';
   };
 
-  // Check if this is today or the most recent activity
-  const isToday = new Date().toDateString() === date.toDateString();
-  const isMostRecentActivity = activities.length > 0 && activities.some(activity => {
-    const activityDate = new Date(activity.start_date_local);
-    return activityDate.toDateString() === date.toDateString();
-  });
-
   return (
     <Card className="mt-4">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
@@ -109,16 +138,6 @@ export const DaySessionDetail: React.FC<DaySessionDetailProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Sélecteur de type de séance si c'est aujourd'hui ou la séance la plus récente */}
-        {(isToday || isMostRecentActivity) && activities.length > 0 && (
-          <div className="border-b pb-4">
-            <LastSessionTypeSelector
-              currentType={stravaData.lastSessionType}
-              onTypeChange={stravaData.updateLastSessionType}
-            />
-          </div>
-        )}
-
         {/* Séances réalisées */}
         {activities.length > 0 && (
           <div className="space-y-3">
@@ -141,6 +160,18 @@ export const DaySessionDetail: React.FC<DaySessionDetailProps> = ({
                       Effort: {activity.effort_rating}/10
                     </Badge>
                   )}
+                </div>
+
+                {/* Sélecteur de type de séance pour cette activité */}
+                <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-medium text-blue-800">Type de séance:</span>
+                  </div>
+                  <SessionTypeSelector
+                    activityId={activity.id}
+                    currentType={activity.session_type}
+                    onTypeChange={handleSessionTypeChange}
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-sm">

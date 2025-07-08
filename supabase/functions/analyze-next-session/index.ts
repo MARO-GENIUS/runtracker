@@ -46,7 +46,7 @@ serve(async (req) => {
 
     console.log(`Analyzing next session for user ${user.id}, activity ${activityId}`);
 
-    // Get current activity details
+    // Get current activity details with session_type
     const { data: currentActivity, error: activityError } = await supabase
       .from('strava_activities')
       .select('*')
@@ -58,15 +58,10 @@ serve(async (req) => {
       throw new Error('Activity not found');
     }
 
-    // Get last 20 activities with their AI recommendation types (joined query)
+    // Get last 20 activities with their session types
     const { data: recentActivitiesRaw, error: recentError } = await supabase
       .from('strava_activities')
-      .select(`
-        *,
-        ai_recommendations!matching_activity_id (
-          recommendation_data
-        )
-      `)
+      .select('*')
       .eq('user_id', user.id)
       .order('start_date', { ascending: false })
       .limit(20);
@@ -78,32 +73,25 @@ serve(async (req) => {
 
     console.log(`Found ${recentActivitiesRaw?.length || 0} recent activities for context`);
 
-    // Function to determine session type from AI recommendations
-    const getSessionType = (activity: any) => {
-      if (activity.ai_recommendations && activity.ai_recommendations.length > 0) {
-        const recommendationData = activity.ai_recommendations[0].recommendation_data;
-        const type = recommendationData?.type;
-        
-        // Translate AI recommendation types to French descriptions
-        switch (type) {
-          case 'endurance':
-            return 'Endurance fondamentale';
-          case 'tempo':
-            return 'Séance tempo';
-          case 'intervals':
-            return 'Fractionné';
-          case 'recovery':
-            return 'Récupération active';
-          case 'long':
-            return 'Sortie longue';
-          default:
-            return 'Course libre';
-        }
-      }
-      return 'Course libre';
+    // Function to get session type label
+    const getSessionTypeLabel = (sessionType: string | null) => {
+      if (!sessionType) return 'Course libre';
+      
+      const typeLabels = {
+        'footing': 'Footing',
+        'sortie longue': 'Sortie longue',
+        'intervalle': 'Intervalle',
+        'seuil': 'Seuil',
+        'récupération': 'Récupération',
+        'compétition': 'Compétition',
+        'côtes': 'Côtes',
+        'fartlek': 'Fartlek'
+      };
+      
+      return typeLabels[sessionType as keyof typeof typeLabels] || sessionType;
     };
 
-    // Format activity data with enhanced session type detection
+    // Format activity data with session types
     const formatActivity = (activity: any) => {
       const distance = (activity.distance / 1000).toFixed(1);
       const duration = Math.round(activity.moving_time / 60);
@@ -112,11 +100,11 @@ serve(async (req) => {
         String(Math.round(((activity.moving_time / 60) / (activity.distance / 1000) % 1) * 60)).padStart(2, '0') 
         : 'N/A';
       
-      const sessionType = getSessionType(activity);
+      const sessionType = getSessionTypeLabel(activity.session_type);
       
       return {
         date: new Date(activity.start_date_local).toLocaleDateString('fr-FR'),
-        type: sessionType, // Now using the real AI recommendation type
+        type: sessionType,
         duration: `${duration} min`,
         distance: `${distance} km`,
         pace: `${pace} min/km`,
@@ -138,13 +126,13 @@ serve(async (req) => {
     
     const recentActivitiesFormatted = sortedActivities.map(formatActivity);
 
-    // Create enhanced context about recent training with real session types
+    // Create enhanced context about recent training with session types
     const contextText = recentActivitiesFormatted.length > 0 ? 
       `Contexte des 20 dernières activités (ordre chronologique - de la plus ancienne à la plus récente) :\n${recentActivitiesFormatted.map((act, i) => 
         `${i + 1}. ${act.date} - ${act.type} - ${act.distance} en ${act.duration} (${act.pace})${act.effortNotes ? ` - Notes: ${act.effortNotes}` : ''}`
       ).join('\n')}\n\n` : '';
 
-    // Enhanced prompt with real session types and better periodization understanding
+    // Enhanced prompt with session types
     const prompt = `Tu es un coach expert en course à pied, spécialisé en préparation sur 5 km, 10 km, semi-marathon et marathon. 
 
 ${contextText}Voici mes données issues de ma dernière séance Strava :
@@ -159,7 +147,7 @@ Dénivelé positif : ${currentActivityFormatted.elevation}
 Notes d'effort : ${currentActivityFormatted.effortNotes || 'Non renseignées'}
 Objectif actuel : Semi-marathon
 
-IMPORTANT : Analyse bien la progression chronologique de mes séances ci-dessus. Tu peux voir les vrais types d'entraînement que j'ai fait (Endurance fondamentale, Récupération active, Séance tempo, Fractionné, Sortie longue, Course libre).
+IMPORTANT : Analyse bien la progression chronologique de mes séances ci-dessus. Tu peux voir les vrais types d'entraînement que j'ai fait selon ma classification personnelle.
 
 En analysant cette séance dans le contexte de ma progression d'entraînement récente et en tenant compte de l'alternance intensité/récupération, donne-moi UNIQUEMENT une suggestion précise de la prochaine séance sous ce format exact :
 
@@ -205,7 +193,7 @@ Sois directif, pertinent et adapte ta réponse à ma progression récente. Si j'
       throw new Error('No suggestion received from OpenAI');
     }
 
-    console.log('Analysis completed successfully with enhanced session types');
+    console.log('Analysis completed successfully with activity-specific session types');
 
     return new Response(JSON.stringify({
       success: true,

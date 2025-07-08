@@ -17,6 +17,7 @@ interface WeeklyActivity {
   average_speed: number | null;
   effort_rating: number | null;
   effort_notes: string | null;
+  session_type?: string | null;
 }
 
 interface AIRecommendation {
@@ -114,10 +115,10 @@ const WeeklyCoachView: React.FC = () => {
       weekEnd.setDate(currentWeekStart.getDate() + 6);
       weekEnd.setHours(23, 59, 59, 999);
 
-      // Fetch activities for the week
+      // Fetch activities for the week - incluant le session_type
       const { data: activities, error: activitiesError } = await supabase
         .from('strava_activities')
-        .select('id, name, distance, moving_time, start_date_local, average_speed, effort_rating, effort_notes')
+        .select('id, name, distance, moving_time, start_date_local, average_speed, effort_rating, effort_notes, session_type')
         .eq('user_id', user.id)
         .in('type', ['Run', 'VirtualRun'])
         .gte('start_date_local', currentWeekStart.toISOString())
@@ -150,6 +151,10 @@ const WeeklyCoachView: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleActivityUpdate = () => {
+    fetchWeekData();
   };
 
   useEffect(() => {
@@ -265,6 +270,7 @@ const WeeklyCoachView: React.FC = () => {
           activities={getDayActivities(selectedDay)}
           recommendations={getDayRecommendations(selectedDay)}
           onClose={() => setSelectedDay(null)}
+          onActivityUpdate={handleActivityUpdate}
         />
       )}
     </div>
