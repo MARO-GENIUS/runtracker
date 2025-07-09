@@ -187,6 +187,7 @@ export type Database = {
           max_speed: number | null
           moving_time: number
           name: string
+          session_type: string | null
           start_date: string
           start_date_local: string
           suffer_score: number | null
@@ -212,6 +213,7 @@ export type Database = {
           max_speed?: number | null
           moving_time: number
           name: string
+          session_type?: string | null
           start_date: string
           start_date_local: string
           suffer_score?: number | null
@@ -237,6 +239,7 @@ export type Database = {
           max_speed?: number | null
           moving_time?: number
           name?: string
+          session_type?: string | null
           start_date?: string
           start_date_local?: string
           suffer_score?: number | null

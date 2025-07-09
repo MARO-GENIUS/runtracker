@@ -78,7 +78,7 @@ export const DaySessionDetail: React.FC<DaySessionDetailProps> = ({
     }
 
     try {
-      // Mettre à jour le type de session pour l'activité spécifique
+      // Mettre à jour le type de session dans la base de données avec la nouvelle colonne
       const { error } = await supabase
         .from('strava_activities')
         .update({ session_type: newType })
