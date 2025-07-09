@@ -117,24 +117,33 @@ Réponds uniquement avec ce JSON, sans ajout de texte libre. Objectif : que je p
     setError(null);
 
     try {
+      console.log('Génération de séance avec les données:', stravaData);
+      
       const prompt = createPrompt(stravaData);
+      console.log('Prompt créé, appel de la fonction Edge...');
       
       const { data, error: functionError } = await supabase.functions.invoke('generate-ai-workout', {
         body: { prompt }
       });
 
+      console.log('Réponse de la fonction Edge:', data, functionError);
+
       if (functionError) {
+        console.error('Erreur de la fonction Edge:', functionError);
         throw new Error(functionError.message || 'Erreur lors de la génération de la séance');
       }
 
-      if (data?.error) {
-        throw new Error(data.error);
+      if (data?.error || !data?.success) {
+        console.error('Erreur dans la réponse:', data?.error);
+        throw new Error(data?.error || 'Erreur lors de la génération de la séance');
       }
 
       if (data?.workout) {
+        console.log('Séance générée avec succès:', data.workout);
         setWorkout(data.workout);
         toast.success('Séance générée avec succès !');
       } else {
+        console.error('Pas de séance dans la réponse:', data);
         throw new Error('Réponse invalide de l\'IA');
       }
 
