@@ -42,72 +42,83 @@ const WeeklySummary = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 animate-scale-in">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
-        <div className="flex-1">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800">Résumé Hebdomadaire</h2>
-            {isStravaConnected && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSync}
-                disabled={weeklyLoading}
-                className="flex items-center gap-2 w-fit"
-              >
-                <RefreshCw className={`h-4 w-4 ${weeklyLoading ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">Sync Strava</span>
-              </Button>
-            )}
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-            <div>
-              <span className="text-2xl sm:text-3xl font-bold text-running-blue">{totalKm.toFixed(1)}</span>
-              <span className="text-gray-600 ml-1">km</span>
+    <div className="bg-white rounded-xl shadow-lg mobile-card animate-scale-in">
+      {/* Header mobile-first */}
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+          <div className="flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-800">Résumé Hebdomadaire</h2>
+              {isStravaConnected && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSync}
+                  disabled={weeklyLoading}
+                  className="mobile-button w-fit"
+                >
+                  <RefreshCw className={`h-4 w-4 ${weeklyLoading ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">Sync Strava</span>
+                  <span className="sm:hidden">Sync</span>
+                </Button>
+              )}
             </div>
-            <div className="text-sm text-gray-600">
-              <div>{averageDaily.toFixed(1)} km/jour en moyenne</div>
-              <div>{runningDays} jour{runningDays > 1 ? 's' : ''} de course</div>
+            
+            {/* Stats principales - Layout mobile optimisé */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl sm:text-3xl font-bold text-running-blue">{totalKm.toFixed(1)}</span>
+                <span className="text-gray-600">km</span>
+              </div>
+              <div className="text-sm text-gray-600 space-y-1">
+                <div className="mobile-text-hierarchy">{averageDaily.toFixed(1)} km/jour en moyenne</div>
+                <div className="mobile-text-hierarchy">{runningDays} jour{runningDays > 1 ? 's' : ''} de course</div>
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="flex justify-center sm:justify-end">
-          <WeekSelector 
-            currentWeek={selectedWeek}
-            onWeekChange={handleWeekChange}
-          />
+          
+          {/* Sélecteur de semaine - Responsive */}
+          <div className="flex justify-center sm:justify-end">
+            <WeekSelector 
+              currentWeek={selectedWeek}
+              onWeekChange={handleWeekChange}
+            />
+          </div>
         </div>
       </div>
 
       {weeklyError && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 mobile-text-hierarchy">
           {weeklyError}
         </div>
       )}
 
-      <div className="h-48 w-full">
+      {/* Graphique responsive - Hauteur adaptée mobile */}
+      <div className="h-40 sm:h-48 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={currentWeeklyData}>
+          <BarChart data={currentWeeklyData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
             <XAxis 
               dataKey="day" 
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: '#6b7280' }}
+              tick={{ fontSize: 11, fill: '#6b7280' }}
+              interval={0}
             />
             <YAxis 
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: '#6b7280' }}
+              tick={{ fontSize: 11, fill: '#6b7280' }}
+              width={30}
             />
             <Tooltip 
               formatter={(value: number) => [`${value} km`, 'Distance']}
-              labelStyle={{ color: '#374151' }}
+              labelStyle={{ color: '#374151', fontSize: '14px' }}
               contentStyle={{ 
                 backgroundColor: 'white', 
                 border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                borderRadius: '12px',
+                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+                fontSize: '14px'
               }}
             />
             <Bar 

@@ -2,6 +2,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import './styles/mobile-system.css';
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
 
@@ -94,6 +95,16 @@
   body {
     @apply bg-background text-foreground font-sans;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-size: var(--mobile-text-base);
+    line-height: var(--mobile-leading-normal);
+  }
+  
+  /* Optimisations pour la lecture mobile */
+  @media (max-width: 640px) {
+    body {
+      font-size: var(--mobile-text-sm);
+      line-height: var(--mobile-leading-relaxed);
+    }
   }
 }
 
@@ -113,6 +124,35 @@
   
   .hover-lift {
     @apply transition-transform duration-200 hover:scale-105;
+  }
+  
+  /* Utilitaires mobiles */
+  .mobile-container {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  .mobile-section {
+    @apply py-6 sm:py-8 lg:py-12;
+  }
+  
+  .mobile-card {
+    @apply p-4 sm:p-6 rounded-xl shadow-sm;
+  }
+  
+  .mobile-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6;
+  }
+  
+  .mobile-text-hierarchy {
+    @apply text-sm sm:text-base leading-relaxed;
+  }
+  
+  .mobile-button {
+    @apply px-4 py-3 text-sm font-medium rounded-lg min-h-[44px] flex items-center justify-center gap-2;
+  }
+  
+  .mobile-input {
+    @apply px-3 py-2 text-base rounded-lg min-h-[44px] border border-gray-300 focus:ring-2 focus:ring-running-blue focus:border-transparent;
   }
 }
 
