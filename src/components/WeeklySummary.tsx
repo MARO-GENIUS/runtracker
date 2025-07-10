@@ -31,7 +31,6 @@ const WeeklySummary = () => {
 
   const handleSync = async () => {
     await syncActivities();
-    // Rafraîchir les données hebdomadaires après la synchronisation
     setTimeout(() => {
       refetch();
     }, 1000);
@@ -42,89 +41,100 @@ const WeeklySummary = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg mobile-card animate-scale-in">
-      {/* Header mobile-first */}
-      <div className="flex flex-col gap-4 mb-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-          <div className="flex-1">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-800">Résumé Hebdomadaire</h2>
-              {isStravaConnected && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSync}
-                  disabled={weeklyLoading}
-                  className="mobile-button w-fit"
-                >
-                  <RefreshCw className={`h-4 w-4 ${weeklyLoading ? 'animate-spin' : ''}`} />
-                  <span className="hidden sm:inline">Sync Strava</span>
-                  <span className="sm:hidden">Sync</span>
-                </Button>
-              )}
-            </div>
-            
-            {/* Stats principales - Layout mobile optimisé */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl sm:text-3xl font-bold text-running-blue">{totalKm.toFixed(1)}</span>
-                <span className="text-gray-600">km</span>
-              </div>
-              <div className="text-sm text-gray-600 space-y-1">
-                <div className="mobile-text-hierarchy">{averageDaily.toFixed(1)} km/jour en moyenne</div>
-                <div className="mobile-text-hierarchy">{runningDays} jour{runningDays > 1 ? 's' : ''} de course</div>
-              </div>
-            </div>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 animate-fade-in">
+      {/* Header mobile optimisé */}
+      <div className="mb-6">
+        <div className="flex flex-col gap-4">
+          {/* Titre et bouton sync */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+              Résumé Hebdomadaire
+            </h2>
+            {isStravaConnected && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSync}
+                disabled={weeklyLoading}
+                className="mobile-touch-target-sm px-3 py-2 text-xs font-medium"
+              >
+                <RefreshCw className={`h-3 w-3 ${weeklyLoading ? 'animate-spin' : ''}`} />
+                <span className="ml-1 hidden sm:inline">Sync</span>
+              </Button>
+            )}
           </div>
           
-          {/* Sélecteur de semaine - Responsive */}
-          <div className="flex justify-center sm:justify-end">
-            <WeekSelector 
-              currentWeek={selectedWeek}
-              onWeekChange={handleWeekChange}
-            />
+          {/* Stats principales - Layout mobile vertical */}
+          <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
+            <div className="flex-1">
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-3xl sm:text-4xl font-bold text-running-blue">
+                  {totalKm.toFixed(1)}
+                </span>
+                <span className="text-lg text-gray-600">km</span>
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm text-gray-600">
+                  {averageDaily.toFixed(1)} km/jour en moyenne
+                </div>
+                <div className="text-sm text-gray-600">
+                  {runningDays} jour{runningDays > 1 ? 's' : ''} de course
+                </div>
+              </div>
+            </div>
+            
+            {/* Sélecteur de semaine */}
+            <div className="flex justify-center sm:justify-end">
+              <WeekSelector 
+                currentWeek={selectedWeek}
+                onWeekChange={handleWeekChange}
+              />
+            </div>
           </div>
         </div>
       </div>
 
       {weeklyError && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 mobile-text-hierarchy">
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
           {weeklyError}
         </div>
       )}
 
       {/* Graphique responsive - Hauteur adaptée mobile */}
-      <div className="h-40 sm:h-48 w-full">
+      <div className="h-48 sm:h-56 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={currentWeeklyData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+          <BarChart 
+            data={currentWeeklyData} 
+            margin={{ top: 8, right: 8, left: 8, bottom: 8 }}
+          >
             <XAxis 
               dataKey="day" 
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 11, fill: '#6b7280' }}
+              tick={{ fontSize: 12, fill: '#6b7280' }}
               interval={0}
             />
             <YAxis 
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 11, fill: '#6b7280' }}
-              width={30}
+              width={32}
             />
             <Tooltip 
               formatter={(value: number) => [`${value} km`, 'Distance']}
-              labelStyle={{ color: '#374151', fontSize: '14px' }}
+              labelStyle={{ color: '#374151', fontSize: '13px', fontWeight: '500' }}
               contentStyle={{ 
                 backgroundColor: 'white', 
                 border: '1px solid #e5e7eb',
                 borderRadius: '12px',
                 boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
-                fontSize: '14px'
+                fontSize: '13px'
               }}
             />
             <Bar 
               dataKey="distance" 
               fill="url(#gradientBar)"
-              radius={[4, 4, 0, 0]}
+              radius={[6, 6, 0, 0]}
             />
             <defs>
               <linearGradient id="gradientBar" x1="0" y1="0" x2="0" y2="1">
