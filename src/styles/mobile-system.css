@@ -29,7 +29,7 @@
   --mobile-touch-target: 44px;
   --mobile-touch-target-sm: 36px;
   
-  /* Header heights */
+  /* Header heights responsive */
   --mobile-header-height: 48px;
   --desktop-header-height: 64px;
 }
@@ -43,6 +43,16 @@
 .mobile-touch-target-sm {
   min-height: var(--mobile-touch-target-sm);
   min-width: var(--mobile-touch-target-sm);
+}
+
+.mobile-header-height {
+  height: var(--mobile-header-height);
+}
+
+@media (min-width: 640px) {
+  .mobile-header-height {
+    height: var(--desktop-header-height);
+  }
 }
 
 .mobile-scroll-smooth {
@@ -69,7 +79,7 @@
   padding: var(--mobile-space-sm) var(--mobile-space-md);
 }
 
-/* Animations mobiles fluides */
+/* Animations mobiles fluides et optimisées */
 @media (prefers-reduced-motion: no-preference) {
   .mobile-smooth-transition {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -77,6 +87,21 @@
   
   .mobile-smooth-transform {
     transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 
@@ -111,5 +136,29 @@
   :root {
     --mobile-space-md: 0.75rem;  /* 12px sur très petits écrans */
     --mobile-space-lg: 1rem;     /* 16px sur très petits écrans */
+    --mobile-header-height: 44px; /* Header encore plus compact */
+  }
+}
+
+/* Optimisations tactiles avancées */
+@media (hover: none) and (pointer: coarse) {
+  /* Styles spécifiques aux appareils tactiles */
+  .mobile-touch-target {
+    min-height: 48px; /* Touch target plus grand sur tactile */
+    min-width: 48px;
+  }
+  
+  .mobile-touch-target-sm {
+    min-height: 40px;
+    min-width: 40px;
+  }
+}
+
+/* Amélioration de la lisibilité sur mobile */
+@media (max-width: 640px) {
+  .mobile-text-hierarchy {
+    font-size: var(--mobile-text-sm);
+    line-height: var(--mobile-leading-relaxed);
+    font-weight: 500;
   }
 }
