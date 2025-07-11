@@ -174,6 +174,7 @@ const AIWorkoutGenerator: React.FC = () => {
                 <p className="text-gray-600 mt-1">{workout.objectif}</p>
               </div>
               <Badge variant="outline" className="flex items-center gap-1">
+                {getTypeIcon(workout.type)}
                 {workout.type}
               </Badge>
             </div>

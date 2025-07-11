@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -34,9 +34,22 @@ interface UseAIWorkoutGeneratorReturn {
 }
 
 export const useAIWorkoutGenerator = (): UseAIWorkoutGeneratorReturn => {
-  const [workout, setWorkout] = useState<GeneratedWorkout | null>(null);
+  const [workout, setWorkout] = useState<GeneratedWorkout | null>(() => {
+    // Load workout from localStorage on initialization
+    const savedWorkout = localStorage.getItem('ai-generated-workout');
+    return savedWorkout ? JSON.parse(savedWorkout) : null;
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Persist workout to localStorage whenever it changes
+  useEffect(() => {
+    if (workout) {
+      localStorage.setItem('ai-generated-workout', JSON.stringify(workout));
+    } else {
+      localStorage.removeItem('ai-generated-workout');
+    }
+  }, [workout]);
 
   const createPrompt = (stravaData: any): string => {
     const activitiesText = stravaData.activities.map((activity: any) => 
