@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -53,7 +52,7 @@ export const useAIWorkoutGenerator = (): UseAIWorkoutGeneratorReturn => {
 Ta mission est de me proposer une **nouvelle séance personnalisée**, prête à être exécutée, selon les consignes suivantes :
 
 1. **Analyse mon état de forme**, mon historique récent, et ma charge d'entraînement.
-2. **Prends en compte le type de ma dernière séance** pour diversifier les sollicitations.  
+2. **Prends en compte le type de mes dernières séances** pour diversifier les sollicitations.  
    Ex : si la dernière séance était une sortie longue, évite de proposer la même chose.
 3. Propose une **séance différente, complémentaire et utile à mon objectif**, en choisissant parmi :
    - Easy run
