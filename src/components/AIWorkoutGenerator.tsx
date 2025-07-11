@@ -41,6 +41,11 @@ const AIWorkoutGenerator: React.FC = () => {
     }
   };
 
+  const handleMarkAsCompleted = () => {
+    // Only clear the workout when user explicitly clicks "Mark as completed"
+    markAsCompleted();
+  };
+
   const getRPEColor = (rpe: number) => {
     if (rpe <= 3) return 'bg-green-100 text-green-800';
     if (rpe <= 6) return 'bg-yellow-100 text-yellow-800';
@@ -119,7 +124,8 @@ const AIWorkoutGenerator: React.FC = () => {
             </div>
           </div>
           
-          {!workout && (
+          {/* Only show generate button if no workout is currently displayed */}
+          {!workout && !loading && (
             <div className="text-center pt-4">
               <Button 
                 onClick={handleGenerateWorkout}
@@ -143,8 +149,20 @@ const AIWorkoutGenerator: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Séance générée */}
-      {workout && (
+      {/* Loading state - only show during generation */}
+      {loading && (
+        <Card>
+          <CardContent className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              <span>Génération de votre séance personnalisée...</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Séance générée - persists until user action */}
+      {workout && !loading && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -256,10 +274,10 @@ const AIWorkoutGenerator: React.FC = () => {
               </CollapsibleContent>
             </Collapsible>
 
-            {/* Boutons d'action */}
+            {/* Boutons d'action - only these buttons can clear the workout */}
             <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
               <Button 
-                onClick={markAsCompleted}
+                onClick={handleMarkAsCompleted}
                 className="bg-green-600 hover:bg-green-700 flex-1"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
@@ -283,12 +301,22 @@ const AIWorkoutGenerator: React.FC = () => {
         </Card>
       )}
 
-      {error && (
+      {/* Error state */}
+      {error && !loading && (
         <Card className="border-red-200">
           <CardContent className="pt-4">
             <div className="text-red-600">
               <p className="font-medium">Erreur lors de la génération :</p>
               <p className="mt-1">{error}</p>
+              <Button 
+                onClick={handleGenerateWorkout}
+                variant="outline"
+                className="mt-3"
+                disabled={loading}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Réessayer
+              </Button>
             </div>
           </CardContent>
         </Card>

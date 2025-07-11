@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -159,11 +160,16 @@ Réponds uniquement avec ce JSON, sans ajout de texte libre. Objectif : que je p
   const markAsCompleted = () => {
     if (workout) {
       toast.success(`Séance "${workout.nom_seance}" marquée comme effectuée !`);
+      // Explicitly clear the workout state only when user clicks "Mark as completed"
       setWorkout(null);
+      setError(null);
     }
   };
 
   const generateNewWorkout = async (stravaData: any) => {
+    // Explicitly clear the current workout and generate a new one only when user clicks "Generate new workout"
+    setWorkout(null);
+    setError(null);
     await generateWorkout(stravaData);
   };
 
