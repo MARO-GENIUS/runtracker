@@ -31,6 +31,7 @@ interface UseAIWorkoutGeneratorReturn {
   generateWorkout: (stravaData: any) => Promise<void>;
   markAsCompleted: () => void;
   generateNewWorkout: (stravaData: any) => Promise<void>;
+  lastGeneratedSessions: string[];
 }
 
 export const useAIWorkoutGenerator = (): UseAIWorkoutGeneratorReturn => {
@@ -41,6 +42,10 @@ export const useAIWorkoutGenerator = (): UseAIWorkoutGeneratorReturn => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastGeneratedSessions, setLastGeneratedSessions] = useState<string[]>(() => {
+    const saved = localStorage.getItem('ai-last-sessions');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // Persist workout to localStorage whenever it changes
   useEffect(() => {
@@ -51,60 +56,87 @@ export const useAIWorkoutGenerator = (): UseAIWorkoutGeneratorReturn => {
     }
   }, [workout]);
 
+  // Persist last sessions to localStorage
+  useEffect(() => {
+    localStorage.setItem('ai-last-sessions', JSON.stringify(lastGeneratedSessions));
+  }, [lastGeneratedSessions]);
+
   const createPrompt = (stravaData: any): string => {
-    const activitiesText = stravaData.activities.map((activity: any) => 
-      `${activity.date}: ${activity.distance_km}km en ${activity.duration_minutes}min (${activity.average_pace_min_per_km}/km, FC: ${activity.average_heart_rate || 'N/A'}, Type: ${activity.effort_type}, RPE: ${activity.rpe || 'N/A'})`
-    ).join('\n');
+    // Analyser la répartition des types d'effort sur les 30 derniers jours
+    const effortDistribution = stravaData.activities.reduce((acc: any, activity: any) => {
+      acc[activity.effort_type] = (acc[activity.effort_type] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Calculer la charge d'entraînement hebdomadaire
+    const totalDistance = stravaData.activities.reduce((sum: number, activity: any) => sum + activity.distance_km, 0);
+    const weeklyAverage = Math.round(totalDistance / 4.3); // Moyenne sur ~4.3 semaines
+
+    // Calculer les zones d'allure basées sur les records
+    const paceZones = calculatePaceZones(stravaData.personalRecords);
+
+    const activitiesText = stravaData.activities
+      .slice(0, 15) // Prendre les 15 dernières activités pour plus de détail
+      .map((activity: any) => 
+        `${activity.date}: ${activity.distance_km}km en ${activity.duration_minutes}min (${activity.average_pace_min_per_km}/km, FC: ${activity.average_heart_rate || 'N/A'}, Type: ${activity.effort_type}, RPE: ${activity.rpe || 'N/A'})`
+      ).join('\n');
 
     const recordsText = Object.entries(stravaData.personalRecords)
       .filter(([_, time]) => time !== null)
       .map(([distance, time]) => `${distance}: ${time}`)
       .join(', ');
 
-    return `Tu es un coach expert en course à pied. Je vais te fournir mes données des 30 derniers jours issues de Strava (distance, durée, fréquence cardiaque, puissance, RPE, etc.), mes records personnels (5K, 10K, semi, marathon), mon objectif à venir (ex : sub 45' au 10 km), et surtout le **type de ma dernière séance** (ex. : footing, intervalle, côtes…).
+    const effortAnalysis = Object.entries(effortDistribution)
+      .map(([type, count]) => `${type}: ${count} séances`)
+      .join(', ');
 
-Ta mission est de me proposer une **nouvelle séance personnalisée**, prête à être exécutée, selon les consignes suivantes :
+    const lastSessionsHistory = lastGeneratedSessions.length > 0 
+      ? `\nSÉANCES RÉCEMMENT GÉNÉRÉES (à éviter) : ${lastGeneratedSessions.join(', ')}`
+      : '';
 
-1. **Analyse mon état de forme**, mon historique récent, et ma charge d'entraînement.
-2. **Prends en compte le type de mes dernières séances** pour diversifier les sollicitations.  
-   Ex : si la dernière séance était une sortie longue, évite de proposer la même chose.
-3. Propose une **séance différente, complémentaire et utile à mon objectif**, en choisissant parmi :
-   - Easy run
-   - Long run
-   - Tempo run
-   - Threshold
-   - Intervals (courts ou longs)
-   - Hill repeats
-   - Fartlek
-   - Recovery run
-   - Taper session
-4. **Adapte la structure du retour au type de séance** :
-   - Si séance **tempo / intervalle / côtes** : donne chaque bloc avec distance/durée + allure + RPE + FC + récupération.  
-     Ex : \`4 x 400m à 3:50/km, récup 1'30\` ou \`100m à 4:12/km – repos 1'\`
-   - Si **endurance** : structure par paliers ou temps continus à intensité progressive
-   - Si **fartlek** : mélange de blocs libres mais toujours précis (ex : 2 min rapide – 1 min lent x 6)
-   - Pour chaque bloc : toujours indiquer **allure, RPE, FC cible, temps de récupération**
-5. Ajoute :
-   - Une **variante facile** (pour jour de fatigue)
-   - Une **variante difficile** (pour jour de forme)
-6. Termine par une **explication claire et pédagogique** de la logique d'entraînement
-7. Adapte toutes les intensités (FC, allure, puissance) à mes **données récentes + records + objectif**
+    return `Tu es un coach expert en course à pied spécialisé en périodisation. Analyse mes données et propose une séance adaptée et DIFFÉRENTE de mes habitudes récentes.
 
-DONNÉES DE MES 30 DERNIERS JOURS :
+📊 **ANALYSE DE MON ENTRAÎNEMENT (30 derniers jours)** :
+- Volume hebdomadaire moyen : ${weeklyAverage}km
+- Répartition des types d'effort : ${effortAnalysis}
+- Nombre total de séances : ${stravaData.activities.length}
+
+🏃‍♂️ **MES 15 DERNIÈRES ACTIVITÉS** :
 ${activitiesText}
 
-MES RECORDS PERSONNELS : ${recordsText || 'Aucun record enregistré'}
+⏱️ **MES RECORDS PERSONNELS** : ${recordsText || 'Aucun record enregistré'}
 
-MON OBJECTIF ACTUEL : ${stravaData.currentGoal ? `${stravaData.currentGoal.distance} en ${stravaData.currentGoal.target_time} pour le ${stravaData.currentGoal.target_date}` : 'Aucun objectif défini'}
+🎯 **MON OBJECTIF** : ${stravaData.currentGoal ? `${stravaData.currentGoal.distance} en ${stravaData.currentGoal.target_time} pour le ${stravaData.currentGoal.target_date}` : 'Aucun objectif défini'}
 
-TYPE DE MA DERNIÈRE SÉANCE : ${stravaData.lastSessionType || 'Aucune séance récente'}
+⚡ **ZONES D'ALLURE CALCULÉES** (basées sur mes records) :
+${paceZones}
 
-Réponds strictement avec ce format JSON :
+🔄 **TYPE DE MA DERNIÈRE SÉANCE** : ${stravaData.lastSessionType || 'Aucune séance récente'}${lastSessionsHistory}
+
+**RÈGLES DE PÉRIODISATION À RESPECTER** :
+1. Si j'ai fait beaucoup de séances d'endurance récemment → propose de la qualité (seuil/VMA)
+2. Si j'ai fait du travail intense récemment → propose de la récupération ou de l'endurance
+3. Si manque de variété → introduis un type de séance rare dans mes données
+4. ÉVITE absolument les types de séances récemment générées (voir historique ci-dessus)
+5. Adapte l'intensité à ma forme récente et mes objectifs
+
+**TYPES DE SÉANCES DISPONIBLES** :
+- Recovery run (allure très facile)
+- Easy run (endurance fondamentale)  
+- Long run (sortie longue)
+- Tempo run (allure seuil)
+- Threshold (seuil lactique)
+- Intervals VMA (répétitions courtes)
+- Intervals longues (1000m-2000m)
+- Hill repeats (côtes)
+- Fartlek (jeu d'allure)
+
+**FORMAT DE RÉPONSE** - JSON strict uniquement :
 
 {
   "nom_seance": "",
   "objectif": "",
-  "type": "easy run / tempo / interval / hills / long run / recovery / taper / autre",
+  "type": "recovery / easy run / long run / tempo / threshold / intervals VMA / intervals longues / hills / fartlek",
   "blocs": [
     {
       "description": "400m à 3:50/km",
@@ -112,17 +144,37 @@ Réponds strictement avec ce format JSON :
       "duree_minutes": null,
       "allure_min_per_km": "3:50",
       "frequence_cardiaque_cible": 168,
-      "puissance_cible": 385,
+      "puissance_cible": null,
       "rpe": 7,
       "recuperation": "1'30 marche ou footing léger"
     }
   ],
-  "variante_facile": "2 x 400m à 4:10/km au lieu de 4",
-  "variante_difficile": "6 x 400m à 3:45/km avec 1' récup",
-  "explication": "Cette séance développe la VO2max grâce à des répétitions proches de la VMA, tout en respectant une récupération suffisante. Elle s'intègre parfaitement après un footing léger ou une sortie longue."
-}
+  "variante_facile": "",
+  "variante_difficile": "",
+  "explication": "Analyse de l'intérêt de cette séance par rapport à mon historique et mes objectifs"
+}`;
+  };
 
-Réponds uniquement avec ce JSON, sans ajout de texte libre. Objectif : que je puisse exécuter la séance immédiatement sans avoir à l'interpréter.`;
+  const calculatePaceZones = (records: any): string => {
+    if (!records['5K'] && !records['10K']) return 'Zones d\'allure non calculables (manque de records)';
+    
+    // Utiliser le 5K ou 10K pour estimer la VMA
+    let vmaBase = '4:30'; // Valeur par défaut
+    
+    if (records['5K']) {
+      const [min, sec] = records['5K'].split(':').map(Number);
+      const totalSeconds = min * 60 + sec;
+      const pace5k = totalSeconds / 5; // pace en secondes par km
+      vmaBase = `${Math.floor(pace5k / 60)}:${String(Math.round(pace5k % 60)).padStart(2, '0')}`;
+    } else if (records['10K']) {
+      const [min, sec] = records['10K'].split(':').map(Number);
+      const totalSeconds = min * 60 + sec;
+      const pace10k = totalSeconds / 10;
+      const vmaSeconds = pace10k * 0.95; // Estimation VMA = 95% du 10K
+      vmaBase = `${Math.floor(vmaSeconds / 60)}:${String(Math.round(vmaSeconds % 60)).padStart(2, '0')}`;
+    }
+
+    return `VMA (100%) : ${vmaBase}/km | Seuil (90%) : calculé automatiquement | Endurance (75-80%) : calculé automatiquement`;
   };
 
   const generateWorkout = async (stravaData: any) => {
@@ -154,6 +206,13 @@ Réponds uniquement avec ce JSON, sans ajout de texte libre. Objectif : que je p
       if (data?.workout) {
         console.log('Séance générée avec succès:', data.workout);
         setWorkout(data.workout);
+        
+        // Ajouter le type de séance à l'historique (max 3 dernières)
+        setLastGeneratedSessions(prev => {
+          const newHistory = [data.workout.type, ...prev].slice(0, 3);
+          return newHistory;
+        });
+        
         toast.success('Séance générée avec succès !');
       } else {
         console.error('Pas de séance dans la réponse:', data);
@@ -192,6 +251,7 @@ Réponds uniquement avec ce JSON, sans ajout de texte libre. Objectif : que je p
     error,
     generateWorkout,
     markAsCompleted,
-    generateNewWorkout
+    generateNewWorkout,
+    lastGeneratedSessions
   };
 };

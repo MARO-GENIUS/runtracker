@@ -16,6 +16,9 @@ interface StravaData30Days {
 }
 
 interface PersonalRecordsData {
+  '400m': string | null;
+  '800m': string | null;
+  '1km': string | null;
   '5K': string | null;
   '10K': string | null;
   'Semi': string | null;
@@ -41,7 +44,7 @@ interface Last30DaysData {
 export const useStravaLast30Days = (): Last30DaysData => {
   const [data, setData] = useState<Last30DaysData>({
     activities: [],
-    personalRecords: { '5K': null, '10K': null, 'Semi': null, 'Marathon': null },
+    personalRecords: { '400m': null, '800m': null, '1km': null, '5K': null, '10K': null, 'Semi': null, 'Marathon': null },
     currentGoal: null,
     lastSessionType: null,
     loading: true,
@@ -60,15 +63,30 @@ export const useStravaLast30Days = (): Last30DaysData => {
   };
 
   const determineEffortType = (activity: any): string => {
-    // Logique basée sur l'allure, la durée et les données FC
+    // Logique améliorée basée sur allure, durée, FC et distance
     const paceSeconds = activity.moving_time / (activity.distance / 1000);
     const avgPaceMinPerKm = paceSeconds / 60;
+    const distanceKm = activity.distance / 1000;
+    const avgHR = activity.average_heartrate;
+    const maxHR = activity.max_heartrate;
     
-    if (activity.distance >= 15000) return 'sortie longue';
-    if (avgPaceMinPerKm < 4.5) return 'intervalle';
-    if (avgPaceMinPerKm < 5.5 && activity.distance < 8000) return 'seuil';
-    if (avgPaceMinPerKm > 6.5) return 'récupération';
-    return 'footing';
+    // Récupération active
+    if (avgPaceMinPerKm > 7 || (avgHR && avgHR < 130)) return 'récupération';
+    
+    // Sortie longue (>15km ou >90min)
+    if (distanceKm >= 15 || activity.moving_time > 5400) return 'sortie longue';
+    
+    // Intervalles courts (allure rapide + FC élevée)
+    if (avgPaceMinPerKm < 4.5 || (maxHR && avgHR && (maxHR - avgHR) > 20)) return 'intervalles VMA';
+    
+    // Seuil/Tempo (allure modérément élevée, effort soutenu)
+    if (avgPaceMinPerKm < 5.5 && distanceKm < 12 && activity.moving_time < 3600) return 'seuil/tempo';
+    
+    // Côtes (dépend de l'élévation)
+    if (activity.total_elevation_gain && activity.total_elevation_gain > distanceKm * 50) return 'côtes/fartlek';
+    
+    // Footing d'endurance par défaut
+    return 'footing endurance';
   };
 
   const updateLastSessionType = async (newType: string) => {
@@ -144,13 +162,16 @@ export const useStravaLast30Days = (): Last30DaysData => {
         .select('*')
         .eq('user_id', user.id);
 
-      const personalRecords: PersonalRecordsData = { '5K': null, '10K': null, 'Semi': null, 'Marathon': null };
+      const personalRecords: PersonalRecordsData = { '400m': null, '800m': null, '1km': null, '5K': null, '10K': null, 'Semi': null, 'Marathon': null };
       
       records?.forEach(record => {
         const minutes = Math.floor(record.time_seconds / 60);
-        const seconds = record.time_seconds % 60;
-        const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        const seconds = Math.round(record.time_seconds % 60);
+        const timeString = minutes > 0 ? `${minutes}:${seconds.toString().padStart(2, '0')}` : `${seconds}s`;
         
+        if (record.distance_meters === 400) personalRecords['400m'] = timeString;
+        if (record.distance_meters === 800) personalRecords['800m'] = timeString;
+        if (record.distance_meters === 1000) personalRecords['1km'] = timeString;
         if (record.distance_meters === 5000) personalRecords['5K'] = timeString;
         if (record.distance_meters === 10000) personalRecords['10K'] = timeString;
         if (record.distance_meters === 21097) personalRecords['Semi'] = timeString;
