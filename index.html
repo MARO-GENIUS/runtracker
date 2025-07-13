@@ -8,11 +8,40 @@
     <meta name="description" content="Dashboard interactif pour passionnés de course à pied - Visualisez vos performances et records" />
     <meta name="author" content="RunTracker Pro" />
 
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="msapplication-TileColor" content="#3b82f6" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-152.png" />
+    <link rel="apple-touch-icon" sizes="72x72" href="/icons/icon-72.png" />
+    <link rel="apple-touch-icon" sizes="96x96" href="/icons/icon-96.png" />
+    <link rel="apple-touch-icon" sizes="128x128" href="/icons/icon-128.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="384x384" href="/icons/icon-384.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png" />
+    
+    <!-- Apple Web App -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="RunTracker Pro" />
+    
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileImage" content="/icons/icon-144.png" />
+    <meta name="msapplication-config" content="none" />
+
+    <!-- Open Graph -->
     <meta property="og:title" content="RunTracker Pro - Dashboard Running" />
     <meta property="og:description" content="Visualisez vos performances de course et suivez vos records personnels" />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
 
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
@@ -21,5 +50,52 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('SW registered: ', registration);
+              
+              // Écouter les mises à jour du service worker
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (newWorker) {
+                  newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                      // Nouveau contenu disponible, demander à l'utilisateur de rafraîchir
+                      if (confirm('Une nouvelle version de RunTracker Pro est disponible. Voulez-vous la charger ?')) {
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        window.location.reload();
+                      }
+                    }
+                  });
+                }
+              });
+            })
+            .catch(registrationError => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+      
+      // Écouter l'événement beforeinstallprompt pour la bannière d'installation PWA
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('PWA: Install prompt available');
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // Optionnel : Afficher un bouton d'installation personnalisé
+        // showInstallButton();
+      });
+      
+      window.addEventListener('appinstalled', () => {
+        console.log('PWA: App installed successfully');
+        deferredPrompt = null;
+      });
+    </script>
   </body>
 </html>
