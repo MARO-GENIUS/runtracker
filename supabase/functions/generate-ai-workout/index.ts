@@ -29,13 +29,13 @@ serve(async (req) => {
       });
     }
 
-    const { prompt } = requestBody;
+    const { systemMessage, userMessage, trainingData } = requestBody;
 
-    if (!prompt) {
-      console.error('Prompt manquant dans la requête');
+    if (!systemMessage || !userMessage || !trainingData) {
+      console.error('Messages ou données d\'entraînement manquants dans la requête');
       return new Response(JSON.stringify({
         success: false,
-        error: 'Prompt requis'
+        error: 'Messages système et utilisateur + données d\'entraînement requis'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -54,7 +54,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('Appel à OpenAI avec le prompt...');
+    console.log('Appel à OpenAI avec les messages structurés...');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -66,8 +66,12 @@ serve(async (req) => {
         model: 'gpt-4o-mini',
         messages: [
           {
+            role: 'system',
+            content: systemMessage
+          },
+          {
             role: 'user',
-            content: prompt
+            content: `${userMessage}\n\nMes données d'entraînement :\n${trainingData}`
           }
         ],
         temperature: 0.3,
@@ -103,16 +107,19 @@ serve(async (req) => {
       });
     }
 
-    // Extraire le JSON de la réponse
+    // Extraire le JSON de la réponse avec le nouveau format "séance"
     let workout;
     try {
       // Chercher le JSON dans la réponse (au cas où il y aurait du texte autour)
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        workout = JSON.parse(jsonMatch[0]);
+        const parsed = JSON.parse(jsonMatch[0]);
+        // Adapter le format de réponse selon la nouvelle structure
+        workout = parsed.séance || parsed;
       } else {
         // Essayer de parser directement si pas de match trouvé
-        workout = JSON.parse(content);
+        const parsed = JSON.parse(content);
+        workout = parsed.séance || parsed;
       }
     } catch (parseError) {
       console.error('Erreur de parsing JSON:', parseError);
@@ -120,22 +127,13 @@ serve(async (req) => {
       
       // Créer une séance de fallback si le parsing échoue
       workout = {
-        nom_seance: "Séance d'endurance",
-        objectif: "Maintenir la forme physique",
-        type: "easy run",
-        blocs: [{
-          description: "Course continue facile",
-          distance_m: 5000,
-          duree_minutes: 30,
-          allure_min_per_km: "5:30",
-          frequence_cardiaque_cible: 150,
-          puissance_cible: null,
-          rpe: 5,
-          recuperation: "Pas de récupération nécessaire"
-        }],
-        variante_facile: "Réduire à 20 minutes",
-        variante_difficile: "Augmenter à 40 minutes",
-        explication: "Séance d'endurance de base pour maintenir la condition physique"
+        type: "Récupération",
+        structure: "Course continue facile pendant 30 minutes",
+        allure_cible: "5:30/km",
+        fc_cible: "140-150 bpm",
+        kilométrage_total: "5 km",
+        durée_estimée: "30 min",
+        justification: "Séance d'endurance de base pour maintenir la condition physique"
       };
     }
 

@@ -3,25 +3,14 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface WorkoutBlock {
-  description: string;
-  distance_m: number | null;
-  duree_minutes: number | null;
-  allure_min_per_km: string;
-  frequence_cardiaque_cible: number | null;
-  puissance_cible: number | null;
-  rpe: number;
-  recuperation: string;
-}
-
 interface GeneratedWorkout {
-  nom_seance: string;
-  objectif: string;
   type: string;
-  blocs: WorkoutBlock[];
-  variante_facile: string;
-  variante_difficile: string;
-  explication: string;
+  structure: string;
+  allure_cible: string;
+  fc_cible: string;
+  kilométrage_total: string;
+  durée_estimée: string;
+  justification: string;
 }
 
 interface UseAIWorkoutGeneratorReturn {
@@ -61,98 +50,30 @@ export const useAIWorkoutGenerator = (): UseAIWorkoutGeneratorReturn => {
     localStorage.setItem('ai-last-sessions', JSON.stringify(lastGeneratedSessions));
   }, [lastGeneratedSessions]);
 
-  const createPrompt = (stravaData: any): string => {
-    // Analyser la répartition des types d'effort sur les 30 derniers jours
-    const effortDistribution = stravaData.activities.reduce((acc: any, activity: any) => {
-      acc[activity.effort_type] = (acc[activity.effort_type] || 0) + 1;
-      return acc;
-    }, {});
-
-    // Calculer la charge d'entraînement hebdomadaire
-    const totalDistance = stravaData.activities.reduce((sum: number, activity: any) => sum + activity.distance_km, 0);
-    const weeklyAverage = Math.round(totalDistance / 4.3); // Moyenne sur ~4.3 semaines
-
-    // Calculer les zones d'allure basées sur les records
-    const paceZones = calculatePaceZones(stravaData.personalRecords);
-
-    const activitiesText = stravaData.activities
-      .slice(0, 15) // Prendre les 15 dernières activités pour plus de détail
-      .map((activity: any) => 
-        `${activity.date}: ${activity.distance_km}km en ${activity.duration_minutes}min (${activity.average_pace_min_per_km}/km, FC: ${activity.average_heart_rate || 'N/A'}, Type: ${activity.effort_type}, RPE: ${activity.rpe || 'N/A'})`
-      ).join('\n');
-
-    const recordsText = Object.entries(stravaData.personalRecords)
-      .filter(([_, time]) => time !== null)
-      .map(([distance, time]) => `${distance}: ${time}`)
-      .join(', ');
-
-    const effortAnalysis = Object.entries(effortDistribution)
-      .map(([type, count]) => `${type}: ${count} séances`)
-      .join(', ');
-
-    const lastSessionsHistory = lastGeneratedSessions.length > 0 
-      ? `\nSÉANCES RÉCEMMENT GÉNÉRÉES (à éviter) : ${lastGeneratedSessions.join(', ')}`
-      : '';
-
-    return `Tu es un coach expert en course à pied spécialisé en périodisation. Analyse mes données et propose une séance adaptée et DIFFÉRENTE de mes habitudes récentes.
-
-📊 **ANALYSE DE MON ENTRAÎNEMENT (30 derniers jours)** :
-- Volume hebdomadaire moyen : ${weeklyAverage}km
-- Répartition des types d'effort : ${effortAnalysis}
-- Nombre total de séances : ${stravaData.activities.length}
-
-🏃‍♂️ **MES 15 DERNIÈRES ACTIVITÉS** :
-${activitiesText}
-
-⏱️ **MES RECORDS PERSONNELS** : ${recordsText || 'Aucun record enregistré'}
-
-🎯 **MON OBJECTIF** : ${stravaData.currentGoal ? `${stravaData.currentGoal.distance} en ${stravaData.currentGoal.target_time} pour le ${stravaData.currentGoal.target_date}` : 'Aucun objectif défini'}
-
-⚡ **ZONES D'ALLURE CALCULÉES** (basées sur mes records) :
-${paceZones}
-
-🔄 **TYPE DE MA DERNIÈRE SÉANCE** : ${stravaData.lastSessionType || 'Aucune séance récente'}${lastSessionsHistory}
-
-**RÈGLES DE PÉRIODISATION À RESPECTER** :
-1. Si j'ai fait beaucoup de séances d'endurance récemment → propose de la qualité (seuil/VMA)
-2. Si j'ai fait du travail intense récemment → propose de la récupération ou de l'endurance
-3. Si manque de variété → introduis un type de séance rare dans mes données
-4. ÉVITE absolument les types de séances récemment générées (voir historique ci-dessus)
-5. Adapte l'intensité à ma forme récente et mes objectifs
-
-**TYPES DE SÉANCES DISPONIBLES** :
-- Recovery run (allure très facile)
-- Easy run (endurance fondamentale)  
-- Long run (sortie longue)
-- Tempo run (allure seuil)
-- Threshold (seuil lactique)
-- Intervals VMA (répétitions courtes)
-- Intervals longues (1000m-2000m)
-- Hill repeats (côtes)
-- Fartlek (jeu d'allure)
-
-**FORMAT DE RÉPONSE** - JSON strict uniquement :
-
-{
-  "nom_seance": "",
-  "objectif": "",
-  "type": "recovery / easy run / long run / tempo / threshold / intervals VMA / intervals longues / hills / fartlek",
-  "blocs": [
-    {
-      "description": "400m à 3:50/km",
-      "distance_m": 400,
-      "duree_minutes": null,
-      "allure_min_per_km": "3:50",
-      "frequence_cardiaque_cible": 168,
-      "puissance_cible": null,
-      "rpe": 7,
-      "recuperation": "1'30 marche ou footing léger"
-    }
-  ],
-  "variante_facile": "",
-  "variante_difficile": "",
-  "explication": "Analyse de l'intérêt de cette séance par rapport à mon historique et mes objectifs"
-}`;
+  const formatTrainingData = (stravaData: any): string => {
+    return stravaData.activities.map((activity: any) => {
+      const date = new Date(activity.date).toLocaleDateString('fr-FR');
+      const sessionType = activity.effort_type || 'Non défini';
+      const duration = Math.round(activity.duration_minutes);
+      const distance = activity.distance_km.toFixed(1);
+      const pace = activity.average_pace_min_per_km;
+      const avgHr = activity.average_heart_rate || 'N/A';
+      const maxHr = activity.max_heart_rate || 'N/A';
+      const rpe = activity.rpe || 'N/A';
+      
+      return `Date: ${date}
+Type de séance: ${sessionType}
+Durée: ${duration} minutes
+Distance: ${distance} km
+Allure moyenne: ${pace}/km
+Allures par segment: ${pace}/km (donnée simplifiée)
+Fréquence cardiaque moyenne: ${avgHr} bpm
+Fréquence cardiaque maximale: ${maxHr} bpm
+RPE: ${rpe}
+Objectif associé: ${stravaData.currentGoal ? 
+  `${stravaData.currentGoal.distance} en ${stravaData.currentGoal.target_time} le ${new Date(stravaData.currentGoal.target_date).toLocaleDateString('fr-FR')}` : 
+  'Aucun objectif défini'}`;
+    }).join('\n\n');
   };
 
   const calculatePaceZones = (records: any): string => {
@@ -184,11 +105,57 @@ ${paceZones}
     try {
       console.log('Génération de séance avec les données:', stravaData);
       
-      const prompt = createPrompt(stravaData);
-      console.log('Prompt créé, appel de la fonction Edge...');
+      const systemMessage = "Tu es un coach sportif expert en course à pied. Tu analyses les données d'entraînement d'un coureur sur les 30 derniers jours afin de lui proposer un plan d'entraînement optimisé pour atteindre son objectif à venir. Ta réponse doit être claire, bien structurée, exploitable par une application, et adaptée au contenu des séances passées.";
+      
+      const userMessage = `Voici mes données d'entraînement des 30 derniers jours, incluant pour chaque séance :
+- Date
+- Type de séance (ex : récupération, intervalle, tempo…)
+- Durée (en minutes)
+- Distance (en km)
+- Allure moyenne (en min/km)
+- Allures par segment (en min/km)
+- Fréquence cardiaque moyenne et maximale (en bpm)
+- RPE (échelle de 1 à 10)
+- Objectif associé (si applicable) : [distance], [temps visé], [date]
+
+Objectif à venir : ${stravaData.currentGoal ? 
+  `${stravaData.currentGoal.distance} en ${stravaData.currentGoal.target_time} le ${new Date(stravaData.currentGoal.target_date).toLocaleDateString('fr-FR')}` : 
+  'Aucun objectif défini pour le moment'}
+
+Génère la prochaine séance d'entraînement, adaptée à mon historique. La réponse doit contenir :
+- Type de séance (ex : seuil, récupération, intervalle…)
+- Structure précise (ex : 6×400m à 4:30/km, récupération 1min)
+- Allure cible
+- Fréquence cardiaque cible
+- Nombre de kilomètres totaux
+- Durée estimée
+- Justification de la séance : pourquoi ce type de séance maintenant ?
+- Cohérence avec mes séances précédentes (pas deux séances dures à la suite, etc.)
+
+Format de sortie requis :
+{
+  "séance": {
+    "type": "Intervalle",
+    "structure": "6×400m à 4:30/km, récup 1min",
+    "allure_cible": "4:30/km",
+    "fc_cible": "150-165 bpm",
+    "kilométrage_total": "7 km",
+    "durée_estimée": "40 min",
+    "justification": "Travail de VMA après deux jours de récupération active."
+  }
+}
+Merci de t'adapter au niveau et à la fatigue du coureur selon les données fournies.`;
+
+      const trainingData = formatTrainingData(stravaData);
+      
+      console.log('Messages créés, appel de la fonction Edge...');
       
       const { data, error: functionError } = await supabase.functions.invoke('generate-ai-workout', {
-        body: { prompt }
+        body: { 
+          systemMessage,
+          userMessage,
+          trainingData
+        }
       });
 
       console.log('Réponse de la fonction Edge:', data, functionError);
@@ -231,7 +198,7 @@ ${paceZones}
 
   const markAsCompleted = () => {
     if (workout) {
-      toast.success(`Séance "${workout.nom_seance}" marquée comme effectuée !`);
+      toast.success(`Séance "${workout.type}" marquée comme effectuée !`);
       // Explicitly clear the workout state only when user clicks "Mark as completed"
       setWorkout(null);
       setError(null);

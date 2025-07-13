@@ -169,9 +169,9 @@ const AIWorkoutGenerator: React.FC = () => {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   {getTypeIcon(workout.type)}
-                  {workout.nom_seance}
+                  {workout.type}
                 </CardTitle>
-                <p className="text-gray-600 mt-1">{workout.objectif}</p>
+                <p className="text-gray-600 mt-1">{workout.structure}</p>
               </div>
               <Badge variant="outline" className="flex items-center gap-1">
                 {getTypeIcon(workout.type)}
@@ -198,52 +198,51 @@ const AIWorkoutGenerator: React.FC = () => {
               </TabsList>
               
               <TabsContent value="normal" className="mt-6">
-                <div className="space-y-4">
-                  {workout.blocs.map((bloc, index) => (
-                    <Card key={index} className="border-l-4 border-l-blue-500">
-                      <CardContent className="pt-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                          <div>
-                            <p className="text-sm font-medium text-gray-600">Description</p>
-                            <p className="font-semibold">{bloc.description}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-600">Allure</p>
-                            <p className="font-semibold flex items-center gap-1">
-                              <Timer className="h-4 w-4" />
-                              {bloc.allure_min_per_km}/km
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-600">FC Cible</p>
-                            <p className="font-semibold flex items-center gap-1">
-                              <Heart className="h-4 w-4 text-red-500" />
-                              {bloc.frequence_cardiaque_cible || 'N/A'} bpm
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-600">RPE</p>
-                            <Badge className={getRPEColor(bloc.rpe)}>
-                              {bloc.rpe}/10
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="mt-3 p-2 bg-gray-50 rounded">
-                          <p className="text-sm">
-                            <span className="font-medium">Récupération:</span> {bloc.recuperation}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                <Card className="border-l-4 border-l-blue-500">
+                  <CardContent className="pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Structure</p>
+                        <p className="font-semibold">{workout.structure}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Allure cible</p>
+                        <p className="font-semibold flex items-center gap-1">
+                          <Timer className="h-4 w-4" />
+                          {workout.allure_cible}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">FC Cible</p>
+                        <p className="font-semibold flex items-center gap-1">
+                          <Heart className="h-4 w-4 text-red-500" />
+                          {workout.fc_cible}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Durée</p>
+                        <p className="font-semibold">{workout.durée_estimée}</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Kilométrage total</p>
+                        <p className="font-semibold">{workout.kilométrage_total}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Justification</p>
+                        <p className="text-sm">{workout.justification}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
               
               <TabsContent value="facile" className="mt-6">
                 <Card className="border-l-4 border-l-green-500">
                   <CardContent className="pt-4">
                     <p className="text-green-800 font-medium">Variante facile :</p>
-                    <p className="mt-2">{workout.variante_facile}</p>
+                    <p className="mt-2">Réduire l'intensité et la durée de 20%</p>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -252,7 +251,7 @@ const AIWorkoutGenerator: React.FC = () => {
                 <Card className="border-l-4 border-l-red-500">
                   <CardContent className="pt-4">
                     <p className="text-red-800 font-medium">Variante difficile :</p>
-                    <p className="mt-2">{workout.variante_difficile}</p>
+                    <p className="mt-2">Augmenter l'intensité et la durée de 20%</p>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -269,7 +268,7 @@ const AIWorkoutGenerator: React.FC = () => {
               <CollapsibleContent className="mt-4">
                 <Card className="bg-blue-50">
                   <CardContent className="pt-4">
-                    <p className="text-blue-900">{workout.explication}</p>
+                    <p className="text-blue-900">{workout.justification}</p>
                   </CardContent>
                 </Card>
               </CollapsibleContent>
