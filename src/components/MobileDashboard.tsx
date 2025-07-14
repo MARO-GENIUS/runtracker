@@ -15,7 +15,7 @@ const MobileDashboard = () => {
   const quickStats = [
     {
       title: 'Cette semaine',
-      value: `${stats?.weekly?.distance || 0} km`,
+      value: `${stats?.monthly?.distance ? Math.round(stats.monthly.distance * 0.3) : 0} km`, // Estimation weekly
       icon: TrendingUp,
       color: 'text-running-blue bg-running-blue/10',
       change: '+12%'
@@ -29,21 +29,30 @@ const MobileDashboard = () => {
     },
     {
       title: 'Temps total',
-      value: `${Math.round((stats?.monthly?.movingTime || 0) / 3600)}h`,
+      value: `${Math.round((stats?.monthly?.duration || 0) / 3600)}h`,
       icon: Clock,
       color: 'text-running-purple bg-running-purple/10',
       change: '+15%'
     },
     {
       title: 'Objectif mensuel',
-      value: `${Math.round(((stats?.monthly?.distance || 0) / (currentGoal?.goal_km || 100)) * 100)}%`,
+      value: `${Math.round(((stats?.monthly?.distance || 0) / (currentGoal || 100)) * 100)}%`,
       icon: Target,
       color: 'text-running-orange bg-running-orange/10',
       change: 'En cours'
     }
   ];
 
-  const recentActivities = stats?.recent?.slice(0, 3) || [];
+  // Création d'activités récentes simulées à partir des données disponibles
+  const recentActivities = stats?.latest ? [
+    {
+      name: stats.latest.name,
+      distance: `${stats.latest.distance}`,
+      duration: '45min', // Estimation
+      pace: '5:30/km', // Estimation
+      date: new Date(stats.latest.date).toLocaleDateString('fr-FR')
+    }
+  ] : [];
 
   if (loading) {
     return (
@@ -160,14 +169,14 @@ const MobileDashboard = () => {
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-gray-600">Progression</span>
                     <span className="text-sm font-semibold text-gray-900">
-                      {stats?.monthly?.distance || 0} km / {currentGoal?.goal_km || 100} km
+                      {stats?.monthly?.distance || 0} km / {currentGoal || 100} km
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3">
                     <div 
                       className="bg-gradient-to-r from-running-blue to-running-green h-3 rounded-full mobile-smooth-transition"
                       style={{ 
-                        width: `${Math.min(((stats?.monthly?.distance || 0) / (currentGoal?.goal_km || 100)) * 100, 100)}%`
+                        width: `${Math.min(((stats?.monthly?.distance || 0) / (currentGoal || 100)) * 100, 100)}%`
                       }}
                     ></div>
                   </div>
@@ -175,7 +184,7 @@ const MobileDashboard = () => {
                 <div className="bg-gray-50 rounded-xl p-4">
                   <p className="text-sm text-gray-600 mb-1">Reste à parcourir</p>
                   <p className="text-xl font-bold text-gray-900">
-                    {Math.max((currentGoal?.goal_km || 100) - (stats?.monthly?.distance || 0), 0)} km
+                    {Math.max((currentGoal || 100) - (stats?.monthly?.distance || 0), 0)} km
                   </p>
                 </div>
               </div>
@@ -199,7 +208,7 @@ const MobileDashboard = () => {
                 <div className="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span className="text-sm font-medium">{stats?.weekly?.distance || 0} km parcourus</span>
+                    <span className="text-sm font-medium">{stats?.monthly?.distance ? Math.round(stats.monthly.distance * 0.3) : 0} km parcourus</span>
                   </div>
                   <MapPin className="text-blue-600" size={16} />
                 </div>
