@@ -1,11 +1,19 @@
 
+import { useIsMobile } from '@/hooks/useIsMobile';
 import ActivitiesView from '../components/ActivitiesView';
+import MobileActivitiesView from '../components/MobileActivitiesView';
 import Layout from '../components/Layout';
 
 const Activities = () => {
+  const isMobile = useIsMobile();
+
   return (
     <Layout>
-      <ActivitiesView />
+      {isMobile ? (
+        <MobileActivitiesView />
+      ) : (
+        <ActivitiesView />
+      )}
     </Layout>
   );
 };
