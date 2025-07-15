@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,20 +16,26 @@ import {
   ChevronDown,
   ChevronUp,
   Activity,
-  Trophy
+  Trophy,
+  AlertCircle
 } from 'lucide-react';
 import { useStravaLast30Days } from '@/hooks/useStravaLast30Days';
 import { useAIWorkoutGenerator } from '@/hooks/useAIWorkoutGenerator';
 import { usePersonalRecords } from '@/hooks/usePersonalRecords';
+import { calculateTrainingZones } from '@/utils/trainingZones';
 import LastSessionTypeSelector from './LastSessionTypeSelector';
 
 const AIWorkoutGenerator: React.FC = () => {
   const [selectedVariant, setSelectedVariant] = useState<'normal' | 'facile' | 'difficile'>('normal');
   const [isExplanationOpen, setIsExplanationOpen] = useState(false);
+  const [showZones, setShowZones] = useState(false);
   
   const stravaData = useStravaLast30Days();
   const { records: personalRecords, loading: recordsLoading, error: recordsError } = usePersonalRecords();
   const { workout, loading, error, generateWorkout, markAsCompleted, generateNewWorkout } = useAIWorkoutGenerator();
+
+  // Calculer les zones d'entraînement
+  const trainingZones = personalRecords ? calculateTrainingZones(personalRecords) : null;
 
   const handleGenerateWorkout = () => {
     if (!stravaData.loading && stravaData.activities.length > 0) {
@@ -133,6 +138,64 @@ const AIWorkoutGenerator: React.FC = () => {
               <p className="text-lg font-semibold text-orange-600">{personalRecords.length}</p>
             </div>
           </div>
+
+          {/* Affichage des zones d'entraînement personnalisées */}
+          {trainingZones && (
+            <div className="mt-4">
+              <Collapsible open={showZones} onOpenChange={setShowZones}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" className="w-full flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      <span>Vos zones d'intensité personnalisées</span>
+                    </div>
+                    {showZones ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="p-3 border rounded-lg bg-red-50 border-red-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Zap className="h-4 w-4 text-red-600" />
+                        <span className="font-semibold text-red-800">VMA</span>
+                      </div>
+                      <p className="text-sm text-red-700">{trainingZones.vma.min}/km - {trainingZones.vma.max}/km</p>
+                    </div>
+                    <div className="p-3 border rounded-lg bg-orange-50 border-orange-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Target className="h-4 w-4 text-orange-600" />
+                        <span className="font-semibold text-orange-800">Seuil</span>
+                      </div>
+                      <p className="text-sm text-orange-700">{trainingZones.seuil.min}/km - {trainingZones.seuil.max}/km</p>
+                    </div>
+                    <div className="p-3 border rounded-lg bg-yellow-50 border-yellow-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Timer className="h-4 w-4 text-yellow-600" />
+                        <span className="font-semibold text-yellow-800">Tempo</span>
+                      </div>
+                      <p className="text-sm text-yellow-700">{trainingZones.tempo.min}/km - {trainingZones.tempo.max}/km</p>
+                    </div>
+                    <div className="p-3 border rounded-lg bg-green-50 border-green-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Heart className="h-4 w-4 text-green-600" />
+                        <span className="font-semibold text-green-800">Endurance</span>
+                      </div>
+                      <p className="text-sm text-green-700">{trainingZones.endurance.min}/km - {trainingZones.endurance.max}/km</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <AlertCircle className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-800">Zones calculées automatiquement</span>
+                    </div>
+                    <p className="text-xs text-blue-700">
+                      Ces allures sont basées sur vos records personnels et seront utilisées par l'IA pour générer des séances précises.
+                    </p>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+          )}
           
           {/* Only show generate button if no workout is currently displayed */}
           {!workout && !loading && (

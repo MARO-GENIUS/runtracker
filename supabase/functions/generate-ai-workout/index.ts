@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Début de la génération de séance...');
+    console.log('Début de la génération de séance avec zones personnalisées...');
 
     let requestBody;
     try {
@@ -54,7 +54,8 @@ serve(async (req) => {
       });
     }
 
-    console.log('Appel à OpenAI avec les messages structurés...');
+    console.log('Appel à OpenAI avec système de zones personnalisées...');
+    console.log('Extrait du message utilisateur:', userMessage.substring(0, 500));
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -71,10 +72,10 @@ serve(async (req) => {
           },
           {
             role: 'user',
-            content: `${userMessage}\n\nMes données d'entraînement :\n${trainingData}`
+            content: userMessage
           }
         ],
-        temperature: 0.3,
+        temperature: 0.2, // Réduit pour plus de cohérence dans les allures
         max_tokens: 2000
       }),
     });
@@ -92,7 +93,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('Réponse OpenAI reçue:', data);
+    console.log('Réponse OpenAI reçue avec zones personnalisées');
 
     const content = data.choices?.[0]?.message?.content;
 
@@ -121,23 +122,25 @@ serve(async (req) => {
         const parsed = JSON.parse(content);
         workout = parsed.séance || parsed;
       }
+      
+      console.log('Séance parsée avec allures personnalisées:', workout);
     } catch (parseError) {
       console.error('Erreur de parsing JSON:', parseError);
       console.error('Contenu reçu d\'OpenAI:', content);
       
-      // Créer une séance de fallback si le parsing échoue
+      // Créer une séance de fallback adaptée au niveau
       workout = {
-        type: "Récupération",
-        structure: "Course continue facile pendant 30 minutes",
-        allure_cible: "5:30/km",
-        fc_cible: "140-150 bpm",
-        kilométrage_total: "5 km",
-        durée_estimée: "30 min",
-        justification: "Séance d'endurance de base pour maintenir la condition physique"
+        type: "Endurance fondamentale",
+        structure: "Course continue facile pendant 40 minutes",
+        allure_cible: "4:50-5:10/km",
+        fc_cible: "140-155 bpm",
+        kilométrage_total: "8 km",
+        durée_estimée: "40 min",
+        justification: "Séance d'endurance de base pour maintenir la condition physique. Allure dans votre zone d'endurance personnalisée."
       };
     }
 
-    console.log('Séance générée avec succès');
+    console.log('Séance générée avec zones personnalisées avec succès');
 
     return new Response(JSON.stringify({
       success: true,

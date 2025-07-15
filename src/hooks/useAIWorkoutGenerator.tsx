@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { usePersonalRecords } from '@/hooks/usePersonalRecords';
+import { calculateTrainingZones, formatTrainingZonesForAI } from '@/utils/trainingZones';
 
 interface GeneratedWorkout {
   type: string;
@@ -58,10 +58,16 @@ export const useAIWorkoutGenerator = (): UseAIWorkoutGeneratorReturn => {
       return 'Aucun record personnel disponible pour le moment.';
     }
 
-    // Map distance meters to standard formats
+    // Map distance meters to standard formats avec tous les records importants
     const distanceMap: { [key: number]: string } = {
+      400: '400m',
+      800: '800m', 
+      1000: '1000m',
+      1609: '1 mile',
+      3000: '3000m',
       5000: '5 km',
       10000: '10 km',
+      15000: '15 km',
       21097: 'Semi-marathon',
       42195: 'Marathon'
     };
@@ -74,7 +80,7 @@ export const useAIWorkoutGenerator = (): UseAIWorkoutGeneratorReturn => {
       })
       .join('\n');
 
-    return recordsText || 'Aucun record personnel sur les distances standards (5km, 10km, semi-marathon, marathon).';
+    return recordsText || 'Aucun record personnel sur les distances standards.';
   };
 
   const formatTrainingData = (stravaData: any): string => {
@@ -93,7 +99,6 @@ Type de séance: ${sessionType}
 Durée: ${duration} minutes
 Distance: ${distance} km
 Allure moyenne: ${pace}/km
-Allures par segment: ${pace}/km (donnée simplifiée)
 Fréquence cardiaque moyenne: ${avgHr} bpm
 Fréquence cardiaque maximale: ${maxHr} bpm
 RPE: ${rpe}
@@ -116,60 +121,72 @@ Objectif associé: ${stravaData.currentGoal ?
     try {
       console.log('Génération de séance avec les données:', stravaData);
       
-      const systemMessage = "Tu es un coach sportif expert en course à pied. Tu analyses les données d'entraînement d'un coureur sur les 30 derniers jours, ainsi que ses records personnels, afin de lui proposer un plan d'entraînement optimisé pour atteindre son objectif. Ta réponse doit être claire, bien structurée, exploitable par une application, et adaptée aux séances passées, à la fatigue récente et aux capacités maximales du coureur.";
+      // Calculer les zones d'entraînement personnalisées
+      const trainingZones = calculateTrainingZones(personalRecords);
+      const zonesText = trainingZones ? formatTrainingZonesForAI(trainingZones) : '';
       
-      const userMessage = `Voici mes données d'entraînement des 30 derniers jours, incluant pour chaque séance :
-- Date
-- Type de séance (ex : récupération, intervalle, tempo…)
-- Durée (en minutes)
-- Distance (en km)
-- Allure moyenne (en min/km)
-- Allures par segment (en min/km)
-- Fréquence cardiaque moyenne et maximale (en bpm)
-- RPE (échelle de 1 à 10)
-- Objectif associé (si applicable) : [distance], [temps visé], [date]
+      console.log('Zones d\'entraînement calculées:', trainingZones);
+      
+      const systemMessage = `Tu es un coach sportif expert en course à pied avec une expertise particulière dans la personnalisation des allures d'entraînement. 
 
-Voici également mes records personnels sur différentes distances :
+Tu analyses les données d'entraînement d'un coureur sur les 30 derniers jours, ainsi que ses records personnels, afin de lui proposer un plan d'entraînement optimisé pour atteindre son objectif.
+
+RÈGLES CRITIQUES POUR LES ALLURES :
+1. Tu DOIS utiliser les zones d'intensité calculées à partir des records personnels du coureur
+2. Les allures proposées doivent être PRÉCISES et adaptées au niveau réel du coureur
+3. RESPECTE STRICTEMENT les zones selon le type de séance :
+   - VMA/Intervalle : utilise la zone VMA fournie
+   - Seuil : utilise la zone SEUIL fournie  
+   - Tempo : utilise la zone TEMPO fournie
+   - Endurance/Récupération : utilise la zone ENDURANCE fournie
+
+4. Ne propose JAMAIS d'allures génériques ou approximatives
+5. Justifie toujours tes choix d'allure en référence aux zones calculées
+
+Ta réponse doit être claire, bien structurée, exploitable par une application, et adaptée aux séances passées, à la fatigue récente et aux capacités maximales du coureur.`;
+      
+      const userMessage = `Voici mes données d'entraînement des 30 derniers jours :
+
+RECORDS PERSONNELS :
 ${formatPersonalRecords()}
+
+${zonesText}
+
+HISTORIQUE D'ENTRAÎNEMENT (30 derniers jours) :
+${formatTrainingData(stravaData)}
 
 Objectif à venir : ${stravaData.currentGoal ? 
   `${stravaData.currentGoal.distance} en ${stravaData.currentGoal.target_time} le ${new Date(stravaData.currentGoal.target_date).toLocaleDateString('fr-FR')}` : 
   'Aucun objectif défini pour le moment'}
 
-Génère la prochaine séance d'entraînement, adaptée à mon historique, ma fatigue, mon niveau et mes records. La réponse doit contenir :
-- Type de séance (ex : seuil, récupération, intervalle…)
-- Structure précise (ex : 6×400m à 4:30/km, récupération 1min)
-- Allure cible
-- Fréquence cardiaque cible
-- Nombre de kilomètres totaux
-- Durée estimée
-- Justification de la séance : pourquoi ce type de séance maintenant ?
-- Cohérence avec mes séances précédentes (ex : pas deux séances intenses consécutives)
-- Adéquation avec mes records : ajuster les allures proposées en fonction de mes performances maximales
+CONSIGNES IMPORTANTES :
+- Utilise OBLIGATOIREMENT les zones d'intensité calculées ci-dessus
+- Les allures doivent correspondre EXACTEMENT au type de séance demandé
+- Pour une séance seuil, utilise la zone SEUIL (pas plus lent !)
+- Pour du VMA, utilise la zone VMA
+- Adapte selon ma fatigue et mes séances récentes
+- Justifie tes choix d'allure en référence à mes zones personnalisées
 
 Format de sortie requis :
 {
   "séance": {
-    "type": "Intervalle",
-    "structure": "6×400m à 4:30/km, récup 1min",
-    "allure_cible": "4:30/km",
-    "fc_cible": "150-165 bpm",
-    "kilométrage_total": "7 km",
-    "durée_estimée": "40 min",
-    "justification": "Travail de VMA après deux jours de récupération active."
+    "type": "Type de séance",
+    "structure": "Structure détaillée de la séance",
+    "allure_cible": "Allure basée sur mes zones personnalisées",
+    "fc_cible": "Zone de FC adaptée",
+    "kilométrage_total": "Distance totale",
+    "durée_estimée": "Durée estimée",
+    "justification": "Justification incluant pourquoi cette allure correspond à ma zone d'intensité"
   }
-}
-Merci de t'adapter au niveau et à la fatigue du coureur selon les données fournies et ses records personnels.`;
+}`;
 
-      const trainingData = formatTrainingData(stravaData);
-      
-      console.log('Messages créés, appel de la fonction Edge...');
+      console.log('Messages créés avec zones personnalisées, appel de la fonction Edge...');
       
       const { data, error: functionError } = await supabase.functions.invoke('generate-ai-workout', {
         body: { 
           systemMessage,
           userMessage,
-          trainingData
+          trainingData: formatTrainingData(stravaData)
         }
       });
 
