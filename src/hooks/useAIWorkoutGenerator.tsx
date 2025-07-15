@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { usePersonalRecords } from '@/hooks/usePersonalRecords';
 
 interface GeneratedWorkout {
   type: string;
@@ -36,6 +37,8 @@ export const useAIWorkoutGenerator = (): UseAIWorkoutGeneratorReturn => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const { records: personalRecords, loading: recordsLoading } = usePersonalRecords();
+
   // Persist workout to localStorage whenever it changes
   useEffect(() => {
     if (workout) {
@@ -49,6 +52,30 @@ export const useAIWorkoutGenerator = (): UseAIWorkoutGeneratorReturn => {
   useEffect(() => {
     localStorage.setItem('ai-last-sessions', JSON.stringify(lastGeneratedSessions));
   }, [lastGeneratedSessions]);
+
+  const formatPersonalRecords = (): string => {
+    if (!personalRecords || personalRecords.length === 0) {
+      return 'Aucun record personnel disponible pour le moment.';
+    }
+
+    // Map distance meters to standard formats
+    const distanceMap: { [key: number]: string } = {
+      5000: '5 km',
+      10000: '10 km',
+      21097: 'Semi-marathon',
+      42195: 'Marathon'
+    };
+
+    const recordsText = personalRecords
+      .filter(record => distanceMap[record.distanceMeters])
+      .map(record => {
+        const distanceName = distanceMap[record.distanceMeters];
+        return `- ${distanceName} : ${record.time} réalisé le ${record.date}`;
+      })
+      .join('\n');
+
+    return recordsText || 'Aucun record personnel sur les distances standards (5km, 10km, semi-marathon, marathon).';
+  };
 
   const formatTrainingData = (stravaData: any): string => {
     return stravaData.activities.map((activity: any) => {
@@ -76,36 +103,20 @@ Objectif associé: ${stravaData.currentGoal ?
     }).join('\n\n');
   };
 
-  const calculatePaceZones = (records: any): string => {
-    if (!records['5K'] && !records['10K']) return 'Zones d\'allure non calculables (manque de records)';
-    
-    // Utiliser le 5K ou 10K pour estimer la VMA
-    let vmaBase = '4:30'; // Valeur par défaut
-    
-    if (records['5K']) {
-      const [min, sec] = records['5K'].split(':').map(Number);
-      const totalSeconds = min * 60 + sec;
-      const pace5k = totalSeconds / 5; // pace en secondes par km
-      vmaBase = `${Math.floor(pace5k / 60)}:${String(Math.round(pace5k % 60)).padStart(2, '0')}`;
-    } else if (records['10K']) {
-      const [min, sec] = records['10K'].split(':').map(Number);
-      const totalSeconds = min * 60 + sec;
-      const pace10k = totalSeconds / 10;
-      const vmaSeconds = pace10k * 0.95; // Estimation VMA = 95% du 10K
-      vmaBase = `${Math.floor(vmaSeconds / 60)}:${String(Math.round(vmaSeconds % 60)).padStart(2, '0')}`;
+  const generateWorkout = async (stravaData: any) => {
+    // Wait for personal records to load if they're still loading
+    if (recordsLoading) {
+      toast.error('Chargement des records en cours...');
+      return;
     }
 
-    return `VMA (100%) : ${vmaBase}/km | Seuil (90%) : calculé automatiquement | Endurance (75-80%) : calculé automatiquement`;
-  };
-
-  const generateWorkout = async (stravaData: any) => {
     setLoading(true);
     setError(null);
 
     try {
       console.log('Génération de séance avec les données:', stravaData);
       
-      const systemMessage = "Tu es un coach sportif expert en course à pied. Tu analyses les données d'entraînement d'un coureur sur les 30 derniers jours afin de lui proposer un plan d'entraînement optimisé pour atteindre son objectif à venir. Ta réponse doit être claire, bien structurée, exploitable par une application, et adaptée au contenu des séances passées.";
+      const systemMessage = "Tu es un coach sportif expert en course à pied. Tu analyses les données d'entraînement d'un coureur sur les 30 derniers jours, ainsi que ses records personnels, afin de lui proposer un plan d'entraînement optimisé pour atteindre son objectif. Ta réponse doit être claire, bien structurée, exploitable par une application, et adaptée aux séances passées, à la fatigue récente et aux capacités maximales du coureur.";
       
       const userMessage = `Voici mes données d'entraînement des 30 derniers jours, incluant pour chaque séance :
 - Date
@@ -118,11 +129,14 @@ Objectif associé: ${stravaData.currentGoal ?
 - RPE (échelle de 1 à 10)
 - Objectif associé (si applicable) : [distance], [temps visé], [date]
 
+Voici également mes records personnels sur différentes distances :
+${formatPersonalRecords()}
+
 Objectif à venir : ${stravaData.currentGoal ? 
   `${stravaData.currentGoal.distance} en ${stravaData.currentGoal.target_time} le ${new Date(stravaData.currentGoal.target_date).toLocaleDateString('fr-FR')}` : 
   'Aucun objectif défini pour le moment'}
 
-Génère la prochaine séance d'entraînement, adaptée à mon historique. La réponse doit contenir :
+Génère la prochaine séance d'entraînement, adaptée à mon historique, ma fatigue, mon niveau et mes records. La réponse doit contenir :
 - Type de séance (ex : seuil, récupération, intervalle…)
 - Structure précise (ex : 6×400m à 4:30/km, récupération 1min)
 - Allure cible
@@ -130,7 +144,8 @@ Génère la prochaine séance d'entraînement, adaptée à mon historique. La r�
 - Nombre de kilomètres totaux
 - Durée estimée
 - Justification de la séance : pourquoi ce type de séance maintenant ?
-- Cohérence avec mes séances précédentes (pas deux séances dures à la suite, etc.)
+- Cohérence avec mes séances précédentes (ex : pas deux séances intenses consécutives)
+- Adéquation avec mes records : ajuster les allures proposées en fonction de mes performances maximales
 
 Format de sortie requis :
 {
@@ -144,7 +159,7 @@ Format de sortie requis :
     "justification": "Travail de VMA après deux jours de récupération active."
   }
 }
-Merci de t'adapter au niveau et à la fatigue du coureur selon les données fournies.`;
+Merci de t'adapter au niveau et à la fatigue du coureur selon les données fournies et ses records personnels.`;
 
       const trainingData = formatTrainingData(stravaData);
       
@@ -214,7 +229,7 @@ Merci de t'adapter au niveau et à la fatigue du coureur selon les données four
 
   return {
     workout,
-    loading,
+    loading: loading || recordsLoading,
     error,
     generateWorkout,
     markAsCompleted,

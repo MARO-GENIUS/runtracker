@@ -16,10 +16,12 @@ import {
   Zap,
   ChevronDown,
   ChevronUp,
-  Activity
+  Activity,
+  Trophy
 } from 'lucide-react';
 import { useStravaLast30Days } from '@/hooks/useStravaLast30Days';
 import { useAIWorkoutGenerator } from '@/hooks/useAIWorkoutGenerator';
+import { usePersonalRecords } from '@/hooks/usePersonalRecords';
 import LastSessionTypeSelector from './LastSessionTypeSelector';
 
 const AIWorkoutGenerator: React.FC = () => {
@@ -27,6 +29,7 @@ const AIWorkoutGenerator: React.FC = () => {
   const [isExplanationOpen, setIsExplanationOpen] = useState(false);
   
   const stravaData = useStravaLast30Days();
+  const { records: personalRecords, loading: recordsLoading, error: recordsError } = usePersonalRecords();
   const { workout, loading, error, generateWorkout, markAsCompleted, generateNewWorkout } = useAIWorkoutGenerator();
 
   const handleGenerateWorkout = () => {
@@ -69,25 +72,25 @@ const AIWorkoutGenerator: React.FC = () => {
     }
   };
 
-  if (stravaData.loading) {
+  if (stravaData.loading || recordsLoading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">
           <div className="flex items-center gap-2">
             <RefreshCw className="h-4 w-4 animate-spin" />
-            <span>Chargement de vos données Strava...</span>
+            <span>Chargement de vos données...</span>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  if (stravaData.error) {
+  if (stravaData.error || recordsError) {
     return (
       <Card>
         <CardContent className="py-8">
           <div className="text-center text-red-600">
-            <p>Erreur lors du chargement des données: {stravaData.error}</p>
+            <p>Erreur lors du chargement des données: {stravaData.error || recordsError}</p>
           </div>
         </CardContent>
       </Card>
@@ -105,7 +108,7 @@ const AIWorkoutGenerator: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center p-3 bg-blue-50 rounded-lg">
               <p className="text-sm text-gray-600">Activités (30j)</p>
               <p className="text-2xl font-bold text-blue-600">{stravaData.activities.length}</p>
@@ -121,6 +124,13 @@ const AIWorkoutGenerator: React.FC = () => {
               <p className="text-lg font-semibold text-purple-600">
                 {stravaData.activities.reduce((sum, activity) => sum + activity.distance_km, 0).toFixed(1)} km
               </p>
+            </div>
+            <div className="text-center p-3 bg-orange-50 rounded-lg">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Trophy className="h-4 w-4 text-orange-600" />
+                <p className="text-sm text-gray-600">Records</p>
+              </div>
+              <p className="text-lg font-semibold text-orange-600">{personalRecords.length}</p>
             </div>
           </div>
           
