@@ -73,7 +73,7 @@ const Layout = ({ children }: LayoutProps) => {
         {children}
       </main>
       
-      {/* Footer responsive avec hauteur fixe pour éviter les changements de layout */}
+      {/* Footer responsive */}
       <footer className="bg-white border-t border-gray-100 mt-8 sm:mt-12 lg:mt-16 py-6 sm:py-8">
         <div className="max-w-6xl mx-auto mobile-container text-center text-gray-600">
           <p className="mobile-text-hierarchy">
@@ -82,15 +82,6 @@ const Layout = ({ children }: LayoutProps) => {
           <p className="text-xs mt-2 text-gray-500">
             Visualisez vos performances • Suivez vos progrès • Atteignez vos objectifs
           </p>
-          {/* Container avec hauteur fixe pour éviter les changements de layout */}
-          <div className="h-6 flex items-center justify-center mt-2">
-            {isGlobalSyncing && (
-              <p className="text-xs text-blue-600 flex items-center gap-2 animate-fade-in">
-                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                <span className="mobile-text-hierarchy">Synchronisation automatique en cours...</span>
-              </p>
-            )}
-          </div>
         </div>
       </footer>
     </div>
