@@ -1,8 +1,8 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useTrainingRecommendations } from '@/hooks/useTrainingRecommendations';
 import { useAICoach } from '@/hooks/useAICoach';
-import { usePersistentAIRecommendations } from '@/hooks/usePersistentAIRecommendations';
 import { useActivityMatching } from '@/hooks/useActivityMatching';
 import { CoachHeader } from './coach/CoachHeader';
 import { CoachTabs } from './coach/CoachTabs';
@@ -14,9 +14,8 @@ import ScheduledDateManager from './ScheduledDateManager';
 
 const CoachView = () => {
   const { toast } = useToast();
-  const { recommendations, settings, updateSettings, refreshRecommendations } = useTrainingRecommendations();
+  const { settings, updateSettings, refreshRecommendations } = useTrainingRecommendations();
   const { 
-    recommendations: aiRecommendations, 
     analysisData, 
     isLoading: aiLoading, 
     scheduledDate,
@@ -25,25 +24,11 @@ const CoachView = () => {
     reanalyzeWithNewDate
   } = useAICoach();
   
-  const {
-    persistentRecommendations,
-    isLoading: persistentLoading,
-    removeRecommendation,
-    loadRecommendations
-  } = usePersistentAIRecommendations();
-  
   useActivityMatching();
   
   const [activeTab, setActiveTab] = useState('ai-generator');
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [isSchedulingModalOpen, setIsSchedulingModalOpen] = useState(false);
-
-  const handleStartSession = (recommendation: any) => {
-    toast({
-      title: "Séance planifiée",
-      description: `${recommendation.title} ajoutée à votre planning`,
-    });
-  };
 
   const handleRefresh = () => {
     refreshRecommendations();
@@ -71,19 +56,10 @@ const CoachView = () => {
   };
 
   const handleRatingUpdated = () => {
-    loadRecommendations();
     toast({
       title: "Ressenti mis à jour",
       description: "Vos prochaines analyses IA tiendront compte de ce ressenti",
     });
-  };
-
-  const handleRemoveRecommendation = async (recommendationId: string) => {
-    await removeRecommendation(recommendationId);
-  };
-
-  const handleRecommendationUpdate = () => {
-    loadRecommendations();
   };
 
   return (
@@ -92,10 +68,8 @@ const CoachView = () => {
       <CoachHeader
         analysisData={analysisData}
         settings={settings}
-        showAnalysis={showAnalysis}
         aiLoading={aiLoading}
         onUpdateSettings={updateSettings}
-        onToggleAnalysis={() => setShowAnalysis(!showAnalysis)}
         onAIAnalysis={handleAIAnalysis}
         onRefresh={handleRefresh}
       />
@@ -119,25 +93,17 @@ const CoachView = () => {
       {/* Widget de ressenti rapide */}
       <QuickEffortRating onRatingUpdated={handleRatingUpdated} />
 
-      {/* Onglets pour les recommandations */}
+      {/* Onglets pour les recommandations simplifiés */}
       <CoachTabs
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        persistentRecommendations={persistentRecommendations}
-        aiRecommendations={aiRecommendations}
-        recommendations={recommendations}
-        aiLoading={aiLoading}
-        persistentLoading={persistentLoading}
-        onStartSession={handleStartSession}
-        onRemoveRecommendation={handleRemoveRecommendation}
-        onRecommendationUpdate={handleRecommendationUpdate}
       />
 
       {/* Résumé enrichi avec objectifs personnels */}
       <CoachSummary
         settings={settings}
         analysisData={analysisData}
-        persistentRecommendations={persistentRecommendations}
+        persistentRecommendations={[]}
       />
 
       {/* Modal de planification */}

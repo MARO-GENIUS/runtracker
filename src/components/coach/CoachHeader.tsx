@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Brain, TrendingUp, Sparkles, RefreshCw } from 'lucide-react';
+import { Brain, Sparkles, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TrainingSettings from '../TrainingSettings';
 
@@ -17,10 +17,8 @@ interface TrainingSettingsData {
 interface CoachHeaderProps {
   analysisData: any;
   settings: TrainingSettingsData;
-  showAnalysis: boolean;
   aiLoading: boolean;
   onUpdateSettings: (settings: TrainingSettingsData) => Promise<boolean>;
-  onToggleAnalysis: () => void;
   onAIAnalysis: () => void;
   onRefresh: () => void;
 }
@@ -28,10 +26,8 @@ interface CoachHeaderProps {
 export const CoachHeader: React.FC<CoachHeaderProps> = ({
   analysisData,
   settings,
-  showAnalysis,
   aiLoading,
   onUpdateSettings,
-  onToggleAnalysis,
   onAIAnalysis,
   onRefresh
 }) => {
@@ -79,15 +75,6 @@ export const CoachHeader: React.FC<CoachHeaderProps> = ({
           settings={settings}
           onUpdateSettings={onUpdateSettings}
         />
-        <Button 
-          variant="outline"
-          size="sm"
-          onClick={onToggleAnalysis}
-          className="hidden sm:flex"
-        >
-          <TrendingUp className="h-4 w-4 mr-2" />
-          {showAnalysis ? 'Masquer analyse' : 'Voir analyse'}
-        </Button>
         <Button 
           onClick={onAIAnalysis}
           disabled={aiLoading}
