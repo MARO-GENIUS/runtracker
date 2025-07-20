@@ -119,7 +119,7 @@ const RecordsSlider = () => {
                       </div>
                     )}
                     
-                    {/* Ligne 1: Distance + Allure */}
+                    {/* Ligne 1: Distance à gauche, Temps + Allure à droite */}
                     <div className="flex items-center justify-between mb-2">
                       <div className={`
                         inline-flex items-center px-2.5 py-1 rounded-lg font-bold text-sm
@@ -131,27 +131,26 @@ const RecordsSlider = () => {
                         {record.distance}
                       </div>
                       
-                      <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                        <Clock size={14} />
-                        <span className="font-medium">{record.pace}</span>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-bold text-lg text-running-blue">{record.time}</span>
+                        <span className="text-gray-400">•</span>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <Clock size={12} />
+                          <span className="font-medium">{record.pace}</span>
+                        </div>
                       </div>
                     </div>
                     
-                    {/* Ligne 2: Temps principal */}
-                    <div className="mb-2">
-                      <div className="font-bold text-xl text-running-blue">{record.time}</div>
-                    </div>
-                    
-                    {/* Ligne 3: Date + Lieu */}
-                    <div className="flex items-start justify-between text-sm">
+                    {/* Ligne 2: Date + Chevron */}
+                    <div className="flex items-center justify-between text-sm mb-1">
                       <div className="text-gray-600 font-medium">
                         {record.date}
                       </div>
-                      <ChevronRight size={16} className="text-gray-400 group-hover:text-gray-600 transition-colors flex-shrink-0 mt-0.5" />
+                      <ChevronRight size={16} className="text-gray-400 group-hover:text-gray-600 transition-colors flex-shrink-0" />
                     </div>
                     
-                    {/* Ligne 4: Localisation */}
-                    <div className="flex items-start gap-1.5 mt-1">
+                    {/* Ligne 3: Localisation */}
+                    <div className="flex items-start gap-1.5">
                       <MapPin size={12} className="text-gray-500 mt-0.5 flex-shrink-0" />
                       <div className="text-xs text-gray-600 truncate">
                         {record.location}
