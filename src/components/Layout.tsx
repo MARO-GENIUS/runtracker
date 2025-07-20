@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useGlobalSync } from '@/hooks/useGlobalSync';
 import { Navigate, useLocation } from 'react-router-dom';
