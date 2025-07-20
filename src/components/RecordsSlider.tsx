@@ -54,27 +54,6 @@ const RecordsSlider = () => {
     }
   };
 
-  // Function to render the circle content (logo for 10km, number for others)
-  const renderCircleContent = (distance: string, isRecent: boolean) => {
-    const is10km = distance === '10 km';
-    
-    if (is10km) {
-      return (
-        <img 
-          src="/logo-10km.png" 
-          alt="10km logo" 
-          className="w-8 h-8 object-contain"
-        />
-      );
-    }
-    
-    return (
-      <span className="font-bold text-white">
-        {distance.split(' ')[0]}
-      </span>
-    );
-  };
-
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 animate-fade-in">
       {/* Header mobile optimisé */}
@@ -133,26 +112,25 @@ const RecordsSlider = () => {
                 </div>
               )}
               
-              {/* Contenu principal */}
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className={`
-                    w-12 h-12 rounded-full flex items-center justify-center
-                    ${record.isRecent ? 'bg-running-orange' : 'bg-running-blue'}
-                  `}>
-                    {renderCircleContent(record.distance, record.isRecent)}
-                  </div>
-                  <div>
-                    <div className="font-bold text-lg text-gray-900">
-                      {record.distance}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {record.date}
-                    </div>
-                  </div>
+              {/* Badge distance en haut */}
+              <div className="flex items-center justify-between mb-4">
+                <div className={`
+                  inline-flex items-center px-3 py-1.5 rounded-lg font-bold text-sm
+                  ${record.isRecent 
+                    ? 'bg-gradient-to-r from-running-orange to-orange-600 text-white shadow-md' 
+                    : 'bg-gradient-to-r from-running-blue to-blue-600 text-white shadow-md'
+                  }
+                `}>
+                  {record.distance}
                 </div>
                 
                 <ChevronRight size={20} className="text-gray-400 group-hover:text-gray-600 transition-colors" />
+              </div>
+              
+              {/* Informations principales */}
+              <div className="mb-3">
+                <div className="font-bold text-xl text-running-blue mb-1">{record.time}</div>
+                <div className="text-sm text-gray-600">{record.date}</div>
               </div>
               
               {/* Stats */}
@@ -160,13 +138,16 @@ const RecordsSlider = () => {
                 <div className="flex items-center gap-2">
                   <Clock size={16} className="text-gray-500" />
                   <div>
-                    <div className="font-bold text-xl text-running-blue">{record.time}</div>
-                    <div className="text-xs text-gray-600">Temps</div>
+                    <div className="font-semibold text-gray-900">{record.pace}</div>
+                    <div className="text-xs text-gray-600">Allure moyenne</div>
                   </div>
                 </div>
-                <div>
-                  <div className="font-semibold text-gray-900">{record.pace}</div>
-                  <div className="text-xs text-gray-600">Allure moyenne</div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex-shrink-0"></div>
+                  <div>
+                    <div className="text-xs text-gray-600">Performance</div>
+                    <div className="text-sm font-medium text-gray-900">Record</div>
+                  </div>
                 </div>
               </div>
               
