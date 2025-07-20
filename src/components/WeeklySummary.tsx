@@ -36,30 +36,28 @@ const WeeklySummary = () => {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 animate-fade-in">
-      {/* Header mobile optimisé */}
-      <div className="mb-6">
-        <div className="flex flex-col gap-4">
-          {/* Titre et bouton sync */}
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-              Résumé Hebdomadaire
-            </h2>
-          </div>
+      {/* Header compact */}
+      <div className="mb-4">
+        <div className="flex flex-col gap-3">
+          {/* Titre */}
+          <h2 className="text-lg font-bold text-gray-900">
+            Résumé Hebdomadaire
+          </h2>
           
-          {/* Stats principales - Layout mobile vertical */}
-          <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
+          {/* Stats principales compactes */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
             <div className="flex-1">
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-3xl sm:text-4xl font-bold text-running-blue">
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="text-2xl sm:text-3xl font-bold text-running-blue">
                   {totalKm.toFixed(1)}
                 </span>
-                <span className="text-lg text-gray-600">km</span>
+                <span className="text-base text-gray-600">km</span>
               </div>
-              <div className="space-y-1">
-                <div className="text-sm text-gray-600">
+              <div className="space-y-0.5">
+                <div className="text-xs text-gray-600">
                   {averageDaily.toFixed(1)} km/jour en moyenne
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-xs text-gray-600">
                   {runningDays} jour{runningDays > 1 ? 's' : ''} de course
                 </div>
               </div>
@@ -82,8 +80,8 @@ const WeeklySummary = () => {
         </div>
       )}
 
-      {/* Graphique responsive - Hauteur adaptée mobile */}
-      <div className="h-48 sm:h-56 w-full">
+      {/* Graphique compact */}
+      <div className="h-36 sm:h-40 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart 
             data={currentWeeklyData} 

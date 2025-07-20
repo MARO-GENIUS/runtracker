@@ -9,8 +9,13 @@ const Dashboard = () => {
   return (
     <Layout>
       <div className="space-y-6 sm:space-y-8">
-        <WeeklySummary />
-        <RunningCalendar />
+        {/* Première ligne : Résumé hebdomadaire et Calendrier côte à côte sur desktop/tablette */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+          <WeeklySummary />
+          <RunningCalendar />
+        </div>
+        
+        {/* Sections suivantes conservent le layout pleine largeur */}
         <RecordsSlider />
         <MonthlyStats />
       </div>
