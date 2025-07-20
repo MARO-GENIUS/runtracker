@@ -1,13 +1,8 @@
 
 import CoachView from '../components/CoachView';
-import Layout from '../components/Layout';
 
 const Coach = () => {
-  return (
-    <Layout>
-      <CoachView />
-    </Layout>
-  );
+  return <CoachView />;
 };
 
 export default Coach;

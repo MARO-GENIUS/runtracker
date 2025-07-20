@@ -1,13 +1,8 @@
 
 import ActivitiesView from '../components/ActivitiesView';
-import Layout from '../components/Layout';
 
 const Activities = () => {
-  return (
-    <Layout>
-      <ActivitiesView />
-    </Layout>
-  );
+  return <ActivitiesView />;
 };
 
 export default Activities;
