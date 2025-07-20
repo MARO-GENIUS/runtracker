@@ -108,7 +108,7 @@ const TopNavigation = ({ currentView, user, onSignOut }: TopNavigationProps) => 
                     <span className="hidden lg:block font-medium">Profil</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-white shadow-lg border border-gray-200 z-50">
+                <DropdownMenuContent align="end" className="w-56 bg-white shadow-lg border border-gray-200 z-[60]">
                   <div className="px-3 py-2 border-b border-gray-100">
                     <p className="text-sm text-gray-600 truncate mobile-text-hierarchy font-medium">{user.email}</p>
                   </div>

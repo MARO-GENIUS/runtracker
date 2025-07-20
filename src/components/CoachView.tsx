@@ -87,7 +87,7 @@ const CoachView = () => {
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="mobile-container mobile-section-spacing space-y-4 sm:space-y-6 lg:space-y-8">
       {/* En-tête avec analyse IA adaptative */}
       <CoachHeader
         analysisData={analysisData}

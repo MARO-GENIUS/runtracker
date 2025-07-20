@@ -51,53 +51,67 @@ const ActivitiesView = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
-      {/* Header avec statistiques rapides */}
-      <div className="flex justify-between items-start">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
-          <Card>
-            <CardContent className="p-4">
+    <div className="mobile-container mobile-section-spacing space-y-4 sm:space-y-6">
+      {/* Header avec statistiques rapides - Responsive */}
+      <div className="space-y-4">
+        {/* Bouton synchroniser en haut sur mobile */}
+        <div className="flex justify-end sm:hidden">
+          <Button 
+            onClick={handleRefresh}
+            disabled={loading || refreshing}
+            variant="outline"
+            className="mobile-touch-target"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${(loading || refreshing) ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Synchroniser</span>
+          </Button>
+        </div>
+
+        {/* Grille de statistiques responsive */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="mobile-card-spacing">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center gap-2">
-                <TrendingUp className="text-running-blue" size={20} />
-                <div>
-                  <p className="text-sm text-gray-600">Ce mois</p>
-                  <p className="text-2xl font-bold">{stats?.monthly?.distance || 0} km</p>
+                <TrendingUp className="text-running-blue flex-shrink-0" size={18} />
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm text-gray-600 mobile-text-hierarchy">Ce mois</p>
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{stats?.monthly?.distance || 0} km</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardContent className="p-4">
+          <Card className="mobile-card-spacing">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center gap-2">
-                <Clock className="text-green-600" size={20} />
-                <div>
-                  <p className="text-sm text-gray-600">Activités</p>
-                  <p className="text-2xl font-bold">{stats?.monthly?.activitiesCount || 0}</p>
+                <Clock className="text-green-600 flex-shrink-0" size={18} />
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm text-gray-600 mobile-text-hierarchy">Activités</p>
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats?.monthly?.activitiesCount || 0}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardContent className="p-4">
+          <Card className="mobile-card-spacing">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center gap-2">
-                <MapPin className="text-purple-600" size={20} />
-                <div>
-                  <p className="text-sm text-gray-600">Cette année</p>
-                  <p className="text-2xl font-bold">{stats?.yearly?.distance || 0} km</p>
+                <MapPin className="text-purple-600 flex-shrink-0" size={18} />
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm text-gray-600 mobile-text-hierarchy">Cette année</p>
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{stats?.yearly?.distance || 0} km</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardContent className="p-4">
+          <Card className="mobile-card-spacing">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center gap-2">
-                <TrendingUp className="text-orange-600" size={20} />
-                <div>
-                  <p className="text-sm text-gray-600">Dernière course</p>
-                  <p className="text-lg font-bold">
+                <TrendingUp className="text-orange-600 flex-shrink-0" size={18} />
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm text-gray-600 mobile-text-hierarchy">Dernière</p>
+                  <p className="text-base sm:text-lg font-bold text-gray-900 truncate">
                     {stats?.latest ? `${stats.latest.distance} km` : 'Aucune'}
                   </p>
                 </div>
@@ -105,16 +119,19 @@ const ActivitiesView = () => {
             </CardContent>
           </Card>
         </div>
-        
-        <Button 
-          onClick={handleRefresh}
-          disabled={loading || refreshing}
-          variant="outline"
-          className="ml-4"
-        >
-          <RefreshCw className={`mr-2 h-4 w-4 ${(loading || refreshing) ? 'animate-spin' : ''}`} />
-          Synchroniser
-        </Button>
+
+        {/* Bouton synchroniser desktop */}
+        <div className="hidden sm:flex justify-end">
+          <Button 
+            onClick={handleRefresh}
+            disabled={loading || refreshing}
+            variant="outline"
+            className="mobile-touch-target"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${(loading || refreshing) ? 'animate-spin' : ''}`} />
+            Synchroniser
+          </Button>
+        </div>
       </div>
 
       {error && (
