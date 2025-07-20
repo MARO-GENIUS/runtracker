@@ -1,5 +1,5 @@
 
-import { MapPin, Clock, RefreshCw, ChevronRight, Trophy } from 'lucide-react';
+import { MapPin, Clock, ChevronRight, Trophy } from 'lucide-react';
 import { useState } from 'react';
 import { usePersonalRecords } from '@/hooks/usePersonalRecords';
 import { useStravaData } from '@/hooks/useStravaData';
@@ -10,7 +10,7 @@ import DistanceHistoryPanel from '@/components/DistanceHistoryPanel';
 
 const RecordsSlider = () => {
   const { records, loading, error, refetch } = usePersonalRecords();
-  const { syncActivities, isStravaConnected } = useStravaData();
+  const { isStravaConnected } = useStravaData();
   const [selectedRecord, setSelectedRecord] = useState<{ distance: number; name: string } | null>(null);
 
   // Auto-refresh quand les données Strava sont synchronisées
@@ -23,12 +23,6 @@ const RecordsSlider = () => {
   // Utilise les vraies données Strava si disponibles, sinon les données mockées
   const currentRecords = (isStravaConnected && records.length > 0) ? records : personalRecords;
 
-  const handleSync = async () => {
-    await syncActivities();
-    setTimeout(() => {
-      refetch();
-    }, 1000);
-  };
 
   const handleRecordClick = (record: any) => {
     let distanceInMeters: number;
@@ -79,18 +73,6 @@ const RecordsSlider = () => {
           </div>
         </div>
         
-        {isStravaConnected && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSync}
-            disabled={loading}
-            className="mobile-touch-target-sm px-3 py-2"
-          >
-            <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-            <span className="ml-1 text-xs">Sync</span>
-          </Button>
-        )}
       </div>
 
       {error && (

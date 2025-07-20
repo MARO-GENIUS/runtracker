@@ -2,14 +2,13 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, TrendingUp, Clock, MapPin } from 'lucide-react';
+import { TrendingUp, Clock, MapPin } from 'lucide-react';
 import { useStravaData } from '@/hooks/useStravaData';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import ActivitiesTable from './ActivitiesTable';
 
 const ActivitiesView = () => {
-  const { stats, loading, error, syncActivities, isStravaConnected } = useStravaData();
-  const [refreshing, setRefreshing] = useState(false);
+  const { stats, error, isStravaConnected } = useStravaData();
 
   // Auto-refresh du composant quand les données changent
   useAutoRefresh({
@@ -21,11 +20,6 @@ const ActivitiesView = () => {
     enabled: isStravaConnected
   });
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await syncActivities();
-    setRefreshing(false);
-  };
 
   if (!isStravaConnected) {
     return (
@@ -54,18 +48,6 @@ const ActivitiesView = () => {
     <div className="mobile-container mobile-section-spacing space-y-4 sm:space-y-6">
       {/* Header avec statistiques rapides - Responsive */}
       <div className="space-y-4">
-        {/* Bouton synchroniser en haut sur mobile */}
-        <div className="flex justify-end sm:hidden">
-          <Button 
-            onClick={handleRefresh}
-            disabled={loading || refreshing}
-            variant="outline"
-            className="mobile-touch-target"
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${(loading || refreshing) ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Synchroniser</span>
-          </Button>
-        </div>
 
         {/* Grille de statistiques responsive */}
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -120,18 +102,6 @@ const ActivitiesView = () => {
           </Card>
         </div>
 
-        {/* Bouton synchroniser desktop */}
-        <div className="hidden sm:flex justify-end">
-          <Button 
-            onClick={handleRefresh}
-            disabled={loading || refreshing}
-            variant="outline"
-            className="mobile-touch-target"
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${(loading || refreshing) ? 'animate-spin' : ''}`} />
-            Synchroniser
-          </Button>
-        </div>
       </div>
 
       {error && (

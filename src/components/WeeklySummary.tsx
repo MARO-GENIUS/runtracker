@@ -6,12 +6,12 @@ import { useStravaData } from '@/hooks/useStravaData';
 import { useWeeklyRunningActivities } from '@/hooks/useWeeklyRunningActivities';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+
 import WeekSelector from './WeekSelector';
 
 const WeeklySummary = () => {
   const [selectedWeek, setSelectedWeek] = useState(new Date());
-  const { syncActivities, isStravaConnected } = useStravaData();
+  const { isStravaConnected } = useStravaData();
   const { stats: weeklyStats, loading: weeklyLoading, error: weeklyError, refetch } = useWeeklyRunningActivities({ 
     weekDate: selectedWeek 
   });
@@ -29,12 +29,6 @@ const WeeklySummary = () => {
   const averageDaily = (isStravaConnected && weeklyStats) ? weeklyStats.averageDaily : totalKm / 7;
   const runningDays = (isStravaConnected && weeklyStats) ? weeklyStats.runningDays : weeklyData.filter(day => day.distance > 0).length;
 
-  const handleSync = async () => {
-    await syncActivities();
-    setTimeout(() => {
-      refetch();
-    }, 1000);
-  };
 
   const handleWeekChange = (newWeek: Date) => {
     setSelectedWeek(newWeek);
@@ -50,18 +44,6 @@ const WeeklySummary = () => {
             <h2 className="text-lg sm:text-xl font-bold text-gray-900">
               Résumé Hebdomadaire
             </h2>
-            {isStravaConnected && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSync}
-                disabled={weeklyLoading}
-                className="mobile-touch-target-sm px-3 py-2 text-xs font-medium"
-              >
-                <RefreshCw className={`h-3 w-3 ${weeklyLoading ? 'animate-spin' : ''}`} />
-                <span className="ml-1 hidden sm:inline">Sync</span>
-              </Button>
-            )}
           </div>
           
           {/* Stats principales - Layout mobile vertical */}

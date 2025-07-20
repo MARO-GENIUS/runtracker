@@ -65,14 +65,13 @@ const CoachView = () => {
   return (
     <div className="mobile-container mobile-section-spacing space-y-4 sm:space-y-6 lg:space-y-8">
       {/* En-tête avec analyse IA adaptative */}
-      <CoachHeader
-        analysisData={analysisData}
-        settings={settings}
-        aiLoading={aiLoading}
-        onUpdateSettings={updateSettings}
-        onAIAnalysis={handleAIAnalysis}
-        onRefresh={handleRefresh}
-      />
+        <CoachHeader
+          analysisData={analysisData}
+          settings={settings}
+          aiLoading={aiLoading}
+          onUpdateSettings={updateSettings}
+          onAIAnalysis={handleAIAnalysis}
+        />
 
       {/* Gestionnaire de date planifiée */}
       {scheduledDate && (

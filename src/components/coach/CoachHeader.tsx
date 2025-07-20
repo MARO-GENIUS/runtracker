@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Brain, Sparkles, RefreshCw } from 'lucide-react';
+import { Brain, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TrainingSettings from '../TrainingSettings';
 
@@ -20,7 +20,6 @@ interface CoachHeaderProps {
   aiLoading: boolean;
   onUpdateSettings: (settings: TrainingSettingsData) => Promise<boolean>;
   onAIAnalysis: () => void;
-  onRefresh: () => void;
 }
 
 export const CoachHeader: React.FC<CoachHeaderProps> = ({
@@ -28,8 +27,7 @@ export const CoachHeader: React.FC<CoachHeaderProps> = ({
   settings,
   aiLoading,
   onUpdateSettings,
-  onAIAnalysis,
-  onRefresh
+  onAIAnalysis
 }) => {
   const daysSinceLastActivity = analysisData?.daysSinceLastActivity;
   const raceGoal = analysisData?.raceGoal;
@@ -82,15 +80,6 @@ export const CoachHeader: React.FC<CoachHeaderProps> = ({
         >
           <Sparkles className="h-4 w-4 mr-2" />
           {aiLoading ? 'Analyse adaptative...' : 'Analyser avec l\'IA'}
-        </Button>
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={onRefresh}
-          className="text-gray-500 hover:text-gray-700"
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Actualiser
         </Button>
       </div>
     </div>
