@@ -100,60 +100,62 @@ const RecordsSlider = () => {
                   <div 
                     onClick={() => handleRecordClick(record)}
                     className={`
-                      group relative overflow-hidden rounded-xl p-3 cursor-pointer h-full
-                      transition-all duration-200 mobile-touch-target
-                      active:scale-98 hover:shadow-md
+                      group relative overflow-hidden rounded-xl p-4 cursor-pointer h-full
+                      transition-all duration-300 mobile-touch-target
+                      active:scale-[0.98] hover:shadow-lg hover:-translate-y-1
                       ${record.isRecent 
-                        ? 'bg-gradient-to-r from-orange-50 to-orange-100 border border-running-orange/20' 
-                        : 'bg-gradient-to-r from-gray-50 to-white border border-gray-200'
+                        ? 'bg-gradient-to-br from-orange-50 via-white to-orange-50/50 border-2 border-running-orange/20' 
+                        : 'bg-gradient-to-br from-gray-50 via-white to-gray-50/30 border border-gray-200 hover:border-gray-300'
                       }
                     `}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    {/* Badge récent en position absolue */}
-                    {record.isRecent && (
-                      <div className="absolute top-2 right-2">
-                        <span className="bg-running-orange text-white text-xs px-2 py-1 rounded-full font-medium">
-                          Récent
-                        </span>
-                      </div>
-                    )}
-                    
-                    {/* Ligne 1: Distance à gauche, Temps + Allure à droite */}
-                    <div className="flex items-center justify-between mb-2">
+                    {/* En-tête avec badges */}
+                    <div className="flex items-center justify-between mb-4">
                       <div className={`
-                        inline-flex items-center px-2.5 py-1 rounded-lg font-bold text-sm
+                        inline-flex items-center px-3 py-1.5 rounded-full font-bold text-sm
                         ${record.isRecent 
-                          ? 'bg-gradient-to-r from-running-orange to-orange-600 text-white shadow-sm' 
-                          : 'bg-gradient-to-r from-running-blue to-blue-600 text-white shadow-sm'
+                          ? 'bg-gradient-to-r from-running-orange to-orange-600 text-white shadow-lg' 
+                          : 'bg-gradient-to-r from-running-blue to-blue-600 text-white shadow-md'
                         }
                       `}>
                         {record.distance}
                       </div>
                       
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="font-bold text-lg text-running-blue">{record.time}</span>
-                        <span className="text-gray-400">•</span>
-                        <div className="flex items-center gap-1 text-gray-600">
-                          <Clock size={12} />
-                          <span className="font-medium">{record.pace}</span>
+                      {record.isRecent && (
+                        <div className="bg-running-orange text-white text-xs px-2.5 py-1 rounded-full font-medium shadow-sm">
+                          ✨ Récent
                         </div>
+                      )}
+                    </div>
+                    
+                    {/* Information principale - Temps centré */}
+                    <div className="text-center mb-3">
+                      <div className="font-bold text-2xl sm:text-3xl text-running-blue mb-1 tracking-tight">
+                        {record.time}
+                      </div>
+                      <div className="flex items-center justify-center gap-1.5 text-sm text-gray-600">
+                        <Clock size={14} className="text-running-orange" />
+                        <span className="font-medium">{record.pace}</span>
                       </div>
                     </div>
                     
-                    {/* Ligne 2: Date + Chevron */}
-                    <div className="flex items-center justify-between text-sm mb-1">
-                      <div className="text-gray-600 font-medium">
-                        {record.date}
+                    {/* Pied avec contexte */}
+                    <div className="border-t border-gray-100 pt-3 mt-auto">
+                      {/* Date et navigation */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm text-gray-700 font-medium">
+                          {record.date}
+                        </div>
+                        <ChevronRight size={16} className="text-gray-400 group-hover:text-running-blue transition-colors duration-200" />
                       </div>
-                      <ChevronRight size={16} className="text-gray-400 group-hover:text-gray-600 transition-colors flex-shrink-0" />
-                    </div>
-                    
-                    {/* Ligne 3: Localisation */}
-                    <div className="flex items-start gap-1.5">
-                      <MapPin size={12} className="text-gray-500 mt-0.5 flex-shrink-0" />
-                      <div className="text-xs text-gray-600 truncate">
-                        {record.location}
+                      
+                      {/* Localisation */}
+                      <div className="flex items-start gap-2">
+                        <MapPin size={14} className="text-running-orange mt-0.5 flex-shrink-0" />
+                        <div className="text-xs text-gray-600 truncate leading-relaxed">
+                          {record.location}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -162,8 +164,8 @@ const RecordsSlider = () => {
             </CarouselContent>
             
             {/* Navigation du carrousel */}
-            <CarouselPrevious className="absolute -left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white border-gray-200 hover:border-gray-300" />
-            <CarouselNext className="absolute -right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white border-gray-200 hover:border-gray-300" />
+            <CarouselPrevious className="absolute -left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white border-gray-200 hover:border-gray-300 shadow-lg" />
+            <CarouselNext className="absolute -right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white border-gray-200 hover:border-gray-300 shadow-lg" />
           </Carousel>
         </div>
       )}
