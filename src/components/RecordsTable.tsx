@@ -60,37 +60,44 @@ const RecordsTable = () => {
 
       {/* Table responsive */}
       <div className="overflow-x-auto">
-        <div className="grid gap-3 p-6 md:hidden">
-          {/* Version mobile - Cards */}
+        <div className="grid gap-2 p-4 md:hidden">
+          {/* Version mobile - Cards optimisées */}
           {filteredAndSorted.map((record) => (
             <div 
               key={record.id}
-              className={`border rounded-lg p-4 ${
+              className={`border rounded-lg p-3 ${
                 record.isRecent 
                   ? 'border-running-orange bg-orange-50' 
                   : 'border-gray-200 bg-white'
               } hover:shadow-md transition-shadow duration-200`}
             >
-              <div className="flex justify-between items-start mb-3">
+              {/* Ligne 1: Distance + Allure + Badge récent */}
+              <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-3">
                   <span className="font-bold text-lg text-gray-800">{record.distance}</span>
-                  {record.isRecent && (
-                    <span className="bg-running-orange text-white text-xs px-2 py-1 rounded-full">
-                      Récent
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1 text-sm text-gray-600">
+                    <Clock size={12} />
+                    <span>{record.pace}</span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-bold text-xl text-running-blue">{record.time}</div>
-                  <div className="text-sm text-gray-600">{record.pace}</div>
-                </div>
+                {record.isRecent && (
+                  <span className="bg-running-orange text-white text-xs px-2 py-1 rounded-full">
+                    Récent
+                  </span>
+                )}
               </div>
               
+              {/* Ligne 2: Temps principal */}
+              <div className="mb-2">
+                <div className="font-bold text-xl text-running-blue">{record.time}</div>
+              </div>
+              
+              {/* Ligne 3: Date + Lieu */}
               <div className="flex items-start gap-2 text-sm text-gray-600">
-                <MapPin size={14} className="mt-0.5" />
+                <MapPin size={14} className="mt-0.5 flex-shrink-0" />
                 <div>
                   <div className="font-medium">{record.date}</div>
-                  <div>{record.location}</div>
+                  <div className="text-xs">{record.location}</div>
                 </div>
               </div>
             </div>

@@ -57,8 +57,8 @@ const RecordsSlider = () => {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 animate-fade-in">
-      {/* Header mobile optimisé */}
-      <div className="flex items-center justify-between mb-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="bg-running-orange/10 p-2 rounded-lg">
             <Trophy className="h-5 w-5 text-running-orange" />
@@ -94,13 +94,13 @@ const RecordsSlider = () => {
             }}
             className="w-full"
           >
-            <CarouselContent className="-ml-2 md:-ml-4">
+            <CarouselContent className="-ml-1 md:-ml-2">
               {currentRecords.map((record, index) => (
-                <CarouselItem key={record.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                <CarouselItem key={record.id} className="pl-1 md:pl-2 basis-full sm:basis-1/2 lg:basis-1/3">
                   <div 
                     onClick={() => handleRecordClick(record)}
                     className={`
-                      group relative overflow-hidden rounded-xl p-4 cursor-pointer h-full
+                      group relative overflow-hidden rounded-xl p-3 cursor-pointer h-full
                       transition-all duration-200 mobile-touch-target
                       active:scale-98 hover:shadow-md
                       ${record.isRecent 
@@ -110,51 +110,50 @@ const RecordsSlider = () => {
                     `}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    {/* Badge récent */}
+                    {/* Badge récent en position absolue */}
                     {record.isRecent && (
-                      <div className="absolute top-3 right-3">
+                      <div className="absolute top-2 right-2">
                         <span className="bg-running-orange text-white text-xs px-2 py-1 rounded-full font-medium">
                           Récent
                         </span>
                       </div>
                     )}
                     
-                    {/* Badge distance en haut */}
-                    <div className="flex items-center justify-between mb-4">
+                    {/* Ligne 1: Distance + Allure */}
+                    <div className="flex items-center justify-between mb-2">
                       <div className={`
-                        inline-flex items-center px-3 py-1.5 rounded-lg font-bold text-sm
+                        inline-flex items-center px-2.5 py-1 rounded-lg font-bold text-sm
                         ${record.isRecent 
-                          ? 'bg-gradient-to-r from-running-orange to-orange-600 text-white shadow-md' 
-                          : 'bg-gradient-to-r from-running-blue to-blue-600 text-white shadow-md'
+                          ? 'bg-gradient-to-r from-running-orange to-orange-600 text-white shadow-sm' 
+                          : 'bg-gradient-to-r from-running-blue to-blue-600 text-white shadow-sm'
                         }
                       `}>
                         {record.distance}
                       </div>
                       
-                      <ChevronRight size={20} className="text-gray-400 group-hover:text-gray-600 transition-colors" />
-                    </div>
-                    
-                    {/* Informations principales */}
-                    <div className="mb-3">
-                      <div className="font-bold text-xl text-running-blue mb-1">{record.time}</div>
-                      <div className="text-sm text-gray-600">{record.date}</div>
-                    </div>
-                    
-                    {/* Stats - Une seule colonne maintenant */}
-                    <div className="mb-3">
-                      <div className="flex items-center gap-2">
-                        <Clock size={16} className="text-gray-500" />
-                        <div>
-                          <div className="font-semibold text-gray-900">{record.pace}</div>
-                          <div className="text-xs text-gray-600">Allure moyenne</div>
-                        </div>
+                      <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                        <Clock size={14} />
+                        <span className="font-medium">{record.pace}</span>
                       </div>
                     </div>
                     
-                    {/* Localisation */}
-                    <div className="flex items-start gap-2">
-                      <MapPin size={14} className="text-gray-500 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm text-gray-600 truncate">
+                    {/* Ligne 2: Temps principal */}
+                    <div className="mb-2">
+                      <div className="font-bold text-xl text-running-blue">{record.time}</div>
+                    </div>
+                    
+                    {/* Ligne 3: Date + Lieu */}
+                    <div className="flex items-start justify-between text-sm">
+                      <div className="text-gray-600 font-medium">
+                        {record.date}
+                      </div>
+                      <ChevronRight size={16} className="text-gray-400 group-hover:text-gray-600 transition-colors flex-shrink-0 mt-0.5" />
+                    </div>
+                    
+                    {/* Ligne 4: Localisation */}
+                    <div className="flex items-start gap-1.5 mt-1">
+                      <MapPin size={12} className="text-gray-500 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-gray-600 truncate">
                         {record.location}
                       </div>
                     </div>
