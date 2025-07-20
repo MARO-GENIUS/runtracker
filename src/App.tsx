@@ -1,7 +1,5 @@
 
 import React from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
@@ -13,6 +11,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Layout from "./components/Layout";
 import { AuthProvider } from "./hooks/useAuth";
+import { ToasterWrapper } from "./components/ToasterWrapper";
 
 const queryClient = new QueryClient();
 
@@ -35,8 +34,7 @@ const App = () => {
               <Route path="/coach" element={<Layout><Coach /></Layout>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-            <Toaster />
-            <Sonner />
+            <ToasterWrapper />
           </AuthProvider>
         </ThemeProvider>
       </BrowserRouter>
