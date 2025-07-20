@@ -1,3 +1,4 @@
+
 import { MapPin, Clock, ChevronRight, Trophy } from 'lucide-react';
 import { useState } from 'react';
 import { usePersonalRecords } from '@/hooks/usePersonalRecords';
@@ -55,9 +56,9 @@ const RecordsSlider = () => {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-4 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2.5 sm:p-3 animate-fade-in">
+      {/* Header - espacement réduit */}
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
           <div className="bg-running-orange/10 p-2 rounded-lg">
             <Trophy className="h-5 w-5 text-running-orange" />
@@ -74,7 +75,7 @@ const RecordsSlider = () => {
       </div>
 
       {error && (
-        <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+        <div className="mb-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
           {error}
         </div>
       )}
@@ -99,7 +100,7 @@ const RecordsSlider = () => {
                   <div 
                     onClick={() => handleRecordClick(record)}
                     className={`
-                      group relative overflow-hidden rounded-xl p-3 cursor-pointer h-full
+                      group relative overflow-hidden rounded-xl p-2.5 cursor-pointer h-full
                       transition-all duration-300 mobile-touch-target
                       active:scale-[0.98] hover:shadow-lg hover:-translate-y-1
                       ${record.isRecent 
@@ -109,10 +110,10 @@ const RecordsSlider = () => {
                     `}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    {/* En-tête avec badges */}
-                    <div className="flex items-center justify-between mb-2">
+                    {/* En-tête avec badges - espacement optimisé */}
+                    <div className="flex items-center justify-between mb-1">
                       <div className={`
-                        inline-flex items-center px-2.5 py-1 rounded-full font-bold text-sm
+                        inline-flex items-center px-2 py-0.5 rounded-full font-bold text-sm
                         ${record.isRecent 
                           ? 'bg-gradient-to-r from-running-orange to-orange-600 text-white shadow-lg' 
                           : 'bg-gradient-to-r from-running-blue to-blue-600 text-white shadow-md'
@@ -122,15 +123,15 @@ const RecordsSlider = () => {
                       </div>
                       
                       {record.isRecent && (
-                        <div className="bg-running-orange text-white text-xs px-2 py-0.5 rounded-full font-medium shadow-sm">
+                        <div className="bg-running-orange text-white text-xs px-1.5 py-0.5 rounded-full font-medium shadow-sm">
                           ✨ Récent
                         </div>
                       )}
                     </div>
                     
-                    {/* Information principale - Temps centré */}
-                    <div className="text-center mb-2">
-                      <div className="font-bold text-xl sm:text-2xl text-running-blue mb-0.5 tracking-tight">
+                    {/* Information principale - Temps centré, espacement réduit */}
+                    <div className="text-center mb-1">
+                      <div className="font-bold text-xl sm:text-2xl text-running-blue mb-0 tracking-tight">
                         {record.time}
                       </div>
                       <div className="flex items-center justify-center gap-1.5 text-sm text-gray-600">
@@ -139,17 +140,17 @@ const RecordsSlider = () => {
                       </div>
                     </div>
                     
-                    {/* Pied avec contexte */}
-                    <div className="border-t border-gray-100 pt-2 mt-auto">
-                      {/* Date et navigation */}
-                      <div className="flex items-center justify-between mb-1">
+                    {/* Pied avec contexte - espacement compacté */}
+                    <div className="border-t border-gray-100 pt-1.5 mt-1">
+                      {/* Date et navigation - zone violette optimisée */}
+                      <div className="flex items-center justify-between mb-0.5">
                         <div className="text-sm text-gray-700 font-medium">
                           {record.date}
                         </div>
                         <ChevronRight size={16} className="text-gray-400 group-hover:text-running-blue transition-colors duration-200" />
                       </div>
                       
-                      {/* Localisation */}
+                      {/* Localisation - espacement réduit */}
                       <div className="flex items-start gap-1.5">
                         <MapPin size={13} className="text-running-orange mt-0.5 flex-shrink-0" />
                         <div className="text-xs text-gray-600 truncate leading-relaxed">
@@ -170,7 +171,7 @@ const RecordsSlider = () => {
       )}
 
       {!isStravaConnected && (
-        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
           Connectez-vous à Strava pour voir vos records personnels réels
         </div>
       )}
