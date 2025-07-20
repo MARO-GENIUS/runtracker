@@ -6,6 +6,7 @@ import { useStravaData } from '@/hooks/useStravaData';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { personalRecords } from '../data/mockData';
 import { Button } from '@/components/ui/button';
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';
 import DistanceHistoryPanel from '@/components/DistanceHistoryPanel';
 
 const RecordsSlider = () => {
@@ -71,7 +72,6 @@ const RecordsSlider = () => {
             </p>
           </div>
         </div>
-        
       </div>
 
       {error && (
@@ -86,80 +86,87 @@ const RecordsSlider = () => {
           <span className="ml-3 text-sm text-gray-600">Chargement des records...</span>
         </div>
       ) : (
-        <div className="space-y-3">
-          {/* Layout mobile vertical avec cartes optimisées */}
-          {currentRecords.map((record, index) => (
-            <div 
-              key={record.id}
-              onClick={() => handleRecordClick(record)}
-              className={`
-                group relative overflow-hidden rounded-xl p-4 cursor-pointer
-                transition-all duration-200 mobile-touch-target
-                active:scale-98 hover:shadow-md
-                ${record.isRecent 
-                  ? 'bg-gradient-to-r from-orange-50 to-orange-100 border border-running-orange/20' 
-                  : 'bg-gradient-to-r from-gray-50 to-white border border-gray-200'
-                }
-              `}
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              {/* Badge récent */}
-              {record.isRecent && (
-                <div className="absolute top-3 right-3">
-                  <span className="bg-running-orange text-white text-xs px-2 py-1 rounded-full font-medium">
-                    Récent
-                  </span>
-                </div>
-              )}
-              
-              {/* Badge distance en haut */}
-              <div className="flex items-center justify-between mb-4">
-                <div className={`
-                  inline-flex items-center px-3 py-1.5 rounded-lg font-bold text-sm
-                  ${record.isRecent 
-                    ? 'bg-gradient-to-r from-running-orange to-orange-600 text-white shadow-md' 
-                    : 'bg-gradient-to-r from-running-blue to-blue-600 text-white shadow-md'
-                  }
-                `}>
-                  {record.distance}
-                </div>
-                
-                <ChevronRight size={20} className="text-gray-400 group-hover:text-gray-600 transition-colors" />
-              </div>
-              
-              {/* Informations principales */}
-              <div className="mb-3">
-                <div className="font-bold text-xl text-running-blue mb-1">{record.time}</div>
-                <div className="text-sm text-gray-600">{record.date}</div>
-              </div>
-              
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-4 mb-3">
-                <div className="flex items-center gap-2">
-                  <Clock size={16} className="text-gray-500" />
-                  <div>
-                    <div className="font-semibold text-gray-900">{record.pace}</div>
-                    <div className="text-xs text-gray-600">Allure moyenne</div>
+        <div className="relative">
+          <Carousel 
+            opts={{
+              align: "start",
+              loop: false,
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {currentRecords.map((record, index) => (
+                <CarouselItem key={record.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                  <div 
+                    onClick={() => handleRecordClick(record)}
+                    className={`
+                      group relative overflow-hidden rounded-xl p-4 cursor-pointer h-full
+                      transition-all duration-200 mobile-touch-target
+                      active:scale-98 hover:shadow-md
+                      ${record.isRecent 
+                        ? 'bg-gradient-to-r from-orange-50 to-orange-100 border border-running-orange/20' 
+                        : 'bg-gradient-to-r from-gray-50 to-white border border-gray-200'
+                      }
+                    `}
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    {/* Badge récent */}
+                    {record.isRecent && (
+                      <div className="absolute top-3 right-3">
+                        <span className="bg-running-orange text-white text-xs px-2 py-1 rounded-full font-medium">
+                          Récent
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Badge distance en haut */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`
+                        inline-flex items-center px-3 py-1.5 rounded-lg font-bold text-sm
+                        ${record.isRecent 
+                          ? 'bg-gradient-to-r from-running-orange to-orange-600 text-white shadow-md' 
+                          : 'bg-gradient-to-r from-running-blue to-blue-600 text-white shadow-md'
+                        }
+                      `}>
+                        {record.distance}
+                      </div>
+                      
+                      <ChevronRight size={20} className="text-gray-400 group-hover:text-gray-600 transition-colors" />
+                    </div>
+                    
+                    {/* Informations principales */}
+                    <div className="mb-3">
+                      <div className="font-bold text-xl text-running-blue mb-1">{record.time}</div>
+                      <div className="text-sm text-gray-600">{record.date}</div>
+                    </div>
+                    
+                    {/* Stats - Une seule colonne maintenant */}
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2">
+                        <Clock size={16} className="text-gray-500" />
+                        <div>
+                          <div className="font-semibold text-gray-900">{record.pace}</div>
+                          <div className="text-xs text-gray-600">Allure moyenne</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Localisation */}
+                    <div className="flex items-start gap-2">
+                      <MapPin size={14} className="text-gray-500 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-gray-600 truncate">
+                        {record.location}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-green-500 flex-shrink-0"></div>
-                  <div>
-                    <div className="text-xs text-gray-600">Performance</div>
-                    <div className="text-sm font-medium text-gray-900">Record</div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Localisation */}
-              <div className="flex items-start gap-2">
-                <MapPin size={14} className="text-gray-500 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-gray-600 truncate">
-                  {record.location}
-                </div>
-              </div>
-            </div>
-          ))}
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            
+            {/* Navigation du carrousel */}
+            <CarouselPrevious className="absolute -left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white border-gray-200 hover:border-gray-300" />
+            <CarouselNext className="absolute -right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white border-gray-200 hover:border-gray-300" />
+          </Carousel>
         </div>
       )}
 
