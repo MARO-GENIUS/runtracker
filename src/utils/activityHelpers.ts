@@ -106,7 +106,7 @@ export const formatTimeFromSeconds = (timeInSeconds: number): string => {
 
 export const isRecentRecord = (dateString: string): boolean => {
   const recordDate = new Date(dateString);
-  const threeMonthsAgo = new Date();
-  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-  return recordDate > threeMonthsAgo;
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  return recordDate > thirtyDaysAgo;
 };
