@@ -26,33 +26,39 @@ const MonthlyStats = () => {
     return <MonthlyStatsLoading />;
   }
 
+  // Détermine si on a une dernière activité pour adapter le nombre de colonnes
+  const hasLatestActivity = isStravaConnected && stats?.latest;
+
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Tableau de bord Strava en haut */}
       <StravaMonthlyDashboard />
       
-      {/* Objectif mensuel */}
-      <MonthlyGoal
-        currentMonthKm={currentMonthKm}
-        currentGoal={currentGoal}
-        monthlyActivities={monthlyActivities}
-        monthlyGrowth={monthlyGrowth}
-        isStravaConnected={isStravaConnected}
-        onUpdateGoal={updateGoal}
-      />
+      {/* Grille horizontale responsive pour les trois sections principales */}
+      <div className={`grid grid-cols-1 gap-4 ${hasLatestActivity ? 'sm:grid-cols-2 md:grid-cols-3' : 'sm:grid-cols-2'}`}>
+        {/* Objectif mensuel */}
+        <MonthlyGoal
+          currentMonthKm={currentMonthKm}
+          currentGoal={currentGoal}
+          monthlyActivities={monthlyActivities}
+          monthlyGrowth={monthlyGrowth}
+          isStravaConnected={isStravaConnected}
+          onUpdateGoal={updateGoal}
+        />
 
-      {/* Total annuel */}
-      <YearlyTotal
-        yearlyTotal={yearlyTotal}
-        yearlyActivities={yearlyActivities}
-        yearlyGrowth={yearlyGrowth}
-        isStravaConnected={isStravaConnected}
-      />
+        {/* Total annuel */}
+        <YearlyTotal
+          yearlyTotal={yearlyTotal}
+          yearlyActivities={yearlyActivities}
+          yearlyGrowth={yearlyGrowth}
+          isStravaConnected={isStravaConnected}
+        />
 
-      {/* Dernière activité - Mobile optimisé */}
-      {(isStravaConnected && stats?.latest) && (
-        <LatestActivity latestActivity={stats.latest} />
-      )}
+        {/* Dernière activité - Affiché seulement si Strava connecté */}
+        {hasLatestActivity && (
+          <LatestActivity latestActivity={stats.latest} />
+        )}
+      </div>
     </div>
   );
 };
