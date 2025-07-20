@@ -23,7 +23,6 @@ const RecordsSlider = () => {
   // Utilise les vraies données Strava si disponibles, sinon les données mockées
   const currentRecords = (isStravaConnected && records.length > 0) ? records : personalRecords;
 
-
   const handleRecordClick = (record: any) => {
     let distanceInMeters: number;
     let distanceName: string;
@@ -53,6 +52,27 @@ const RecordsSlider = () => {
         name: distanceName
       });
     }
+  };
+
+  // Function to render the circle content (logo for 10km, number for others)
+  const renderCircleContent = (distance: string, isRecent: boolean) => {
+    const is10km = distance === '10 km';
+    
+    if (is10km) {
+      return (
+        <img 
+          src="/logo-10km.png" 
+          alt="10km logo" 
+          className="w-8 h-8 object-contain"
+        />
+      );
+    }
+    
+    return (
+      <span className="font-bold text-white">
+        {distance.split(' ')[0]}
+      </span>
+    );
   };
 
   return (
@@ -117,10 +137,10 @@ const RecordsSlider = () => {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div className={`
-                    w-12 h-12 rounded-full flex items-center justify-center font-bold text-white
+                    w-12 h-12 rounded-full flex items-center justify-center
                     ${record.isRecent ? 'bg-running-orange' : 'bg-running-blue'}
                   `}>
-                    {record.distance.split(' ')[0]}
+                    {renderCircleContent(record.distance, record.isRecent)}
                   </div>
                   <div>
                     <div className="font-bold text-lg text-gray-900">
