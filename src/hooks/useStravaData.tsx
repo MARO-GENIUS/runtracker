@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useStatsCache } from '@/hooks/useStatsCache';
@@ -64,6 +63,9 @@ export const useStravaData = (): UseStravaDataReturn => {
     getUsagePercentage 
   } = useStravaRateLimit();
 
+  const isLoadingRef = useRef(false);
+  const lastLoadTimeRef = useRef<number>(0);
+
   const checkStravaConnection = async () => {
     if (!user) return;
 
@@ -109,18 +111,23 @@ export const useStravaData = (): UseStravaDataReturn => {
   };
 
   const loadStats = async () => {
-    if (!user || !isStravaConnected) return;
+    if (!user || !isStravaConnected || isLoadingRef.current) return;
 
+    const now = Date.now();
+    if (now - lastLoadTimeRef.current < 1000) {
+      return;
+    }
+    lastLoadTimeRef.current = now;
+
+    isLoadingRef.current = true;
     setLoading(true);
     console.log('Calcul des stats depuis les activités...');
     
     try {
-      // Calculer les statistiques à partir des activités existantes
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth() + 1;
 
-      // Get current month activities
       const startOfMonth = new Date(currentYear, currentMonth - 1, 1).toISOString();
       const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59).toISOString();
 
@@ -132,7 +139,6 @@ export const useStravaData = (): UseStravaDataReturn => {
         .lte('start_date', endOfMonth)
         .order('start_date', { ascending: false });
 
-      // Get current year activities
       const startOfYear = new Date(currentYear, 0, 1).toISOString();
       const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59).toISOString();
 
@@ -144,7 +150,6 @@ export const useStravaData = (): UseStravaDataReturn => {
         .lte('start_date', endOfYear)
         .order('start_date', { ascending: false });
 
-      // Get latest activity
       const { data: latestActivity } = await supabase
         .from('strava_activities')
         .select('*')
@@ -155,14 +160,12 @@ export const useStravaData = (): UseStravaDataReturn => {
       console.log('Activités du mois trouvées:', monthActivities?.length || 0);
       console.log('Activités de l\'année trouvées:', yearActivities?.length || 0);
 
-      // Calculate monthly stats
       const monthlyDistance = monthActivities?.reduce((sum, activity) => sum + (activity.distance / 1000), 0) || 0;
       const monthlyActivitiesCount = monthActivities?.length || 0;
       const monthlyDuration = monthActivities?.reduce((sum, activity) => sum + (activity.moving_time || 0), 0) || 0;
       const longestMonthlyActivity = monthActivities?.reduce((longest, activity) => 
         activity.distance > (longest?.distance || 0) ? activity : longest, null);
 
-      // Calculate yearly stats
       const yearlyDistance = yearActivities?.reduce((sum, activity) => sum + (activity.distance / 1000), 0) || 0;
       const yearlyActivitiesCount = yearActivities?.length || 0;
 
@@ -198,6 +201,7 @@ export const useStravaData = (): UseStravaDataReturn => {
       setError('Erreur lors du chargement des statistiques');
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
   };
 
@@ -207,7 +211,6 @@ export const useStravaData = (): UseStravaDataReturn => {
       return;
     }
 
-    // Vérifier les rate limits avant de faire l'appel
     if (!canMakeRequest) {
       const remaining = getRemainingRequests();
       toast.error(`Limite de requêtes Strava atteinte. ${remaining} requêtes restantes aujourd'hui.`);
@@ -229,8 +232,7 @@ export const useStravaData = (): UseStravaDataReturn => {
       
       const { data, error: functionError } = await supabase.functions.invoke('sync-strava-activities');
 
-      // Incrémenter le compteur de requêtes (estimation conservative)
-      incrementRequests(10); // Estimation pour une sync basique
+      incrementRequests(10);
 
       if (functionError) {
         console.error('Function error:', functionError);
@@ -244,7 +246,6 @@ export const useStravaData = (): UseStravaDataReturn => {
 
       if (data?.error) {
         if (data.type === 'rate_limit' || data.error.includes('rate limit')) {
-          // Incrémenter davantage en cas de rate limit
           incrementRequests(50);
           toast.error('Limite de taux Strava atteinte. Veuillez attendre quelques minutes avant de réessayer.');
           setError('Limite de taux Strava atteinte');
@@ -264,9 +265,8 @@ export const useStravaData = (): UseStravaDataReturn => {
         const message = data.message || `${data.activities_synced || 0} activités synchronisées`;
         toast.success(message);
         
-        // Incrémenter en fonction du nombre d'activités traitées
         if (data.activities_synced) {
-          incrementRequests(Math.min(data.activities_synced * 2, 100)); // Max 100 pour éviter de surcompter
+          incrementRequests(Math.min(data.activities_synced * 2, 100));
         }
       } else {
         await loadStats();
@@ -279,7 +279,7 @@ export const useStravaData = (): UseStravaDataReturn => {
       let errorMessage = 'Erreur lors de la synchronisation des activités';
       
       if (error.message?.includes('rate limit') || error.message?.includes('429')) {
-        incrementRequests(100); // Pénalité en cas de rate limit
+        incrementRequests(100);
         errorMessage = 'Limite de taux Strava atteinte. Veuillez attendre quelques minutes.';
       } else if (error.message?.includes('token')) {
         errorMessage = 'Problème d\'authentification Strava. Veuillez reconnecter votre compte.';
@@ -295,14 +295,12 @@ export const useStravaData = (): UseStravaDataReturn => {
     }
   };
 
-  // Auto-refresh quand les données sont synchronisées
   useAutoRefresh({
     onRefresh: loadStats,
-    dependencies: [user, isStravaConnected],
+    dependencies: [user?.id, isStravaConnected],
     enabled: isStravaConnected && isInitialized
   });
 
-  // Effet principal pour initialiser les données
   useEffect(() => {
     if (user && !isInitialized) {
       console.log('Utilisateur connecté, initialisation...');

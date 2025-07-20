@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +19,6 @@ const ActivitiesView = () => {
     enabled: isStravaConnected
   });
 
-
   if (!isStravaConnected) {
     return (
       <div className="max-w-6xl mx-auto p-6">
@@ -32,12 +30,9 @@ const ActivitiesView = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="bg-orange-600 hover:bg-orange-700"
-            >
-              Connecter Strava
-            </Button>
+            <p className="text-sm text-gray-600 mb-4">
+              Utilisez le bouton de connexion Strava dans l'en-tête de la page pour commencer.
+            </p>
           </CardContent>
         </Card>
       </div>
