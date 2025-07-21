@@ -57,7 +57,6 @@ const App = () => {
               <Route path="/coach" element={<Layout><Coach /></Layout>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-            {/* Only render ToasterWrapper after React is fully initialized */}
             <ToasterWrapper />
           </AuthProvider>
         </ThemeProvider>
