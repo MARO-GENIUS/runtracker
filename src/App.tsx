@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
@@ -16,6 +16,17 @@ import { ToasterWrapper } from "./components/ToasterWrapper";
 const queryClient = new QueryClient();
 
 const App = () => {
+  const [isReactReady, setIsReactReady] = useState(false);
+
+  useEffect(() => {
+    // Ensure React is fully initialized before rendering toast components
+    const initTimer = setTimeout(() => {
+      setIsReactReady(true);
+    }, 100);
+
+    return () => clearTimeout(initTimer);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -34,7 +45,7 @@ const App = () => {
               <Route path="/coach" element={<Layout><Coach /></Layout>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-            <ToasterWrapper />
+            {isReactReady && <ToasterWrapper />}
           </AuthProvider>
         </ThemeProvider>
       </BrowserRouter>
