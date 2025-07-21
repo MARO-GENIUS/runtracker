@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useStatsCache } from '@/hooks/useStatsCache';
 import { useStravaRateLimit } from '@/hooks/useStravaRateLimit';
