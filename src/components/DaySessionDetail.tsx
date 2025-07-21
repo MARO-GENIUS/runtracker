@@ -1,13 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Activity, Brain, Clock, MapPin, Heart, Zap, Calendar } from 'lucide-react';
+import { X, Activity, Brain, Clock, MapPin, Heart, Zap, Calendar, Settings } from 'lucide-react';
 import SessionTypeSelector from './SessionTypeSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { WorkoutDetailModal } from './workout-forms/WorkoutDetailModal';
 
 interface WeeklyActivity {
   id: number;
@@ -45,6 +46,8 @@ export const DaySessionDetail: React.FC<DaySessionDetailProps> = ({
   onActivityUpdate
 }) => {
   const { user } = useAuth();
+  const [workoutModalOpen, setWorkoutModalOpen] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<WeeklyActivity | null>(null);
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('fr-FR', { 
@@ -121,6 +124,16 @@ export const DaySessionDetail: React.FC<DaySessionDetailProps> = ({
     return 'bg-red-100 text-red-800';
   };
 
+  const handleWorkoutDetailClick = (activity: WeeklyActivity) => {
+    setSelectedActivity(activity);
+    setWorkoutModalOpen(true);
+  };
+
+  const handleWorkoutModalClose = () => {
+    setWorkoutModalOpen(false);
+    setSelectedActivity(null);
+  };
+
   return (
     <Card className="mt-4">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
@@ -155,11 +168,22 @@ export const DaySessionDetail: React.FC<DaySessionDetailProps> = ({
               >
                 <div className="flex items-start justify-between mb-2">
                   <h4 className="font-medium text-green-900">{activity.name}</h4>
-                  {activity.effort_rating && (
-                    <Badge className={`text-xs ${getEffortRatingColor(activity.effort_rating)}`}>
-                      Effort: {activity.effort_rating}/10
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {activity.effort_rating && (
+                      <Badge className={`text-xs ${getEffortRatingColor(activity.effort_rating)}`}>
+                        Effort: {activity.effort_rating}/10
+                      </Badge>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleWorkoutDetailClick(activity)}
+                      className="h-7 px-2"
+                    >
+                      <Settings className="h-3 w-3 mr-1" />
+                      Détailler
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Sélecteur de type de séance pour cette activité */}
@@ -270,6 +294,17 @@ export const DaySessionDetail: React.FC<DaySessionDetailProps> = ({
           </div>
         )}
       </CardContent>
+
+      {/* Modal pour les détails d'entraînement */}
+      {selectedActivity && (
+        <WorkoutDetailModal
+          isOpen={workoutModalOpen}
+          onClose={handleWorkoutModalClose}
+          activityId={selectedActivity.id}
+          activityName={selectedActivity.name}
+          sessionType={selectedActivity.session_type}
+        />
+      )}
     </Card>
   );
 };

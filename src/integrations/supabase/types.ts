@@ -363,6 +363,36 @@ export type Database = {
         }
         Relationships: []
       }
+      workout_details: {
+        Row: {
+          activity_id: number
+          created_at: string
+          id: string
+          session_type: string
+          updated_at: string
+          user_id: string
+          workout_data: Json
+        }
+        Insert: {
+          activity_id: number
+          created_at?: string
+          id?: string
+          session_type: string
+          updated_at?: string
+          user_id: string
+          workout_data?: Json
+        }
+        Update: {
+          activity_id?: number
+          created_at?: string
+          id?: string
+          session_type?: string
+          updated_at?: string
+          user_id?: string
+          workout_data?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
