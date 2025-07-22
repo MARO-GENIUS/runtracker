@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { WorkoutDetailForm } from './WorkoutDetailForm';
@@ -28,25 +28,19 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
   const [expanded, setExpanded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Reset state when modal opens/closes
+  // Stabiliser les états pour éviter les re-rendus excessifs
   useEffect(() => {
-    if (isOpen) {
-      console.log('[WorkoutDetailModal] Modal opened for activity:', activityId);
-      setIsSaving(false);
+    if (isOpen && !loading) {
       setExpanded(!!workoutDetail);
-      // Force refresh data when modal opens
-      if (activityId) {
-        refetch();
-      }
-    } else {
-      console.log('[WorkoutDetailModal] Modal closed');
-      setExpanded(false);
+      setIsSaving(false);
+      setIsDeleting(false);
     }
-  }, [isOpen, activityId, workoutDetail]);
+  }, [isOpen, loading, workoutDetail]);
 
-  const handleSave = async (data: WorkoutData) => {
-    if (!sessionType) {
-      toast.error("Type de séance non défini");
+  // Mémoiser le handler de sauvegarde pour éviter les re-créations
+  const handleSave = useCallback(async (data: WorkoutData) => {
+    if (!sessionType || isSaving) {
+      if (!sessionType) toast.error("Type de séance non défini");
       return;
     }
     
@@ -60,23 +54,26 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
         console.log('[WorkoutDetailModal] Save successful');
         toast.success('Enregistrement réussi ✅');
         
-        // Close modal after short delay to show success message
+        // Fermer après un court délai pour montrer le succès
         setTimeout(() => {
+          setIsSaving(false);
           onClose();
-        }, 1000);
+        }, 1500);
       } else {
         console.error('[WorkoutDetailModal] Save failed');
         toast.error('Échec de l\'enregistrement');
+        setIsSaving(false);
       }
     } catch (error) {
       console.error('[WorkoutDetailModal] Save error:', error);
       toast.error('Erreur lors de la sauvegarde');
-    } finally {
       setIsSaving(false);
     }
-  };
+  }, [sessionType, isSaving, saveWorkoutDetail, onClose]);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
+    if (isDeleting) return;
+    
     setIsDeleting(true);
     try {
       await deleteWorkoutDetail();
@@ -88,20 +85,21 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [isDeleting, deleteWorkoutDetail, onClose]);
 
-  const toggleExpand = () => {
-    setExpanded(!expanded);
-  };
+  const toggleExpand = useCallback(() => {
+    if (!isSaving && !loading) {
+      setExpanded(prev => !prev);
+    }
+  }, [isSaving, loading]);
 
-  const handleCloseRequest = () => {
+  const handleCloseRequest = useCallback(() => {
     if (isSaving) {
-      console.log('[WorkoutDetailModal] Close requested but save in progress');
       toast.warning('Sauvegarde en cours...');
       return;
     }
     onClose();
-  };
+  }, [isSaving, onClose]);
 
   if (!sessionType) {
     return (
@@ -120,6 +118,9 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
     );
   }
 
+  // Calculer l'état des boutons de façon stable
+  const buttonsDisabled = loading || isSaving || isDeleting;
+
   return (
     <Dialog open={isOpen} onOpenChange={handleCloseRequest}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -137,7 +138,7 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
                 size="sm"
                 onClick={toggleExpand}
                 className="flex items-center gap-1.5 text-primary hover:text-primary-foreground hover:bg-primary transition-colors"
-                disabled={isSaving || loading}
+                disabled={buttonsDisabled}
               >
                 {expanded ? (
                   <>
@@ -157,7 +158,7 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={handleDelete}
-                  disabled={isDeleting || isSaving || loading}
+                  disabled={buttonsDisabled}
                   className="text-destructive hover:text-destructive-foreground hover:bg-destructive transition-colors"
                 >
                   {isDeleting ? (
@@ -171,7 +172,7 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
           </div>
         </DialogHeader>
 
-        <div className={`transition-all duration-300 ${expanded ? 'opacity-100' : 'opacity-90'}`}>
+        <div className="transition-all duration-300">
           {loading && !workoutDetail ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin" />
