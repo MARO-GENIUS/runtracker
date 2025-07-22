@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { WorkoutDetailForm } from './WorkoutDetailForm';
 import { useWorkoutDetails } from '@/hooks/useWorkoutDetails';
 import { WorkoutData } from '@/types/workoutTypes';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ClipboardList } from 'lucide-react';
 
 interface WorkoutDetailModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
 }) => {
   const { workoutDetail, loading, saveWorkoutDetail, deleteWorkoutDetail } = useWorkoutDetails(activityId);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [expanded, setExpanded] = useState(!!workoutDetail);
 
   const handleSave = async (data: WorkoutData) => {
     if (!sessionType) return;
@@ -35,6 +37,10 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
     await deleteWorkoutDetail();
     setIsDeleting(false);
     onClose();
+  };
+
+  const toggleExpand = () => {
+    setExpanded(!expanded);
   };
 
   if (!sessionType) {
@@ -65,27 +71,42 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
                 {activityName}
               </p>
             </div>
-            {workoutDetail && (
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="text-red-600 hover:text-red-700"
+                onClick={toggleExpand}
+                className="flex items-center gap-1.5 text-primary hover:text-primary-foreground hover:bg-primary transition-colors"
               >
-                <Trash2 className="h-4 w-4" />
+                <ClipboardList className="h-4 w-4" />
+                <span>{expanded ? 'Simplifier l\'affichage' : 'Détailler l\'affichage'}</span>
               </Button>
-            )}
+              
+              {workoutDetail && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="text-destructive hover:text-destructive-foreground hover:bg-destructive transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </DialogHeader>
 
-        <WorkoutDetailForm
-          sessionType={sessionType}
-          initialData={workoutDetail?.workout_data}
-          onSave={handleSave}
-          onCancel={onClose}
-          loading={loading}
-        />
+        <div className={`transition-all duration-300 ${expanded ? 'opacity-100' : 'opacity-90'}`}>
+          <WorkoutDetailForm
+            sessionType={sessionType}
+            initialData={workoutDetail?.workout_data}
+            onSave={handleSave}
+            onCancel={onClose}
+            loading={loading}
+            expanded={expanded}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );
