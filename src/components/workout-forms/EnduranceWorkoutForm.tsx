@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { EnduranceWorkoutData } from '@/types/workoutTypes';
+import { Loader2, Save, X } from 'lucide-react';
 
 interface EnduranceWorkoutFormProps {
   initialData?: EnduranceWorkoutData;
@@ -15,6 +16,7 @@ interface EnduranceWorkoutFormProps {
   onCancel: () => void;
   loading: boolean;
   expanded?: boolean;
+  isSaving?: boolean;
 }
 
 export const EnduranceWorkoutForm: React.FC<EnduranceWorkoutFormProps> = ({
@@ -22,7 +24,8 @@ export const EnduranceWorkoutForm: React.FC<EnduranceWorkoutFormProps> = ({
   onSave,
   onCancel,
   loading,
-  expanded = true
+  expanded = true,
+  isSaving = false
 }) => {
   const { register, handleSubmit, setValue, watch } = useForm<EnduranceWorkoutData>({
     defaultValues: initialData || {
@@ -38,6 +41,7 @@ export const EnduranceWorkoutForm: React.FC<EnduranceWorkoutFormProps> = ({
   const targetPace = watch('targetPace');
 
   const onSubmit = (data: EnduranceWorkoutData) => {
+    console.log('[EnduranceWorkoutForm] Submitting form data:', data);
     onSave(data);
   };
 
@@ -67,11 +71,37 @@ export const EnduranceWorkoutForm: React.FC<EnduranceWorkoutFormProps> = ({
         </Card>
 
         <div className="flex gap-2 pt-2">
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Sauvegarde...' : 'Sauvegarder'}
+          <Button 
+            type="submit" 
+            disabled={loading || isSaving}
+            className="flex items-center gap-2"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Sauvegarde en cours...</span>
+              </>
+            ) : loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Chargement...</span>
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                <span>Sauvegarder</span>
+              </>
+            )}
           </Button>
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Annuler
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onCancel}
+            disabled={isSaving}
+            className="flex items-center gap-2"
+          >
+            <X className="h-4 w-4" />
+            <span>Annuler</span>
           </Button>
         </div>
       </form>
@@ -126,11 +156,37 @@ export const EnduranceWorkoutForm: React.FC<EnduranceWorkoutFormProps> = ({
       </div>
 
       <div className="flex gap-2 pt-4">
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Sauvegarde...' : 'Sauvegarder'}
+        <Button 
+          type="submit" 
+          disabled={loading || isSaving}
+          className="flex items-center gap-2"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Sauvegarde en cours...</span>
+            </>
+          ) : loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Chargement...</span>
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4" />
+              <span>Sauvegarder</span>
+            </>
+          )}
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Annuler
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={onCancel}
+          disabled={isSaving}
+          className="flex items-center gap-2"
+        >
+          <X className="h-4 w-4" />
+          <span>Annuler</span>
         </Button>
       </div>
     </form>

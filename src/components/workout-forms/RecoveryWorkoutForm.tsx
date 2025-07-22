@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { RecoveryWorkoutData } from '@/types/workoutTypes';
+import { Loader2, Save, X } from 'lucide-react';
 
 interface RecoveryWorkoutFormProps {
   initialData?: RecoveryWorkoutData;
@@ -15,6 +16,7 @@ interface RecoveryWorkoutFormProps {
   onCancel: () => void;
   loading: boolean;
   expanded?: boolean;
+  isSaving?: boolean;
 }
 
 export const RecoveryWorkoutForm: React.FC<RecoveryWorkoutFormProps> = ({
@@ -22,7 +24,8 @@ export const RecoveryWorkoutForm: React.FC<RecoveryWorkoutFormProps> = ({
   onSave,
   onCancel,
   loading,
-  expanded = true
+  expanded = true,
+  isSaving = false
 }) => {
   const { register, handleSubmit, setValue, watch } = useForm<RecoveryWorkoutData>({
     defaultValues: initialData || {
@@ -38,6 +41,7 @@ export const RecoveryWorkoutForm: React.FC<RecoveryWorkoutFormProps> = ({
   const targetPace = watch('targetPace');
 
   const onSubmit = (data: RecoveryWorkoutData) => {
+    console.log('[RecoveryWorkoutForm] Submitting form data:', data);
     onSave(data);
   };
 
@@ -67,11 +71,37 @@ export const RecoveryWorkoutForm: React.FC<RecoveryWorkoutFormProps> = ({
         </Card>
 
         <div className="flex gap-2 pt-2">
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Sauvegarde...' : 'Sauvegarder'}
+          <Button 
+            type="submit" 
+            disabled={loading || isSaving}
+            className="flex items-center gap-2"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Sauvegarde en cours...</span>
+              </>
+            ) : loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Chargement...</span>
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                <span>Sauvegarder</span>
+              </>
+            )}
           </Button>
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Annuler
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onCancel}
+            disabled={isSaving}
+            className="flex items-center gap-2"
+          >
+            <X className="h-4 w-4" />
+            <span>Annuler</span>
           </Button>
         </div>
       </form>
@@ -125,11 +155,37 @@ export const RecoveryWorkoutForm: React.FC<RecoveryWorkoutFormProps> = ({
       </div>
 
       <div className="flex gap-2 pt-4">
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Sauvegarde...' : 'Sauvegarder'}
+        <Button 
+          type="submit" 
+          disabled={loading || isSaving}
+          className="flex items-center gap-2"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Sauvegarde en cours...</span>
+            </>
+          ) : loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Chargement...</span>
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4" />
+              <span>Sauvegarder</span>
+            </>
+          )}
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Annuler
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={onCancel}
+          disabled={isSaving}
+          className="flex items-center gap-2"
+        >
+          <X className="h-4 w-4" />
+          <span>Annuler</span>
         </Button>
       </div>
     </form>

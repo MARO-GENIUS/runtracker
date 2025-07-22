@@ -25,6 +25,7 @@ interface WorkoutDetailFormProps {
   onCancel: () => void;
   loading: boolean;
   expanded?: boolean;
+  isSaving?: boolean;
 }
 
 export const WorkoutDetailForm: React.FC<WorkoutDetailFormProps> = ({
@@ -33,7 +34,8 @@ export const WorkoutDetailForm: React.FC<WorkoutDetailFormProps> = ({
   onSave,
   onCancel,
   loading,
-  expanded = true
+  expanded = true,
+  isSaving = false
 }) => {
   // Normalize session type to handle different naming conventions
   const normalizeSessionType = (type: string): string => {
@@ -66,6 +68,9 @@ export const WorkoutDetailForm: React.FC<WorkoutDetailFormProps> = ({
 
   const normalizedType = normalizeSessionType(sessionType);
 
+  // Log the session type and its normalized value for debugging
+  console.log('[WorkoutDetailForm] Session type:', sessionType, 'Normalized to:', normalizedType);
+  
   const getSessionTypeInfo = () => {
     switch (normalizedType) {
       case 'intervals':
@@ -141,33 +146,44 @@ export const WorkoutDetailForm: React.FC<WorkoutDetailFormProps> = ({
   };
 
   const getFormComponent = () => {
+    const props = {
+      initialData,
+      onSave,
+      onCancel,
+      loading,
+      expanded,
+      isSaving
+    };
+
+    console.log('[WorkoutDetailForm] Rendering form component for type:', normalizedType);
+
     switch (normalizedType) {
       case 'intervals':
-        return <IntervalWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
+        return <IntervalWorkoutForm {...props} />;
       
       case 'threshold':
-        return <ThresholdWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
+        return <ThresholdWorkoutForm {...props} />;
       
       case 'endurance':
-        return <EnduranceWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
+        return <EnduranceWorkoutForm {...props} />;
       
       case 'tempo':
-        return <TempoWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
+        return <TempoWorkoutForm {...props} />;
       
       case 'hills':
-        return <HillWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
+        return <HillWorkoutForm {...props} />;
       
       case 'fartlek':
-        return <FartlekWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
+        return <FartlekWorkoutForm {...props} />;
       
       case 'recovery':
-        return <RecoveryWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
+        return <RecoveryWorkoutForm {...props} />;
       
       case 'long':
-        return <LongRunWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
+        return <LongRunWorkoutForm {...props} />;
       
       default:
-        return <EnduranceWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
+        return <EnduranceWorkoutForm {...props} />;
     }
   };
 

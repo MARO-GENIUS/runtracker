@@ -19,12 +19,15 @@ export const useWorkoutDetails = (activityId?: number) => {
   const { user } = useAuth();
   const [workoutDetail, setWorkoutDetail] = useState<WorkoutDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null);
 
   const fetchWorkoutDetail = async () => {
     if (!user || !activityId) return;
 
     setLoading(true);
     try {
+      console.log(`[useWorkoutDetails] Fetching workout details for activity ${activityId} and user ${user.id}`);
+      
       const { data, error } = await supabase
         .from('workout_details')
         .select('*')
@@ -33,20 +36,31 @@ export const useWorkoutDetails = (activityId?: number) => {
         .maybeSingle();
 
       if (error) throw error;
+      console.log('[useWorkoutDetails] Fetched workout detail:', data);
       setWorkoutDetail(data);
     } catch (error) {
-      console.error('Error fetching workout details:', error);
+      console.error('[useWorkoutDetails] Error fetching workout details:', error);
       toast.error('Erreur lors du chargement des détails');
+      setSaveSuccess(false);
     } finally {
       setLoading(false);
     }
   };
 
-  const saveWorkoutDetail = async (sessionType: string, workoutData: WorkoutData) => {
-    if (!user || !activityId) return;
+  const saveWorkoutDetail = async (sessionType: string, workoutData: WorkoutData): Promise<boolean> => {
+    if (!user || !activityId) {
+      console.error('[useWorkoutDetails] Cannot save: missing user or activityId', { user, activityId });
+      toast.error('Erreur: Utilisateur non connecté ou activité invalide');
+      setSaveSuccess(false);
+      return false;
+    }
 
     setLoading(true);
+    setSaveSuccess(null);
+    
     try {
+      console.log('[useWorkoutDetails] Saving workout details:', { sessionType, workoutData, activityId, userId: user.id });
+      
       // Normalize session type for storage consistency
       const normalizedSessionType = normalizeSessionType(sessionType);
       
@@ -57,8 +71,12 @@ export const useWorkoutDetails = (activityId?: number) => {
         workout_data: workoutData as any
       };
 
+      let result;
+      
       if (workoutDetail) {
         // Update existing
+        console.log('[useWorkoutDetails] Updating existing workout detail with ID:', workoutDetail.id);
+        
         const { data, error } = await supabase
           .from('workout_details')
           .update({ ...detailData, updated_at: new Date().toISOString() })
@@ -67,10 +85,13 @@ export const useWorkoutDetails = (activityId?: number) => {
           .single();
 
         if (error) throw error;
-        setWorkoutDetail(data);
-        toast.success('Détails d\'entraînement mis à jour');
+        result = data;
+        console.log('[useWorkoutDetails] Successfully updated workout detail:', data);
+        
       } else {
         // Create new
+        console.log('[useWorkoutDetails] Creating new workout detail');
+        
         const { data, error } = await supabase
           .from('workout_details')
           .insert(detailData)
@@ -78,16 +99,23 @@ export const useWorkoutDetails = (activityId?: number) => {
           .single();
 
         if (error) throw error;
-        setWorkoutDetail(data);
-        toast.success('Détails d\'entraînement sauvegardés');
+        result = data;
+        console.log('[useWorkoutDetails] Successfully created workout detail:', data);
       }
       
       // Update the activity's session type
       await updateActivitySessionType(activityId, normalizedSessionType);
       
+      setWorkoutDetail(result);
+      toast.success('Détails d\'entraînement sauvegardés');
+      setSaveSuccess(true);
+      return true;
+      
     } catch (error) {
-      console.error('Error saving workout details:', error);
-      toast.error('Erreur lors de la sauvegarde');
+      console.error('[useWorkoutDetails] Error saving workout details:', error);
+      toast.error('Erreur lors de la sauvegarde des détails');
+      setSaveSuccess(false);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -95,13 +123,21 @@ export const useWorkoutDetails = (activityId?: number) => {
 
   const updateActivitySessionType = async (activityId: number, sessionType: string) => {
     try {
-      await supabase
+      console.log('[useWorkoutDetails] Updating activity session type:', { activityId, sessionType });
+      
+      const { error } = await supabase
         .from('strava_activities')
         .update({ session_type: sessionType })
         .eq('id', activityId)
         .eq('user_id', user?.id);
+
+      if (error) {
+        console.error('[useWorkoutDetails] Error updating activity session type:', error);
+      } else {
+        console.log('[useWorkoutDetails] Successfully updated activity session type');
+      }
     } catch (error) {
-      console.error('Error updating activity session type:', error);
+      console.error('[useWorkoutDetails] Error updating activity session type:', error);
     }
   };
 
@@ -110,6 +146,8 @@ export const useWorkoutDetails = (activityId?: number) => {
 
     setLoading(true);
     try {
+      console.log('[useWorkoutDetails] Deleting workout detail with ID:', workoutDetail.id);
+      
       const { error } = await supabase
         .from('workout_details')
         .delete()
@@ -126,8 +164,9 @@ export const useWorkoutDetails = (activityId?: number) => {
         
       setWorkoutDetail(null);
       toast.success('Détails supprimés');
+      console.log('[useWorkoutDetails] Successfully deleted workout detail');
     } catch (error) {
-      console.error('Error deleting workout details:', error);
+      console.error('[useWorkoutDetails] Error deleting workout details:', error);
       toast.error('Erreur lors de la suppression');
     } finally {
       setLoading(false);
@@ -168,6 +207,7 @@ export const useWorkoutDetails = (activityId?: number) => {
   return {
     workoutDetail,
     loading,
+    saveSuccess,
     saveWorkoutDetail,
     deleteWorkoutDetail,
     refetch: fetchWorkoutDetail
