@@ -1,137 +1,138 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Check, Timer, Clock, Zap, Heart, MountainSnow, Rotate, Share2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface LastSessionTypeSelectorProps {
   currentType: string | null;
-  onTypeChange: (newType: string) => Promise<void>;
+  onTypeChange: (type: string) => Promise<void>;
 }
 
-const LastSessionTypeSelector: React.FC<LastSessionTypeSelectorProps> = ({
-  currentType,
-  onTypeChange
+const LastSessionTypeSelector: React.FC<LastSessionTypeSelectorProps> = ({ 
+  currentType, 
+  onTypeChange 
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [selectedType, setSelectedType] = useState(currentType || '');
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Synchronize selectedType with currentType when it changes
-  useEffect(() => {
-    setSelectedType(currentType || '');
-  }, [currentType]);
-
   const sessionTypes = [
-    { value: 'footing', label: 'Footing' },
-    { value: 'sortie longue', label: 'Sortie longue' },
-    { value: 'intervalle', label: 'Intervalle' },
-    { value: 'seuil', label: 'Seuil' },
-    { value: 'récupération', label: 'Récupération' },
-    { value: 'compétition', label: 'Compétition' },
-    { value: 'côtes', label: 'Côtes' },
-    { value: 'fartlek', label: 'Fartlek' }
+    { 
+      id: 'intervals',
+      label: 'Intervalles', 
+      icon: <Timer className="h-4 w-4" />,
+      color: 'bg-red-100 text-red-800 border-red-200'
+    },
+    { 
+      id: 'threshold',
+      label: 'Seuil', 
+      icon: <Clock className="h-4 w-4" />,
+      color: 'bg-purple-100 text-purple-800 border-purple-200'
+    },
+    { 
+      id: 'endurance',
+      label: 'Endurance', 
+      icon: <Heart className="h-4 w-4" />,
+      color: 'bg-blue-100 text-blue-800 border-blue-200'
+    },
+    { 
+      id: 'tempo',
+      label: 'Tempo', 
+      icon: <Share2 className="h-4 w-4" />,
+      color: 'bg-amber-100 text-amber-800 border-amber-200'
+    },
+    { 
+      id: 'hills',
+      label: 'Côtes', 
+      icon: <MountainSnow className="h-4 w-4" />,
+      color: 'bg-emerald-100 text-emerald-800 border-emerald-200'
+    },
+    { 
+      id: 'fartlek',
+      label: 'Fartlek', 
+      icon: <Zap className="h-4 w-4" />,
+      color: 'bg-indigo-100 text-indigo-800 border-indigo-200'
+    },
+    { 
+      id: 'recovery',
+      label: 'Récupération', 
+      icon: <Rotate className="h-4 w-4" />,
+      color: 'bg-green-100 text-green-800 border-green-200'
+    }
   ];
 
-  const handleSave = async () => {
-    if (selectedType && selectedType !== currentType) {
-      setIsLoading(true);
-      try {
-        await onTypeChange(selectedType);
-        setIsEditing(false);
-        toast.success(`Type de séance mis à jour : ${selectedType}`);
-      } catch (error) {
-        console.error('Erreur lors de la mise à jour:', error);
-        toast.error('Erreur lors de la mise à jour du type de séance');
-        // Reset to current value on error
-        setSelectedType(currentType || '');
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      setIsEditing(false);
+  // Normalize the current type to match our session type IDs
+  const normalizeSessionType = (type: string | null): string | null => {
+    if (!type) return null;
+    
+    type = type.toLowerCase().trim();
+    
+    if (type.includes('interval') || type.includes('fractionn') || type === 'intervalles') {
+      return 'intervals';
+    } else if (type.includes('seuil') || type === 'threshold') {
+      return 'threshold';
+    } else if (type.includes('endurance') || type === 'easy' || type === 'fondamentale') {
+      return 'endurance';
+    } else if (type.includes('tempo')) {
+      return 'tempo';
+    } else if (type.includes('côte') || type.includes('hill') || type.includes('cote')) {
+      return 'hills';
+    } else if (type.includes('fartlek')) {
+      return 'fartlek';
+    } else if (type.includes('récup') || type.includes('recovery') || type.includes('recup')) {
+      return 'recovery';
+    } else if (type.includes('long') || type.includes('sortie longue')) {
+      return 'long';
+    }
+    
+    return type;
+  };
+
+  const normalizedCurrentType = normalizeSessionType(currentType);
+
+  const handleTypeSelect = async (typeId: string) => {
+    try {
+      await onTypeChange(typeId);
+      toast.success(`Type de séance défini : ${sessionTypes.find(t => t.id === typeId)?.label}`);
+    } catch (error) {
+      console.error('Error setting session type:', error);
+      toast.error('Erreur lors de la mise à jour du type de séance');
     }
   };
 
-  const handleCancel = () => {
-    setSelectedType(currentType || '');
-    setIsEditing(false);
-  };
-
-  const handleEdit = () => {
-    setSelectedType(currentType || '');
-    setIsEditing(true);
-  };
-
-  const getSessionLabel = (type: string | null) => {
-    if (!type) return 'Non défini';
-    const sessionType = sessionTypes.find(t => t.value === type);
-    return sessionType ? sessionType.label : type;
-  };
-
   return (
-    <Card className="bg-blue-50 border-blue-200">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium text-blue-800 flex items-center justify-between">
-          Dernière séance effectuée
-          {!isEditing && (
+    <div>
+      <h3 className="text-base font-medium mb-3">Type de votre dernière séance :</h3>
+      
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+        {sessionTypes.map((type) => {
+          const isSelected = normalizedCurrentType === type.id;
+          
+          return (
             <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleEdit}
-              className="h-6 px-2 text-blue-600 hover:text-blue-800"
+              key={type.id}
+              variant={isSelected ? "default" : "outline"}
+              className={`h-auto py-2 px-3 justify-start gap-2 ${
+                isSelected ? 'bg-primary text-primary-foreground' : ''
+              }`}
+              onClick={() => handleTypeSelect(type.id)}
             >
-              <Edit className="h-3 w-3" />
+              <div className="flex items-center gap-2">
+                <div className={`p-1 rounded-full ${
+                  isSelected ? 'bg-primary-foreground/20' : type.color
+                }`}>
+                  {type.icon}
+                </div>
+                <span className="text-sm">{type.label}</span>
+              </div>
+              {isSelected && (
+                <Badge variant="outline" className="ml-auto bg-primary-foreground/20 border-0">
+                  <Check className="h-3 w-3" />
+                </Badge>
+              )}
             </Button>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0">
-        {!isEditing ? (
-          <Badge variant="outline" className="bg-white text-blue-700 border-blue-300">
-            {getSessionLabel(currentType)}
-          </Badge>
-        ) : (
-          <div className="space-y-3">
-            <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Sélectionner le type de séance" />
-              </SelectTrigger>
-              <SelectContent>
-                {sessionTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={isLoading}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Check className="h-3 w-3 mr-1" />
-                {isLoading ? 'Enregistrement...' : 'Valider'}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={isLoading}
-              >
-                <X className="h-3 w-3 mr-1" />
-                Annuler
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          );
+        })}
+      </div>
+    </div>
   );
 };
 

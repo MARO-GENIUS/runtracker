@@ -1,11 +1,10 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { WorkoutDetailForm } from './WorkoutDetailForm';
 import { useWorkoutDetails } from '@/hooks/useWorkoutDetails';
 import { WorkoutData } from '@/types/workoutTypes';
-import { Trash2, ClipboardList } from 'lucide-react';
+import { Trash2, ClipboardList, LayoutList, LayoutDashboard } from 'lucide-react';
 
 interface WorkoutDetailModalProps {
   isOpen: boolean;
@@ -25,6 +24,12 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
   const { workoutDetail, loading, saveWorkoutDetail, deleteWorkoutDetail } = useWorkoutDetails(activityId);
   const [isDeleting, setIsDeleting] = useState(false);
   const [expanded, setExpanded] = useState(!!workoutDetail);
+
+  useEffect(() => {
+    // If a workout detail exists, default to expanded view
+    // Otherwise, start with the simplified view for new entries
+    setExpanded(!!workoutDetail);
+  }, [workoutDetail, isOpen]);
 
   const handleSave = async (data: WorkoutData) => {
     if (!sessionType) return;
@@ -78,8 +83,17 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
                 onClick={toggleExpand}
                 className="flex items-center gap-1.5 text-primary hover:text-primary-foreground hover:bg-primary transition-colors"
               >
-                <ClipboardList className="h-4 w-4" />
-                <span>{expanded ? 'Simplifier l\'affichage' : 'Détailler l\'affichage'}</span>
+                {expanded ? (
+                  <>
+                    <LayoutDashboard className="h-4 w-4" />
+                    <span>Simplifier l'affichage</span>
+                  </>
+                ) : (
+                  <>
+                    <LayoutList className="h-4 w-4" />
+                    <span>Détailler l'affichage</span>
+                  </>
+                )}
               </Button>
               
               {workoutDetail && (

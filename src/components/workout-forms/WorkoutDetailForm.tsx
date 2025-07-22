@@ -35,41 +35,64 @@ export const WorkoutDetailForm: React.FC<WorkoutDetailFormProps> = ({
   loading,
   expanded = true
 }) => {
+  // Normalize session type to handle different naming conventions
+  const normalizeSessionType = (type: string): string => {
+    if (!type) return 'endurance';
+    
+    type = type.toLowerCase().trim();
+    
+    // Map common session type variations to normalized types
+    if (type.includes('interval') || type.includes('fractionn') || type === 'intervalles') {
+      return 'intervals';
+    } else if (type.includes('seuil') || type === 'threshold') {
+      return 'threshold';
+    } else if (type.includes('endurance') || type === 'easy' || type === 'fondamentale') {
+      return 'endurance';
+    } else if (type.includes('tempo')) {
+      return 'tempo';
+    } else if (type.includes('côte') || type.includes('hill') || type.includes('cote')) {
+      return 'hills';
+    } else if (type.includes('fartlek')) {
+      return 'fartlek';
+    } else if (type.includes('récup') || type.includes('recovery') || type.includes('recup')) {
+      return 'recovery';
+    } else if (type.includes('long') || type.includes('sortie longue')) {
+      return 'long';
+    }
+    
+    // Default to endurance if type is not recognized
+    return 'endurance';
+  };
+
+  const normalizedType = normalizeSessionType(sessionType);
+
   const getSessionTypeInfo = () => {
-    switch (sessionType?.toLowerCase()) {
+    switch (normalizedType) {
       case 'intervals':
-      case 'fractionné':
-      case 'intervalles':
         return { 
           color: 'bg-red-100 text-red-800 border-red-200',
           description: 'Entraînement alternant des périodes d\'effort intense et de récupération'
         };
       
       case 'threshold':
-      case 'seuil':
         return { 
           color: 'bg-purple-100 text-purple-800 border-purple-200',
           description: 'Course à intensité élevée et stable, juste en dessous du seuil anaérobie'
         };
       
       case 'endurance':
-      case 'endurance fondamentale':
-      case 'easy':
         return { 
           color: 'bg-blue-100 text-blue-800 border-blue-200',
           description: 'Course à allure modérée et confortable pour développer l\'endurance de base'
         };
       
       case 'tempo':
-      case 'tempo run':
         return { 
           color: 'bg-amber-100 text-amber-800 border-amber-200',
           description: 'Course à allure soutenue et constante, légèrement plus rapide que l\'allure d\'endurance'
         };
       
       case 'hills':
-      case 'côtes':
-      case 'hill repeats':
         return { 
           color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
           description: 'Répétitions en montée pour développer la force et la puissance'
@@ -82,16 +105,12 @@ export const WorkoutDetailForm: React.FC<WorkoutDetailFormProps> = ({
         };
       
       case 'recovery':
-      case 'récupération':
-      case 'active recovery':
         return { 
           color: 'bg-green-100 text-green-800 border-green-200',
           description: 'Course très légère pour favoriser la récupération active'
         };
       
       case 'long':
-      case 'long run':
-      case 'sortie longue':
         return { 
           color: 'bg-orange-100 text-orange-800 border-orange-200',
           description: 'Sortie longue à allure modérée pour développer l\'endurance'
@@ -107,42 +126,44 @@ export const WorkoutDetailForm: React.FC<WorkoutDetailFormProps> = ({
 
   const typeInfo = getSessionTypeInfo();
 
+  const getFormattedSessionType = () => {
+    switch (normalizedType) {
+      case 'intervals': return 'Intervalles';
+      case 'threshold': return 'Seuil';
+      case 'endurance': return 'Endurance fondamentale';
+      case 'tempo': return 'Tempo';
+      case 'hills': return 'Côtes';
+      case 'fartlek': return 'Fartlek';
+      case 'recovery': return 'Récupération';
+      case 'long': return 'Sortie longue';
+      default: return sessionType || 'Personnalisé';
+    }
+  };
+
   const getFormComponent = () => {
-    switch (sessionType?.toLowerCase()) {
+    switch (normalizedType) {
       case 'intervals':
-      case 'fractionné':
-      case 'intervalles':
         return <IntervalWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
       
       case 'threshold':
-      case 'seuil':
         return <ThresholdWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
       
       case 'endurance':
-      case 'endurance fondamentale':
-      case 'easy':
         return <EnduranceWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
       
       case 'tempo':
-      case 'tempo run':
         return <TempoWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
       
       case 'hills':
-      case 'côtes':
-      case 'hill repeats':
         return <HillWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
       
       case 'fartlek':
         return <FartlekWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
       
       case 'recovery':
-      case 'récupération':
-      case 'active recovery':
         return <RecoveryWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
       
       case 'long':
-      case 'long run':
-      case 'sortie longue':
         return <LongRunWorkoutForm initialData={initialData} onSave={onSave} onCancel={onCancel} loading={loading} expanded={expanded} />;
       
       default:
@@ -155,7 +176,7 @@ export const WorkoutDetailForm: React.FC<WorkoutDetailFormProps> = ({
       <div className={`p-3 rounded-lg border ${typeInfo.color} transition-all duration-300`}>
         <div className="flex justify-between items-center">
           <p className="text-sm font-medium">
-            Type de séance: <span>{sessionType}</span>
+            Type de séance: <span>{getFormattedSessionType()}</span>
           </p>
           <TooltipProvider>
             <Tooltip>

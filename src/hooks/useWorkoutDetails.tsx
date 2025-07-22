@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -46,10 +47,13 @@ export const useWorkoutDetails = (activityId?: number) => {
 
     setLoading(true);
     try {
+      // Normalize session type for storage consistency
+      const normalizedSessionType = normalizeSessionType(sessionType);
+      
       const detailData = {
         activity_id: activityId,
         user_id: user.id,
-        session_type: sessionType,
+        session_type: normalizedSessionType,
         workout_data: workoutData as any
       };
 
@@ -77,11 +81,27 @@ export const useWorkoutDetails = (activityId?: number) => {
         setWorkoutDetail(data);
         toast.success('Détails d\'entraînement sauvegardés');
       }
+      
+      // Update the activity's session type
+      await updateActivitySessionType(activityId, normalizedSessionType);
+      
     } catch (error) {
       console.error('Error saving workout details:', error);
       toast.error('Erreur lors de la sauvegarde');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateActivitySessionType = async (activityId: number, sessionType: string) => {
+    try {
+      await supabase
+        .from('strava_activities')
+        .update({ session_type: sessionType })
+        .eq('id', activityId)
+        .eq('user_id', user?.id);
+    } catch (error) {
+      console.error('Error updating activity session type:', error);
     }
   };
 
@@ -96,6 +116,14 @@ export const useWorkoutDetails = (activityId?: number) => {
         .eq('id', workoutDetail.id);
 
       if (error) throw error;
+      
+      // Also clear the session_type in the activity
+      await supabase
+        .from('strava_activities')
+        .update({ session_type: null })
+        .eq('id', workoutDetail.activity_id)
+        .eq('user_id', user?.id);
+        
       setWorkoutDetail(null);
       toast.success('Détails supprimés');
     } catch (error) {
@@ -104,6 +132,33 @@ export const useWorkoutDetails = (activityId?: number) => {
     } finally {
       setLoading(false);
     }
+  };
+  
+  // Helper function to normalize session type
+  const normalizeSessionType = (type: string): string => {
+    if (!type) return 'endurance';
+    
+    type = type.toLowerCase().trim();
+    
+    if (type.includes('interval') || type.includes('fractionn') || type === 'intervalles') {
+      return 'intervals';
+    } else if (type.includes('seuil') || type === 'threshold') {
+      return 'threshold';
+    } else if (type.includes('endurance') || type === 'easy' || type === 'fondamentale') {
+      return 'endurance';
+    } else if (type.includes('tempo')) {
+      return 'tempo';
+    } else if (type.includes('côte') || type.includes('hill') || type.includes('cote')) {
+      return 'hills';
+    } else if (type.includes('fartlek')) {
+      return 'fartlek';
+    } else if (type.includes('récup') || type.includes('recovery') || type.includes('recup')) {
+      return 'recovery';
+    } else if (type.includes('long') || type.includes('sortie longue')) {
+      return 'long';
+    }
+    
+    return type;
   };
 
   useEffect(() => {
