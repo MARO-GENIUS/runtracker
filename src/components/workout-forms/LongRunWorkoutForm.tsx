@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -5,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent } from '@/components/ui/card';
 import { LongRunWorkoutData } from '@/types/workoutTypes';
 
 interface LongRunWorkoutFormProps {
@@ -12,13 +14,15 @@ interface LongRunWorkoutFormProps {
   onSave: (data: LongRunWorkoutData) => void;
   onCancel: () => void;
   loading: boolean;
+  expanded?: boolean;
 }
 
 export const LongRunWorkoutForm: React.FC<LongRunWorkoutFormProps> = ({
   initialData,
   onSave,
   onCancel,
-  loading
+  loading,
+  expanded = true
 }) => {
   const { register, handleSubmit, setValue, watch } = useForm<LongRunWorkoutData>({
     defaultValues: initialData || {
@@ -31,10 +35,54 @@ export const LongRunWorkoutForm: React.FC<LongRunWorkoutFormProps> = ({
   });
 
   const negativeSplit = watch('negativeSplit');
+  const duration = watch('duration');
+  const targetPace = watch('targetPace');
+  const fuelStrategy = watch('fuelStrategy');
 
   const onSubmit = (data: LongRunWorkoutData) => {
     onSave(data);
   };
+
+  // Simplified view for non-expanded mode
+  if (!expanded) {
+    return (
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <Card className="bg-muted/30">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-2">
+              <div className="flex justify-center gap-x-6">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Durée</p>
+                  <p className="text-xl font-semibold">{duration} min</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Allure</p>
+                  <p className="text-xl font-semibold">{targetPace}</p>
+                </div>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {negativeSplit ? 'Avec negative split' : 'Sans negative split'}
+              </div>
+              {fuelStrategy && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  Ravitaillement: {fuelStrategy}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex gap-2 pt-2">
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Sauvegarde...' : 'Sauvegarder'}
+          </Button>
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Annuler
+          </Button>
+        </div>
+      </form>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
