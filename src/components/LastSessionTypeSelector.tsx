@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, Timer, Clock, Zap, Heart, MountainSnow, Rotate, Share2 } from 'lucide-react';
+import { Check, Timer, Clock, Zap, Heart, MountainSnow, RotateCcw, Share2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
@@ -54,7 +54,7 @@ const LastSessionTypeSelector: React.FC<LastSessionTypeSelectorProps> = ({
     { 
       id: 'recovery',
       label: 'Récupération', 
-      icon: <Rotate className="h-4 w-4" />,
+      icon: <RotateCcw className="h-4 w-4" />,
       color: 'bg-green-100 text-green-800 border-green-200'
     }
   ];
