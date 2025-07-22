@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -21,10 +20,15 @@ export const useWorkoutDetails = (activityId?: number) => {
   const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null);
 
-  const fetchWorkoutDetail = async () => {
-    if (!user || !activityId) return;
+  const fetchWorkoutDetail = async (forceRefresh = false) => {
+    if (!user || !activityId) {
+      console.log('[useWorkoutDetails] Cannot fetch: missing user or activityId', { user: !!user, activityId });
+      return;
+    }
 
     setLoading(true);
+    setSaveSuccess(null);
+    
     try {
       console.log(`[useWorkoutDetails] Fetching workout details for activity ${activityId} and user ${user.id}`);
       
@@ -35,9 +39,20 @@ export const useWorkoutDetails = (activityId?: number) => {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[useWorkoutDetails] Supabase error:', error);
+        throw error;
+      }
+      
       console.log('[useWorkoutDetails] Fetched workout detail:', data);
       setWorkoutDetail(data);
+      
+      if (data) {
+        console.log('[useWorkoutDetails] Found existing workout data:', data.workout_data);
+      } else {
+        console.log('[useWorkoutDetails] No existing workout details found for this activity');
+      }
+      
     } catch (error) {
       console.error('[useWorkoutDetails] Error fetching workout details:', error);
       toast.error('Erreur lors du chargement des détails');
@@ -49,7 +64,7 @@ export const useWorkoutDetails = (activityId?: number) => {
 
   const saveWorkoutDetail = async (sessionType: string, workoutData: WorkoutData): Promise<boolean> => {
     if (!user || !activityId) {
-      console.error('[useWorkoutDetails] Cannot save: missing user or activityId', { user, activityId });
+      console.error('[useWorkoutDetails] Cannot save: missing user or activityId', { user: !!user, activityId });
       toast.error('Erreur: Utilisateur non connecté ou activité invalide');
       setSaveSuccess(false);
       return false;
@@ -59,7 +74,13 @@ export const useWorkoutDetails = (activityId?: number) => {
     setSaveSuccess(null);
     
     try {
-      console.log('[useWorkoutDetails] Saving workout details:', { sessionType, workoutData, activityId, userId: user.id });
+      console.log('[useWorkoutDetails] Saving workout details:', { 
+        sessionType, 
+        workoutData, 
+        activityId, 
+        userId: user.id,
+        hasExisting: !!workoutDetail 
+      });
       
       // Normalize session type for storage consistency
       const normalizedSessionType = normalizeSessionType(sessionType);
@@ -79,12 +100,20 @@ export const useWorkoutDetails = (activityId?: number) => {
         
         const { data, error } = await supabase
           .from('workout_details')
-          .update({ ...detailData, updated_at: new Date().toISOString() })
+          .update({ 
+            session_type: normalizedSessionType,
+            workout_data: workoutData as any,
+            updated_at: new Date().toISOString() 
+          })
           .eq('id', workoutDetail.id)
+          .eq('user_id', user.id) // Additional security check
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('[useWorkoutDetails] Update error:', error);
+          throw error;
+        }
         result = data;
         console.log('[useWorkoutDetails] Successfully updated workout detail:', data);
         
@@ -98,7 +127,10 @@ export const useWorkoutDetails = (activityId?: number) => {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('[useWorkoutDetails] Insert error:', error);
+          throw error;
+        }
         result = data;
         console.log('[useWorkoutDetails] Successfully created workout detail:', data);
       }
@@ -106,9 +138,14 @@ export const useWorkoutDetails = (activityId?: number) => {
       // Update the activity's session type
       await updateActivitySessionType(activityId, normalizedSessionType);
       
+      // Update local state immediately
       setWorkoutDetail(result);
+      
+      // Show success message
       toast.success('Détails d\'entraînement sauvegardés');
       setSaveSuccess(true);
+      
+      console.log('[useWorkoutDetails] Save operation completed successfully');
       return true;
       
     } catch (error) {
@@ -200,9 +237,17 @@ export const useWorkoutDetails = (activityId?: number) => {
     return type;
   };
 
+  // Fetch data when activityId or user changes
   useEffect(() => {
-    fetchWorkoutDetail();
-  }, [activityId, user]);
+    if (user && activityId) {
+      console.log('[useWorkoutDetails] Effect triggered - fetching data for activity:', activityId);
+      fetchWorkoutDetail();
+    } else {
+      console.log('[useWorkoutDetails] Effect triggered - clearing data (no user or activityId)');
+      setWorkoutDetail(null);
+      setSaveSuccess(null);
+    }
+  }, [activityId, user?.id]); // Only depend on user.id to avoid unnecessary refetches
 
   return {
     workoutDetail,
@@ -210,6 +255,6 @@ export const useWorkoutDetails = (activityId?: number) => {
     saveSuccess,
     saveWorkoutDetail,
     deleteWorkoutDetail,
-    refetch: fetchWorkoutDetail
+    refetch: () => fetchWorkoutDetail(true)
   };
 };

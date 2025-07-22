@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { WorkoutDetailForm } from './WorkoutDetailForm';
 import { useWorkoutDetails } from '@/hooks/useWorkoutDetails';
 import { WorkoutData } from '@/types/workoutTypes';
-import { Trash2, ClipboardList, LayoutList, LayoutDashboard, Loader2, Save } from 'lucide-react';
+import { Trash2, LayoutList, LayoutDashboard, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface WorkoutDetailModalProps {
@@ -23,36 +23,26 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
   activityName,
   sessionType
 }) => {
-  const { workoutDetail, loading, saveSuccess, saveWorkoutDetail, deleteWorkoutDetail } = useWorkoutDetails(activityId);
+  const { workoutDetail, loading, saveSuccess, saveWorkoutDetail, deleteWorkoutDetail, refetch } = useWorkoutDetails(activityId);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [expanded, setExpanded] = useState(!!workoutDetail);
+  const [expanded, setExpanded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveAttempted, setSaveAttempted] = useState(false);
 
+  // Reset state when modal opens/closes
   useEffect(() => {
-    // If a workout detail exists, default to expanded view
-    // Otherwise, start with the simplified view for new entries
-    setExpanded(!!workoutDetail);
-  }, [workoutDetail, isOpen]);
-
-  useEffect(() => {
-    // Reset saving state when modal is opened
     if (isOpen) {
+      console.log('[WorkoutDetailModal] Modal opened for activity:', activityId);
       setIsSaving(false);
-      setSaveAttempted(false);
+      setExpanded(!!workoutDetail);
+      // Force refresh data when modal opens
+      if (activityId) {
+        refetch();
+      }
+    } else {
+      console.log('[WorkoutDetailModal] Modal closed');
+      setExpanded(false);
     }
-  }, [isOpen]);
-
-  useEffect(() => {
-    // If save was successful and we attempted to save, close the modal
-    if (saveSuccess === true && saveAttempted) {
-      // Small delay to allow the user to see the success message
-      const timer = setTimeout(() => {
-        onClose();
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-  }, [saveSuccess, saveAttempted, onClose]);
+  }, [isOpen, activityId, workoutDetail]);
 
   const handleSave = async (data: WorkoutData) => {
     if (!sessionType) {
@@ -62,7 +52,6 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
     
     console.log('[WorkoutDetailModal] Save requested with data:', data);
     setIsSaving(true);
-    setSaveAttempted(true);
     
     try {
       const success = await saveWorkoutDetail(sessionType, data);
@@ -70,6 +59,11 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
       if (success) {
         console.log('[WorkoutDetailModal] Save successful');
         toast.success('Enregistrement réussi ✅');
+        
+        // Close modal after short delay to show success message
+        setTimeout(() => {
+          onClose();
+        }, 1000);
       } else {
         console.error('[WorkoutDetailModal] Save failed');
         toast.error('Échec de l\'enregistrement');
@@ -84,9 +78,16 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
 
   const handleDelete = async () => {
     setIsDeleting(true);
-    await deleteWorkoutDetail();
-    setIsDeleting(false);
-    onClose();
+    try {
+      await deleteWorkoutDetail();
+      toast.success('Détails supprimés');
+      onClose();
+    } catch (error) {
+      console.error('[WorkoutDetailModal] Delete error:', error);
+      toast.error('Erreur lors de la suppression');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const toggleExpand = () => {
@@ -94,9 +95,9 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
   };
 
   const handleCloseRequest = () => {
-    // If we're in the middle of saving, don't close
     if (isSaving) {
       console.log('[WorkoutDetailModal] Close requested but save in progress');
+      toast.warning('Sauvegarde en cours...');
       return;
     }
     onClose();
@@ -136,17 +137,17 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
                 size="sm"
                 onClick={toggleExpand}
                 className="flex items-center gap-1.5 text-primary hover:text-primary-foreground hover:bg-primary transition-colors"
-                disabled={isSaving}
+                disabled={isSaving || loading}
               >
                 {expanded ? (
                   <>
                     <LayoutDashboard className="h-4 w-4" />
-                    <span>Simplifier l'affichage</span>
+                    <span>Simplifier</span>
                   </>
                 ) : (
                   <>
                     <LayoutList className="h-4 w-4" />
-                    <span>Détailler l'affichage</span>
+                    <span>Détailler</span>
                   </>
                 )}
               </Button>
@@ -156,7 +157,7 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={handleDelete}
-                  disabled={isDeleting || isSaving}
+                  disabled={isDeleting || isSaving || loading}
                   className="text-destructive hover:text-destructive-foreground hover:bg-destructive transition-colors"
                 >
                   {isDeleting ? (
@@ -171,15 +172,22 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
         </DialogHeader>
 
         <div className={`transition-all duration-300 ${expanded ? 'opacity-100' : 'opacity-90'}`}>
-          <WorkoutDetailForm
-            sessionType={sessionType}
-            initialData={workoutDetail?.workout_data}
-            onSave={handleSave}
-            onCancel={handleCloseRequest}
-            loading={loading || isSaving}
-            expanded={expanded}
-            isSaving={isSaving}
-          />
+          {loading && !workoutDetail ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <span className="ml-2">Chargement des données...</span>
+            </div>
+          ) : (
+            <WorkoutDetailForm
+              sessionType={sessionType}
+              initialData={workoutDetail?.workout_data}
+              onSave={handleSave}
+              onCancel={handleCloseRequest}
+              loading={loading}
+              expanded={expanded}
+              isSaving={isSaving}
+            />
+          )}
         </div>
       </DialogContent>
     </Dialog>
