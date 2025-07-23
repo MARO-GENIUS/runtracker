@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { WorkoutDetailForm } from './WorkoutDetailForm';
@@ -28,16 +28,20 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
   const [expanded, setExpanded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Stabiliser les états pour éviter les re-rendus excessifs
+  // Initialiser expanded seulement à l'ouverture du modal
   useEffect(() => {
-    if (isOpen && !loading) {
+    if (isOpen) {
+      // Initialiser expanded basé sur l'existence de données, mais seulement une fois
       setExpanded(!!workoutDetail);
       setIsSaving(false);
       setIsDeleting(false);
+      
+      // Refetch pour s'assurer d'avoir les dernières données
+      refetch();
     }
-  }, [isOpen, loading, workoutDetail]);
+  }, [isOpen]); // Seulement dépendant de isOpen
 
-  // Mémoiser le handler de sauvegarde pour éviter les re-créations
+  // Mémoiser les handlers pour éviter les re-créations
   const handleSave = useCallback(async (data: WorkoutData) => {
     if (!sessionType || isSaving) {
       if (!sessionType) toast.error("Type de séance non défini");
@@ -101,6 +105,11 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
     onClose();
   }, [isSaving, onClose]);
 
+  // Mémoiser l'état des boutons pour éviter les recalculs
+  const buttonsDisabled = useMemo(() => {
+    return loading || isSaving || isDeleting;
+  }, [loading, isSaving, isDeleting]);
+
   if (!sessionType) {
     return (
       <Dialog open={isOpen} onOpenChange={handleCloseRequest}>
@@ -117,9 +126,6 @@ export const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({
       </Dialog>
     );
   }
-
-  // Calculer l'état des boutons de façon stable
-  const buttonsDisabled = loading || isSaving || isDeleting;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleCloseRequest}>

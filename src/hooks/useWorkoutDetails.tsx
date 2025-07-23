@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { WorkoutData } from '@/types/workoutTypes';
@@ -20,8 +20,11 @@ export const useWorkoutDetails = (activityId?: number) => {
   const [workoutDetail, setWorkoutDetail] = useState<WorkoutDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null);
+  
+  // Utiliser une ref pour éviter les re-créations de fonction
+  const isLoadingRef = useRef(false);
 
-  // Mémoiser la fonction de récupération pour éviter les re-rendus
+  // Fonction de récupération stable sans dépendances problématiques
   const fetchWorkoutDetail = useCallback(async (forceRefresh = false) => {
     if (!user || !activityId) {
       console.log('[useWorkoutDetails] Cannot fetch: missing user or activityId', { user: !!user, activityId });
@@ -29,11 +32,12 @@ export const useWorkoutDetails = (activityId?: number) => {
     }
 
     // Éviter les requêtes multiples simultanées
-    if (loading) {
+    if (isLoadingRef.current && !forceRefresh) {
       console.log('[useWorkoutDetails] Already loading, skipping fetch');
       return;
     }
 
+    isLoadingRef.current = true;
     setLoading(true);
     setSaveSuccess(null);
     
@@ -60,8 +64,9 @@ export const useWorkoutDetails = (activityId?: number) => {
       setSaveSuccess(false);
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
-  }, [user, activityId, loading]);
+  }, [user?.id, activityId]); // Seulement les dépendances essentielles
 
   const saveWorkoutDetail = useCallback(async (sessionType: string, workoutData: WorkoutData): Promise<boolean> => {
     if (!user || !activityId) {
@@ -213,15 +218,16 @@ export const useWorkoutDetails = (activityId?: number) => {
     return type;
   };
 
-  // Récupérer les données lors du changement d'activité
+  // Effet simplifié sans dépendances problématiques
   useEffect(() => {
-    if (user && activityId) {
+    if (user?.id && activityId) {
       fetchWorkoutDetail();
     } else {
       setWorkoutDetail(null);
       setSaveSuccess(null);
+      setLoading(false);
     }
-  }, [activityId, user?.id, fetchWorkoutDetail]);
+  }, [user?.id, activityId]); // Seulement les dépendances qui changent rarement
 
   return {
     workoutDetail,
