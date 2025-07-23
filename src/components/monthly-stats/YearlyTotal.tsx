@@ -9,6 +9,8 @@ interface YearlyTotalProps {
 }
 
 export const YearlyTotal = ({ yearlyTotal, yearlyActivities, yearlyGrowth, isStravaConnected }: YearlyTotalProps) => {
+  const currentYear = new Date().getFullYear();
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-shadow duration-200">
       <div className="flex items-center gap-3 mb-4">
@@ -16,7 +18,7 @@ export const YearlyTotal = ({ yearlyTotal, yearlyActivities, yearlyGrowth, isStr
           <Calendar className="text-running-blue" size={20} />
         </div>
         <div>
-          <h3 className="font-bold text-gray-900">Total 2024</h3>
+          <h3 className="font-bold text-gray-900">Total {currentYear}</h3>
           <p className="text-sm text-gray-600">{isStravaConnected ? `${yearlyActivities} activités` : 'Cette année'}</p>
         </div>
       </div>
