@@ -79,6 +79,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signOut,
   }), [user, session, loading]);
 
+  // Add error boundary protection
+  if (!AuthContext) {
+    console.error('AuthContext is not available');
+    return <div>Error: Authentication context unavailable</div>;
+  }
+
   return (
     <AuthContext.Provider value={value}>
       {children}
