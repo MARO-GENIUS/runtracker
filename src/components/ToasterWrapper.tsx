@@ -5,9 +5,9 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 
 export const ToasterWrapper = () => {
   return (
-    <>
+    <React.Fragment>
       <ShadcnToaster />
       <SonnerToaster />
-    </>
+    </React.Fragment>
   );
 };
