@@ -35,7 +35,7 @@ export const HeartRateTimeSeries: React.FC<HeartRateTimeSeriesProps> = ({
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // Convert time to minutes for display - FIXED: return string instead of number
+  // Convert time to minutes for display
   const formatTimeInMinutes = (seconds: number): string => {
     return Math.round(seconds / 60).toString();
   };
@@ -63,10 +63,12 @@ export const HeartRateTimeSeries: React.FC<HeartRateTimeSeriesProps> = ({
     return null;
   };
 
-  // Check if we have valid heart rate data
+  // Enhanced data validation
   const hasValidData = heartRateData && heartRateData.length > 0;
+  const hasAnyHeartRateInfo = averageHR > 0 || maxHR || hasValidData;
 
-  if (!hasValidData) {
+  // If no heart rate data at all
+  if (!hasAnyHeartRateInfo) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-2 mb-4">
@@ -77,30 +79,12 @@ export const HeartRateTimeSeries: React.FC<HeartRateTimeSeriesProps> = ({
         <div className="flex flex-col items-center justify-center py-8 text-gray-600 bg-gray-50 rounded-lg">
           <AlertCircle size={48} className="text-gray-400 mb-4" />
           <p className="text-center text-lg font-medium mb-2">
-            Données de fréquence cardiaque non disponibles
+            Données de fréquence cardiaque non disponibles pour cette séance
           </p>
           <p className="text-center text-sm text-gray-500 max-w-md">
-            Cette activité ne contient pas de données détaillées de fréquence cardiaque. 
             Assurez-vous que votre montre ou capteur était connecté pendant l'entraînement.
           </p>
         </div>
-        
-        {(averageHR || maxHR) && (
-          <div className="grid grid-cols-2 gap-4">
-            {averageHR && (
-              <div className="text-center p-4 bg-red-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">FC Moyenne</p>
-                <p className="text-3xl font-bold text-red-600">{Math.round(averageHR)} bpm</p>
-              </div>
-            )}
-            {maxHR && (
-              <div className="text-center p-4 bg-red-100 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">FC Max</p>
-                <p className="text-3xl font-bold text-red-700">{Math.round(maxHR)} bpm</p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     );
   }
@@ -112,51 +96,71 @@ export const HeartRateTimeSeries: React.FC<HeartRateTimeSeriesProps> = ({
         <h3 className="text-lg font-semibold">Fréquence cardiaque</h3>
       </div>
       
-      <div className="h-96 mb-6">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart 
-            data={heartRateData} 
-            margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis 
-              dataKey="time"
-              tickFormatter={formatTimeInMinutes}
-              stroke="#6b7280"
-              fontSize={12}
-              label={{ value: 'Durée (en min)', position: 'insideBottom', offset: -10 }}
-            />
-            <YAxis 
-              domain={['dataMin - 10', 'dataMax + 10']}
-              stroke="#6b7280"
-              fontSize={12}
-              label={{ value: 'Fréquence cardiaque (en bat/min)', angle: -90, position: 'insideLeft' }}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Line 
-              type="monotone" 
-              dataKey="heartRate" 
-              stroke="#ef4444"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4, fill: '#dc2626' }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-4">
-        <div className="text-center p-4 bg-red-50 rounded-lg">
-          <p className="text-sm text-gray-600 mb-1">FC Moyenne</p>
-          <p className="text-3xl font-bold text-red-600">{Math.round(averageHR)} bpm</p>
+      {/* Show chart only if we have detailed data */}
+      {hasValidData && (
+        <div className="h-96 mb-6">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart 
+              data={heartRateData} 
+              margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis 
+                dataKey="time"
+                tickFormatter={formatTimeInMinutes}
+                stroke="#6b7280"
+                fontSize={12}
+                label={{ value: 'Durée (en min)', position: 'insideBottom', offset: -10 }}
+              />
+              <YAxis 
+                domain={['dataMin - 10', 'dataMax + 10']}
+                stroke="#6b7280"
+                fontSize={12}
+                label={{ value: 'Fréquence cardiaque (en bat/min)', angle: -90, position: 'insideLeft' }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Line 
+                type="monotone" 
+                dataKey="heartRate" 
+                stroke="#ef4444"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4, fill: '#dc2626' }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
-        {maxHR && (
-          <div className="text-center p-4 bg-red-100 rounded-lg">
-            <p className="text-sm text-gray-600 mb-1">FC Max</p>
-            <p className="text-3xl font-bold text-red-700">{Math.round(maxHR)} bpm</p>
-          </div>
-        )}
-      </div>
+      )}
+
+      {/* Show summary cards if we have any heart rate data */}
+      {(averageHR > 0 || maxHR) && (
+        <div className="grid grid-cols-2 gap-4">
+          {averageHR > 0 && (
+            <div className="text-center p-4 bg-red-50 rounded-lg">
+              <p className="text-sm text-gray-600 mb-1">FC Moyenne</p>
+              <p className="text-3xl font-bold text-red-600">{Math.round(averageHR)} bpm</p>
+            </div>
+          )}
+          {maxHR && (
+            <div className="text-center p-4 bg-red-100 rounded-lg">
+              <p className="text-sm text-gray-600 mb-1">FC Max</p>
+              <p className="text-3xl font-bold text-red-700">{Math.round(maxHR)} bpm</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Show message if we only have basic data but no detailed chart */}
+      {!hasValidData && (averageHR > 0 || maxHR) && (
+        <div className="text-center py-4 bg-blue-50 rounded-lg">
+          <p className="text-sm text-blue-600 mb-2">
+            Données détaillées de fréquence cardiaque non disponibles
+          </p>
+          <p className="text-xs text-blue-500">
+            Seules les moyennes sont disponibles pour cette séance
+          </p>
+        </div>
+      )}
     </div>
   );
 };

@@ -27,7 +27,7 @@ interface ActivityDetail {
   best_efforts?: any[];
   splits?: any[];
   heart_rate_stream?: any[];
-  // Nouvelles données de carte
+  // Map data
   map_polyline?: string | null;
   map_summary_polyline?: string | null;
   start_latlng?: string | null;
@@ -40,9 +40,10 @@ interface UseOptimizedActivityDetailReturn {
   error: string | null;
   fetchActivityDetail: (activityId: number) => Promise<void>;
   prefetchActivity: (activityId: number) => void;
+  loadHeartRateData: (activityId: number) => Promise<void>;
 }
 
-// Cache en mémoire pour les activités
+// Cache management
 const activityCache = new Map<number, ActivityDetail>();
 const cacheExpiry = new Map<number, number>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -67,6 +68,8 @@ export const useOptimizedActivityDetail = (): UseOptimizedActivityDetailReturn =
   const fetchBasicActivityData = useCallback(async (activityId: number, signal?: AbortSignal): Promise<ActivityDetail> => {
     if (!user) throw new Error('Utilisateur non connecté');
 
+    console.log(`Fetching basic activity data for ${activityId}`);
+
     const { data: activityData, error: fetchError } = await supabase
       .from('strava_activities')
       .select(`
@@ -82,6 +85,13 @@ export const useOptimizedActivityDetail = (): UseOptimizedActivityDetailReturn =
 
     if (signal?.aborted) throw new Error('Request aborted');
     if (fetchError) throw new Error(fetchError.message);
+
+    console.log('Basic activity data fetched:', {
+      id: activityData.id,
+      average_heartrate: activityData.average_heartrate,
+      max_heartrate: activityData.max_heartrate,
+      hasMapData: !!(activityData.map_polyline || activityData.map_summary_polyline)
+    });
 
     return activityData;
   }, [user]);
@@ -105,18 +115,59 @@ export const useOptimizedActivityDetail = (): UseOptimizedActivityDetailReturn =
     return bestEffortsData || [];
   }, [user]);
 
+  const loadHeartRateData = useCallback(async (activityId: number) => {
+    if (!user) return;
+
+    try {
+      console.log(`Loading heart rate data for activity ${activityId}`);
+      
+      const { data, error } = await supabase.functions.invoke('get-activity-details', {
+        body: { activityId }
+      });
+
+      if (error) {
+        console.error('Error loading heart rate data:', error);
+        return;
+      }
+
+      if (data?.success && data.heart_rate_stream) {
+        console.log('Heart rate data loaded:', {
+          streamLength: data.heart_rate_stream.length,
+          sample: data.heart_rate_stream.slice(0, 3)
+        });
+
+        // Update activity with heart rate stream data
+        setActivity(prev => {
+          if (!prev) return null;
+          
+          const updatedActivity = {
+            ...prev,
+            heart_rate_stream: data.heart_rate_stream || [],
+            splits: data.splits || prev.splits || []
+          };
+          
+          // Update cache
+          setCacheEntry(activityId, updatedActivity);
+          
+          return updatedActivity;
+        });
+      }
+    } catch (error) {
+      console.error('Error loading heart rate data:', error);
+    }
+  }, [user, setCacheEntry]);
+
   const fetchActivityDetail = useCallback(async (activityId: number) => {
     if (!user) {
       setError('Utilisateur non connecté');
       return;
     }
 
-    // Annuler la requête précédente si elle existe
+    // Cancel previous request
     if (abortController.current) {
       abortController.current.abort();
     }
 
-    // Créer un nouveau contrôleur d'annulation
     abortController.current = new AbortController();
     const { signal } = abortController.current;
 
@@ -124,35 +175,42 @@ export const useOptimizedActivityDetail = (): UseOptimizedActivityDetailReturn =
       setLoading(true);
       setError(null);
 
-      // Vérifier le cache en premier
+      // Check cache first
       if (isCacheValid(activityId)) {
         const cachedActivity = activityCache.get(activityId);
         if (cachedActivity) {
+          console.log('Using cached activity data');
           setActivity(cachedActivity);
           setLoading(false);
+          
+          // Load heart rate data in background if not present
+          if (!cachedActivity.heart_rate_stream || cachedActivity.heart_rate_stream.length === 0) {
+            loadHeartRateData(activityId);
+          }
+          
           return;
         }
       }
 
-      // Récupérer les données de base (incluant les données de carte)
-      const basicData = await fetchBasicActivityData(activityId, signal);
-      
-      // Récupérer les best efforts en parallèle
-      const bestEffortsPromise = fetchBestEfforts(activityId, signal);
-      
-      // Attendre les best efforts
-      const bestEfforts = await bestEffortsPromise;
+      // Fetch basic data and best efforts in parallel
+      const [basicData, bestEfforts] = await Promise.all([
+        fetchBasicActivityData(activityId, signal),
+        fetchBestEfforts(activityId, signal)
+      ]);
 
       const fullActivity: ActivityDetail = {
         ...basicData,
         best_efforts: bestEfforts,
-        splits: [], // Sera chargé à la demande
-        heart_rate_stream: [] // Sera chargé à la demande
+        splits: [],
+        heart_rate_stream: []
       };
 
       if (!signal.aborted) {
         setActivity(fullActivity);
         setCacheEntry(activityId, fullActivity);
+        
+        // Load additional data in background
+        loadHeartRateData(activityId);
       }
 
     } catch (error: any) {
@@ -165,14 +223,16 @@ export const useOptimizedActivityDetail = (): UseOptimizedActivityDetailReturn =
         setLoading(false);
       }
     }
-  }, [user, isCacheValid, fetchBasicActivityData, fetchBestEfforts, setCacheEntry]);
+  }, [user, isCacheValid, fetchBasicActivityData, fetchBestEfforts, setCacheEntry, loadHeartRateData]);
 
   const prefetchActivity = useCallback(async (activityId: number) => {
     if (!user || isCacheValid(activityId)) return;
 
     try {
-      const basicData = await fetchBasicActivityData(activityId);
-      const bestEfforts = await fetchBestEfforts(activityId);
+      const [basicData, bestEfforts] = await Promise.all([
+        fetchBasicActivityData(activityId),
+        fetchBestEfforts(activityId)
+      ]);
       
       const fullActivity: ActivityDetail = {
         ...basicData,
@@ -187,7 +247,7 @@ export const useOptimizedActivityDetail = (): UseOptimizedActivityDetailReturn =
     }
   }, [user, isCacheValid, fetchBasicActivityData, fetchBestEfforts, setCacheEntry]);
 
-  // Cleanup à la destruction du composant
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (abortController.current) {
@@ -201,6 +261,7 @@ export const useOptimizedActivityDetail = (): UseOptimizedActivityDetailReturn =
     loading,
     error,
     fetchActivityDetail,
-    prefetchActivity
+    prefetchActivity,
+    loadHeartRateData
   };
 };

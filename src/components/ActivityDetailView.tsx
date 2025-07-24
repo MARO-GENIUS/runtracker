@@ -43,7 +43,7 @@ interface ActivityDetailViewProps {
     best_efforts?: any[];
     splits?: any[];
     heart_rate_stream?: HeartRateDataPoint[];
-    // Nouvelles données de carte
+    // Map data
     map_polyline?: string | null;
     map_summary_polyline?: string | null;
     start_latlng?: string | null;
@@ -58,13 +58,60 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
     await updateEffortRating(activity.id, rating, notes);
   };
 
-  // Check if we have detailed heart rate data
+  // Enhanced heart rate data detection
   const hasDetailedHeartRate = activity.heart_rate_stream && activity.heart_rate_stream.length > 0;
-  const hasAnyHeartRateData = activity.average_heartrate || hasDetailedHeartRate;
+  const hasBasicHeartRate = activity.average_heartrate && activity.average_heartrate > 0;
+  const hasAnyHeartRateData = hasDetailedHeartRate || hasBasicHeartRate;
+
+  console.log('Heart rate data check:', {
+    hasDetailedHeartRate,
+    hasBasicHeartRate,
+    hasAnyHeartRateData,
+    averageHR: activity.average_heartrate,
+    maxHR: activity.max_heartrate,
+    streamLength: activity.heart_rate_stream?.length || 0
+  });
 
   // Check if we have GPS data for map
   const hasGpsData = activity.map_polyline || activity.map_summary_polyline || 
                      (activity.start_latlng && activity.end_latlng);
+
+  // Heart Rate Chart Component
+  const HeartRateSection = () => {
+    if (!hasAnyHeartRateData) {
+      return (
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center py-8">
+              <div className="text-gray-500 mb-2">
+                <svg className="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Données de fréquence cardiaque non disponibles pour cette séance
+              </h3>
+              <p className="text-sm text-gray-500">
+                Assurez-vous que votre montre ou capteur était connecté pendant l'entraînement.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <HeartRateTimeSeries 
+            heartRateData={activity.heart_rate_stream || []}
+            averageHR={activity.average_heartrate || 0}
+            maxHR={activity.max_heartrate}
+          />
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -96,7 +143,10 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
         <TabsContent value="overview" className="space-y-6">
           <ActivityMetrics activity={activity} />
           
-          {/* Carte compacte dans la vue d'ensemble */}
+          {/* Heart Rate Section - Always visible in overview */}
+          <HeartRateSection />
+          
+          {/* Compact map in overview */}
           {hasGpsData && (
             <ActivityMap
               polyline={activity.map_summary_polyline || activity.map_polyline}
@@ -107,30 +157,28 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
             />
           )}
           
-          {/* Heart Rate Section - placed after map */}
-          {hasAnyHeartRateData && (
-            <Card>
-              <CardContent className="p-6">
-                <HeartRateTimeSeries 
-                  heartRateData={activity.heart_rate_stream || []}
-                  averageHR={activity.average_heartrate || 0}
-                  maxHR={activity.max_heartrate}
-                />
-              </CardContent>
-            </Card>
-          )}
-          
           <BestEfforts bestEfforts={activity.best_efforts || []} />
         </TabsContent>
 
         <TabsContent value="map" className="space-y-6">
-          <ActivityMap
-            polyline={activity.map_polyline || activity.map_summary_polyline}
-            startLatLng={activity.start_latlng}
-            endLatLng={activity.end_latlng}
-            activityName={activity.name}
-            compact={false}
-          />
+          {hasGpsData ? (
+            <ActivityMap
+              polyline={activity.map_polyline || activity.map_summary_polyline}
+              startLatLng={activity.start_latlng}
+              endLatLng={activity.end_latlng}
+              activityName={activity.name}
+              compact={false}
+            />
+          ) : (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-gray-600 mb-2">Données GPS non disponibles</p>
+                <p className="text-sm text-gray-500">
+                  Cette activité ne contient pas de données de géolocalisation.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="effort" className="space-y-6">
@@ -143,26 +191,8 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
         </TabsContent>
 
         <TabsContent value="charts" className="space-y-6">
-          {hasAnyHeartRateData ? (
-            <Card>
-              <CardContent className="p-6">
-                <HeartRateTimeSeries 
-                  heartRateData={activity.heart_rate_stream || []}
-                  averageHR={activity.average_heartrate || 0}
-                  maxHR={activity.max_heartrate}
-                />
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <p className="text-gray-600 mb-2">Aucune donnée de fréquence cardiaque disponible</p>
-                <p className="text-sm text-gray-500">
-                  Cette activité ne contient pas de données de fréquence cardiaque.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          {/* Heart Rate Chart - Always visible in charts tab */}
+          <HeartRateSection />
         </TabsContent>
 
         <TabsContent value="details" className="space-y-6">
