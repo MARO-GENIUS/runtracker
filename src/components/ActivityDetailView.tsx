@@ -9,6 +9,7 @@ import { HeartRateChart } from './HeartRateChart';
 import { HeartRateTimeSeries } from './HeartRateTimeSeries';
 import { EffortRating } from './EffortRating';
 import { NextSessionSuggestion } from './NextSessionSuggestion';
+import { ActivityMap } from './ActivityMap';
 import { useEffortRating } from '@/hooks/useEffortRating';
 import { formatDate, formatDateTime } from '@/utils/activityHelpers';
 
@@ -42,21 +43,16 @@ interface ActivityDetailViewProps {
     best_efforts?: any[];
     splits?: any[];
     heart_rate_stream?: HeartRateDataPoint[];
+    // Nouvelles données de carte
+    map_polyline?: string | null;
+    map_summary_polyline?: string | null;
+    start_latlng?: string | null;
+    end_latlng?: string | null;
   };
 }
 
 export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity }) => {
   const { updateEffortRating } = useEffortRating();
-
-  console.log('ActivityDetailView received activity:', {
-    id: activity.id,
-    name: activity.name,
-    effort_rating: activity.effort_rating,
-    best_efforts_count: activity.best_efforts?.length || 0,
-    splits_count: activity.splits?.length || 0,
-    heart_rate_stream_count: activity.heart_rate_stream?.length || 0,
-    average_heartrate: activity.average_heartrate
-  });
 
   const handleEffortSave = async (rating: number, notes: string) => {
     await updateEffortRating(activity.id, rating, notes);
@@ -65,6 +61,10 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
   // Check if we have detailed heart rate data
   const hasDetailedHeartRate = activity.heart_rate_stream && activity.heart_rate_stream.length > 0;
   const hasAnyHeartRateData = activity.average_heartrate || hasDetailedHeartRate;
+
+  // Check if we have GPS data for map
+  const hasGpsData = activity.map_polyline || activity.map_summary_polyline || 
+                     (activity.start_latlng && activity.end_latlng);
 
   return (
     <div className="space-y-6">
@@ -84,8 +84,9 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="map">Parcours</TabsTrigger>
           <TabsTrigger value="effort">Ressenti</TabsTrigger>
           <TabsTrigger value="charts">Graphiques</TabsTrigger>
           <TabsTrigger value="details">Détails</TabsTrigger>
@@ -95,7 +96,18 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
         <TabsContent value="overview" className="space-y-6">
           <ActivityMetrics activity={activity} />
           
-          {/* Heart Rate Section - placed after metrics */}
+          {/* Carte compacte dans la vue d'ensemble */}
+          {hasGpsData && (
+            <ActivityMap
+              polyline={activity.map_summary_polyline || activity.map_polyline}
+              startLatLng={activity.start_latlng}
+              endLatLng={activity.end_latlng}
+              activityName={activity.name}
+              compact={true}
+            />
+          )}
+          
+          {/* Heart Rate Section - placed after map */}
           {hasAnyHeartRateData && (
             <Card>
               <CardContent className="p-6">
@@ -109,6 +121,16 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
           )}
           
           <BestEfforts bestEfforts={activity.best_efforts || []} />
+        </TabsContent>
+
+        <TabsContent value="map" className="space-y-6">
+          <ActivityMap
+            polyline={activity.map_polyline || activity.map_summary_polyline}
+            startLatLng={activity.start_latlng}
+            endLatLng={activity.end_latlng}
+            activityName={activity.name}
+            compact={false}
+          />
         </TabsContent>
 
         <TabsContent value="effort" className="space-y-6">

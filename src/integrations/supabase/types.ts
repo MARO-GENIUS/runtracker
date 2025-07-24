@@ -179,10 +179,13 @@ export type Database = {
           effort_notes: string | null
           effort_rating: number | null
           elapsed_time: number
+          end_latlng: string | null
           id: number
           location_city: string | null
           location_country: string | null
           location_state: string | null
+          map_polyline: string | null
+          map_summary_polyline: string | null
           max_heartrate: number | null
           max_speed: number | null
           moving_time: number
@@ -190,6 +193,7 @@ export type Database = {
           session_type: string | null
           start_date: string
           start_date_local: string
+          start_latlng: string | null
           suffer_score: number | null
           total_elevation_gain: number | null
           type: string
@@ -205,10 +209,13 @@ export type Database = {
           effort_notes?: string | null
           effort_rating?: number | null
           elapsed_time: number
+          end_latlng?: string | null
           id: number
           location_city?: string | null
           location_country?: string | null
           location_state?: string | null
+          map_polyline?: string | null
+          map_summary_polyline?: string | null
           max_heartrate?: number | null
           max_speed?: number | null
           moving_time: number
@@ -216,6 +223,7 @@ export type Database = {
           session_type?: string | null
           start_date: string
           start_date_local: string
+          start_latlng?: string | null
           suffer_score?: number | null
           total_elevation_gain?: number | null
           type: string
@@ -231,10 +239,13 @@ export type Database = {
           effort_notes?: string | null
           effort_rating?: number | null
           elapsed_time?: number
+          end_latlng?: string | null
           id?: number
           location_city?: string | null
           location_country?: string | null
           location_state?: string | null
+          map_polyline?: string | null
+          map_summary_polyline?: string | null
           max_heartrate?: number | null
           max_speed?: number | null
           moving_time?: number
@@ -242,6 +253,7 @@ export type Database = {
           session_type?: string | null
           start_date?: string
           start_date_local?: string
+          start_latlng?: string | null
           suffer_score?: number | null
           total_elevation_gain?: number | null
           type?: string

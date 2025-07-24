@@ -2,7 +2,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ActivityDetailView } from './ActivityDetailView';
-import { useActivityDetail } from '@/hooks/useActivityDetail';
+import { useOptimizedActivityDetail } from '@/hooks/useOptimizedActivityDetail';
 
 interface ActivityDetailModalProps {
   isOpen: boolean;
@@ -15,17 +15,17 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({
   onClose,
   activityId
 }) => {
-  const { activity, loading, error, fetchActivityDetail } = useActivityDetail();
+  const { activity, loading, error, fetchActivityDetail } = useOptimizedActivityDetail();
 
   React.useEffect(() => {
     if (isOpen && activityId) {
       fetchActivityDetail(activityId);
     }
-  }, [isOpen, activityId]);
+  }, [isOpen, activityId, fetchActivityDetail]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
             {activity?.name || 'Détails de l\'activité'}

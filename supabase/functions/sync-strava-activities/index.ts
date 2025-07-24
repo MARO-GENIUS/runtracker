@@ -171,7 +171,7 @@ serve(async (req) => {
     let syncedCount = 0
     let skippedCount = 0
 
-    // Insert or update activities
+    // Insert or update activities with map data
     for (const activity of runningActivities) {
       try {
         await supabaseClient
@@ -196,6 +196,11 @@ serve(async (req) => {
             max_heartrate: activity.max_heartrate,
             suffer_score: activity.suffer_score,
             calories: activity.kilojoules ? activity.kilojoules * 0.239006 : null,
+            // Nouvelles données de carte
+            map_polyline: activity.map?.polyline || null,
+            map_summary_polyline: activity.map?.summary_polyline || null,
+            start_latlng: activity.start_latlng ? JSON.stringify(activity.start_latlng) : null,
+            end_latlng: activity.end_latlng ? JSON.stringify(activity.end_latlng) : null,
           })
         syncedCount++
       } catch (error) {
