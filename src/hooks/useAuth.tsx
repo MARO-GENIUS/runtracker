@@ -23,7 +23,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initializeAuth = async () => {
       try {
         console.log('Initializing auth...');
-        // Check for existing session
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -44,7 +43,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
       if (mounted) {
@@ -72,18 +70,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const value = React.useMemo(() => ({
+  const value = {
     user,
     session,
     loading,
     signOut,
-  }), [user, session, loading]);
-
-  // Add error boundary protection
-  if (!AuthContext) {
-    console.error('AuthContext is not available');
-    return <div>Error: Authentication context unavailable</div>;
-  }
+  };
 
   return (
     <AuthContext.Provider value={value}>
