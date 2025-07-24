@@ -22,13 +22,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initializeAuth = async () => {
       try {
+        console.log('Initializing auth...');
         // Check for existing session
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+        }
         
         if (mounted) {
           setSession(currentSession);
           setUser(currentSession?.user ?? null);
           setLoading(false);
+          console.log('Auth initialized:', { user: currentSession?.user?.id, session: !!currentSession });
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -40,10 +46,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
       if (mounted) {
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+          setLoading(false);
+        }
       }
     });
 
@@ -56,11 +65,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
+  const value = React.useMemo(() => ({
+    user,
+    session,
+    loading,
+    signOut,
+  }), [user, session, loading]);
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
