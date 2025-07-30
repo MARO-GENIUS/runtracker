@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { TrendingUp, Clock, Trash2 } from 'lucide-react';
+import { TrendingUp, Clock, Trash2, Calendar, MapPin } from 'lucide-react';
 import { formatDistance, formatDuration, formatPace, formatDate, formatElevation } from '@/utils/activityHelpers';
 import { useDeleteActivity } from '@/hooks/useDeleteActivity';
 import { DeleteActivityDialog } from './DeleteActivityDialog';
+import { TruncatedText } from '@/components/ui/truncated-text';
 
 interface Activity {
   id: number;
@@ -50,49 +51,72 @@ export const ActivitiesTableMobile: React.FC<ActivitiesTableMobileProps> = ({
 
   return (
     <>
-      <div className="md:hidden">
+      <div className="md:hidden mobile-smart-container">
         {activities.map((activity) => (
           <div 
             key={activity.id} 
-            className="p-4 border-b border-gray-100 last:border-b-0 cursor-pointer hover:bg-gray-50 transition-colors min-h-[60px] active:bg-gray-100 relative"
+            className="p-3 sm:p-4 border-b border-gray-100 last:border-b-0 cursor-pointer hover:bg-gray-50 transition-colors mobile-touch-target active:bg-gray-100 relative mobile-smooth-transition"
             onClick={() => onActivityClick(activity.id)}
           >
-            <div className="flex justify-between items-start mb-3">
-              <h3 className="font-semibold text-gray-800 text-sm leading-tight pr-2 flex-1">
-                {activity.name}
-              </h3>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500 whitespace-nowrap">
-                  {formatDate(activity.start_date_local)}
-                </span>
+            {/* Header avec titre et date */}
+            <div className="flex justify-between items-start mb-2 gap-2">
+              <div className="flex-1 min-w-0 pr-2">
+                <TruncatedText
+                  text={activity.name}
+                  maxLength={25}
+                  useFallbackAt={15}
+                  fallbackIcon={<TrendingUp size={16} className="text-running-blue" />}
+                  className="font-semibold text-gray-800 mobile-text-responsive leading-tight block"
+                  showTooltip={true}
+                />
+              </div>
+              
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-1 text-gray-500">
+                  <Calendar size={12} className="flex-shrink-0" />
+                  <span className="mobile-text-responsive whitespace-nowrap">
+                    {formatDate(activity.start_date_local)}
+                  </span>
+                </div>
                 <button
                   onClick={(e) => handleDeleteClick(e, activity)}
-                  className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                  className="mobile-touch-target-xs p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors mobile-smooth-transition"
                   title="Supprimer cette activité"
+                  aria-label="Supprimer cette activité"
                 >
                   <Trash2 size={14} />
                 </button>
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4 text-sm mb-2">
-              <div className="flex items-center gap-2">
+            {/* Métriques principales en grille adaptative */}
+            <div className="mobile-grid-auto mb-2">
+              <div className="flex items-center gap-1.5 min-w-0">
                 <TrendingUp size={14} className="text-running-blue flex-shrink-0" />
-                <span className="font-medium">{formatDistance(activity.distance)}</span>
+                <span className="font-medium mobile-text-responsive-sm truncate">
+                  {formatDistance(activity.distance)}
+                </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
                 <Clock size={14} className="text-green-600 flex-shrink-0" />
-                <span className="font-medium">{formatDuration(activity.moving_time)}</span>
+                <span className="font-medium mobile-text-responsive-sm truncate">
+                  {formatDuration(activity.moving_time)}
+                </span>
               </div>
             </div>
             
-            <div className="flex items-center gap-2 text-xs text-gray-600">
-              <span>Allure: {formatPace(activity.distance, activity.moving_time)}</span>
+            {/* Métriques secondaires compactes */}
+            <div className="flex items-center gap-3 mobile-text-responsive text-gray-600 overflow-hidden">
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <span className="font-medium">Allure:</span>
+                <span>{formatPace(activity.distance, activity.moving_time)}</span>
+              </div>
               {activity.total_elevation_gain && (
-                <>
-                  <span>•</span>
-                  <span>D+: {formatElevation(activity.total_elevation_gain)}</span>
-                </>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <span className="text-gray-400">•</span>
+                  <span className="font-medium">D+:</span>
+                  <span>{formatElevation(activity.total_elevation_gain)}</span>
+                </div>
               )}
             </div>
           </div>

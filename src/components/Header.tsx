@@ -2,6 +2,7 @@
 import { ArrowLeft } from 'lucide-react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Link } from 'react-router-dom';
+import { TruncatedText } from '@/components/ui/truncated-text';
 
 interface HeaderProps {
   currentView: 'dashboard' | 'records' | 'activities' | 'coach';
@@ -12,11 +13,11 @@ interface HeaderProps {
 const Header = ({ currentView }: HeaderProps) => {
   return (
     <header className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-600 text-white shadow-lg animate-fade-in">
-      <div className="max-w-6xl mx-auto mobile-container mobile-section-spacing">
+      <div className="max-w-6xl mx-auto mobile-adaptive-container mobile-section-spacing">
         {/* Vue records */}
         {currentView === 'records' && (
           <div className="text-center">
-            <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold mb-2 text-white drop-shadow-lg mobile-text-readable">
+            <h1 className="mobile-text-responsive-base sm:text-2xl lg:text-4xl font-bold mb-2 text-white drop-shadow-lg mobile-text-readable">
               Mes Records Personnels
             </h1>
             <p className="text-white/90 mobile-text-hierarchy font-medium">
@@ -27,41 +28,67 @@ const Header = ({ currentView }: HeaderProps) => {
 
         {/* Vue activities - Layout optimisé responsive */}
         {currentView === 'activities' && (
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
             <Link 
               to="/"
-              className="flex items-center gap-2 text-white/80 hover:text-white mobile-smooth-transition hover:scale-105 mobile-touch-target rounded-lg px-2 py-2"
+              className="flex items-center gap-2 text-white/80 hover:text-white mobile-smooth-transition hover:scale-105 mobile-touch-target-sm rounded-lg px-2 py-2 flex-shrink-0"
+              aria-label="Retour au dashboard"
             >
-              <ArrowLeft size={20} />
-              <span className="font-medium hidden sm:inline mobile-text-hierarchy">Retour au dashboard</span>
+              <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
+              <TruncatedText
+                text="Retour au dashboard"
+                maxLength={8}
+                useFallbackAt={6}
+                fallbackIcon={null}
+                className="font-medium mobile-text-responsive hidden xs:inline"
+                showTooltip={false}
+              />
             </Link>
             
-            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-lg mobile-text-readable text-center flex-1">
-              ACTIVITÉS
+            <h1 className="mobile-text-responsive-sm sm:text-xl lg:text-2xl font-bold text-white drop-shadow-lg mobile-text-readable text-center flex-1 min-w-0">
+              <TruncatedText
+                text="ACTIVITÉS"
+                maxLength={12}
+                className="block"
+                showTooltip={false}
+              />
             </h1>
             
             {/* Espace équilibré */}
-            <div className="mobile-touch-target"></div>
+            <div className="mobile-touch-target-sm flex-shrink-0"></div>
           </div>
         )}
 
         {/* Vue coach */}
         {currentView === 'coach' && (
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
             <Link 
               to="/"
-              className="flex items-center gap-2 text-white/80 hover:text-white mobile-smooth-transition hover:scale-105 mobile-touch-target rounded-lg px-2 py-2"
+              className="flex items-center gap-2 text-white/80 hover:text-white mobile-smooth-transition hover:scale-105 mobile-touch-target-sm rounded-lg px-2 py-2 flex-shrink-0"
+              aria-label="Retour au dashboard"
             >
-              <ArrowLeft size={20} />
-              <span className="font-medium hidden sm:inline mobile-text-hierarchy">Retour au dashboard</span>
+              <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
+              <TruncatedText
+                text="Retour au dashboard"
+                maxLength={8}
+                useFallbackAt={6}
+                fallbackIcon={null}
+                className="font-medium mobile-text-responsive hidden xs:inline"
+                showTooltip={false}
+              />
             </Link>
             
-            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-lg mobile-text-readable text-center flex-1">
-              COACH IA
+            <h1 className="mobile-text-responsive-sm sm:text-xl lg:text-2xl font-bold text-white drop-shadow-lg mobile-text-readable text-center flex-1 min-w-0">
+              <TruncatedText
+                text="COACH IA"
+                maxLength={10}
+                className="block"
+                showTooltip={false}
+              />
             </h1>
             
             {/* Espace équilibré */}
-            <div className="mobile-touch-target"></div>
+            <div className="mobile-touch-target-sm flex-shrink-0"></div>
           </div>
         )}
       </div>
