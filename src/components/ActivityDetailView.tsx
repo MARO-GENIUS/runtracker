@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -89,10 +90,10 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <h3 className="text-lg font-medium text-gray-900 mb-2 mobile-prevent-overflow">
                 Données de fréquence cardiaque non disponibles pour cette séance
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 mobile-prevent-overflow">
                 Assurez-vous que votre montre ou capteur était connecté pendant l'entraînement.
               </p>
             </div>
@@ -102,8 +103,8 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
     }
 
     return (
-      <Card>
-        <CardContent className="p-6">
+      <Card className="mobile-w-full">
+        <CardContent className="p-6 mobile-content-container">
           <HeartRateTimeSeries 
             heartRateData={activity.heart_rate_stream || []}
             averageHR={activity.average_heartrate || 0}
@@ -115,10 +116,10 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mobile-viewport-container">
       {/* Header Info */}
-      <div className="border-b pb-4">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+      <div className="border-b pb-4 mobile-no-overflow">
+        <h2 className="text-2xl font-bold text-gray-800 mb-2 mobile-prevent-overflow">
           <TruncatedText 
             text={activity.name}
             maxLength={40}
@@ -127,10 +128,10 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
             className="inline-block"
           />
         </h2>
-        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-          <span>{formatDateTime(activity.start_date_local)}</span>
+        <div className="mobile-flex-container flex-wrap gap-4 text-sm text-gray-600">
+          <span className="mobile-prevent-overflow">{formatDateTime(activity.start_date_local)}</span>
           {(activity.location_city || activity.location_state) && (
-            <span>
+            <span className="mobile-prevent-overflow">
               {[activity.location_city, activity.location_state, activity.location_country]
                 .filter(Boolean)
                 .join(', ')}
@@ -139,9 +140,9 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-6 mobile-adaptive-container">
-          <TabsTrigger value="overview" className="mobile-text-responsive-sm mobile-touch-target-sm">
+      <Tabs defaultValue="overview" className="w-full mobile-viewport-container">
+        <TabsList className="mobile-tabs-adaptive mobile-w-full">
+          <TabsTrigger value="overview" className="mobile-tab-trigger mobile-flex-item">
             <span className="hidden sm:inline">Vue d'ensemble</span>
             <TruncatedText
               text="Vue d'ensemble"
@@ -152,7 +153,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
               showTooltip={true}
             />
           </TabsTrigger>
-          <TabsTrigger value="map" className="mobile-text-responsive-sm mobile-touch-target-sm">
+          <TabsTrigger value="map" className="mobile-tab-trigger mobile-flex-item">
             <span className="hidden sm:inline">Parcours</span>
             <TruncatedText
               text="Parcours"
@@ -163,7 +164,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
               showTooltip={true}
             />
           </TabsTrigger>
-          <TabsTrigger value="effort" className="mobile-text-responsive-sm mobile-touch-target-sm">
+          <TabsTrigger value="effort" className="mobile-tab-trigger mobile-flex-item">
             <span className="hidden sm:inline">Ressenti</span>
             <TruncatedText
               text="Ressenti"
@@ -174,7 +175,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
               showTooltip={true}
             />
           </TabsTrigger>
-          <TabsTrigger value="charts" className="mobile-text-responsive-sm mobile-touch-target-sm">
+          <TabsTrigger value="charts" className="mobile-tab-trigger mobile-flex-item">
             <span className="hidden sm:inline">Graphiques</span>
             <TruncatedText
               text="Graphiques"
@@ -185,7 +186,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
               showTooltip={true}
             />
           </TabsTrigger>
-          <TabsTrigger value="details" className="mobile-text-responsive-sm mobile-touch-target-sm">
+          <TabsTrigger value="details" className="mobile-tab-trigger mobile-flex-item">
             <span className="hidden sm:inline">Détails</span>
             <TruncatedText
               text="Détails"
@@ -196,7 +197,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
               showTooltip={true}
             />
           </TabsTrigger>
-          <TabsTrigger value="ai-analysis" className="mobile-text-responsive-sm mobile-touch-target-sm">
+          <TabsTrigger value="ai-analysis" className="mobile-tab-trigger mobile-flex-item">
             <span className="hidden sm:inline">Prochaine séance</span>
             <TruncatedText
               text="Prochaine séance"
@@ -209,7 +210,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-6 mobile-content-container">
           <ActivityMetrics activity={activity} />
           
           {/* Heart Rate Section - Always visible in overview */}
@@ -217,32 +218,36 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
           
           {/* Compact map in overview */}
           {hasGpsData && (
-            <ActivityMap
-              polyline={activity.map_summary_polyline || activity.map_polyline}
-              startLatLng={activity.start_latlng}
-              endLatLng={activity.end_latlng}
-              activityName={activity.name}
-              compact={true}
-            />
+            <div className="mobile-w-full mobile-no-overflow">
+              <ActivityMap
+                polyline={activity.map_summary_polyline || activity.map_polyline}
+                startLatLng={activity.start_latlng}
+                endLatLng={activity.end_latlng}
+                activityName={activity.name}
+                compact={true}
+              />
+            </div>
           )}
           
           <BestEfforts bestEfforts={activity.best_efforts || []} />
         </TabsContent>
 
-        <TabsContent value="map" className="space-y-6">
+        <TabsContent value="map" className="space-y-6 mobile-content-container">
           {hasGpsData ? (
-            <ActivityMap
-              polyline={activity.map_polyline || activity.map_summary_polyline}
-              startLatLng={activity.start_latlng}
-              endLatLng={activity.end_latlng}
-              activityName={activity.name}
-              compact={false}
-            />
+            <div className="mobile-w-full mobile-no-overflow">
+              <ActivityMap
+                polyline={activity.map_polyline || activity.map_summary_polyline}
+                startLatLng={activity.start_latlng}
+                endLatLng={activity.end_latlng}
+                activityName={activity.name}
+                compact={false}
+              />
+            </div>
           ) : (
-            <Card>
+            <Card className="mobile-w-full">
               <CardContent className="p-8 text-center">
-                <p className="text-gray-600 mb-2">Données GPS non disponibles</p>
-                <p className="text-sm text-gray-500">
+                <p className="text-gray-600 mb-2 mobile-prevent-overflow">Données GPS non disponibles</p>
+                <p className="text-sm text-gray-500 mobile-prevent-overflow">
                   Cette activité ne contient pas de données de géolocalisation.
                 </p>
               </CardContent>
@@ -250,7 +255,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
           )}
         </TabsContent>
 
-        <TabsContent value="effort" className="space-y-6">
+        <TabsContent value="effort" className="space-y-6 mobile-content-container">
           <EffortRating 
             activityId={activity.id}
             currentRating={activity.effort_rating}
@@ -259,34 +264,34 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
           />
         </TabsContent>
 
-        <TabsContent value="charts" className="space-y-6">
+        <TabsContent value="charts" className="space-y-6 mobile-content-container">
           {/* Heart Rate Chart - Always visible in charts tab */}
           <HeartRateSection />
         </TabsContent>
 
-        <TabsContent value="details" className="space-y-6">
+        <TabsContent value="details" className="space-y-6 mobile-content-container">
           <ActivitySplits splits={activity.splits || []} />
-          <Card>
+          <Card className="mobile-w-full">
             <CardHeader>
-              <CardTitle>Informations techniques</CardTitle>
+              <CardTitle className="mobile-prevent-overflow">Informations techniques</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
+            <CardContent className="mobile-content-container">
+              <div className="mobile-fluid-grid text-sm">
+                <div className="mobile-prevent-overflow">
                   <span className="text-gray-600">Type d'activité:</span>
-                  <span className="ml-2 font-medium">{activity.type}</span>
+                  <span className="ml-2 font-medium mobile-prevent-overflow">{activity.type}</span>
                 </div>
                 {activity.suffer_score && (
-                  <div>
+                  <div className="mobile-prevent-overflow">
                     <span className="text-gray-600">Score de difficulté:</span>
                     <span className="ml-2 font-medium">{activity.suffer_score}</span>
                   </div>
                 )}
-                <div>
+                <div className="mobile-prevent-overflow">
                   <span className="text-gray-600">Temps en mouvement:</span>
                   <span className="ml-2 font-medium">{Math.round(activity.moving_time / 60)} min</span>
                 </div>
-                <div>
+                <div className="mobile-prevent-overflow">
                   <span className="text-gray-600">Temps total:</span>
                   <span className="ml-2 font-medium">{Math.round(activity.elapsed_time / 60)} min</span>
                 </div>
@@ -295,7 +300,7 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
           </Card>
         </TabsContent>
 
-        <TabsContent value="ai-analysis" className="space-y-6">
+        <TabsContent value="ai-analysis" className="space-y-6 mobile-content-container">
           <NextSessionSuggestion activityId={activity.id} />
         </TabsContent>
       </Tabs>

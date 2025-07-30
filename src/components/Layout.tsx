@@ -29,8 +29,8 @@ const Layout = ({ children }: LayoutProps) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center mobile-container">
-        <div className="text-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center mobile-viewport-container">
+        <div className="text-center mobile-adaptive-container">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-running-blue mx-auto mb-4"></div>
           <p className="text-gray-600 mobile-text-hierarchy">Chargement...</p>
         </div>
@@ -43,9 +43,9 @@ const Layout = ({ children }: LayoutProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 mobile-scroll-smooth">
+    <div className="min-h-screen bg-gray-50 mobile-scroll-smooth mobile-viewport-container">
       {/* Navigation supérieure sticky et responsive */}
-      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+      <div className="mobile-sticky-element top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <TopNavigation 
           currentView={currentView} 
           user={user}
@@ -54,33 +54,37 @@ const Layout = ({ children }: LayoutProps) => {
       </div>
       
       {/* Header principal responsive */}
-      <Header 
-        currentView={currentView} 
-        user={user}
-        onSignOut={signOut}
-      />
+      <div className="mobile-no-overflow">
+        <Header 
+          currentView={currentView} 
+          user={user}
+          onSignOut={signOut}
+        />
+      </div>
       
       {/* Barre d'informations responsive - uniquement sur le dashboard */}
       {currentView === 'dashboard' && (
-        <div className="bg-white border-b border-gray-100 py-3 sm:py-4">
-          <div className="max-w-6xl mx-auto mobile-container flex items-center justify-end">
+        <div className="bg-white border-b border-gray-100 py-3 sm:py-4 mobile-no-overflow">
+          <div className="max-w-6xl mx-auto mobile-adaptive-container mobile-flex-container justify-end">
             <StravaConnect />
           </div>
         </div>
       )}
       
       {/* Contenu principal responsive avec espacement mobile optimisé */}
-      <main className="max-w-6xl mx-auto mobile-container mobile-section space-y-4 sm:space-y-6 lg:space-y-8">
-        {children}
+      <main className="max-w-6xl mx-auto mobile-adaptive-container mobile-section-spacing space-y-4 sm:space-y-6 lg:space-y-8">
+        <div className="mobile-content-container">
+          {children}
+        </div>
       </main>
       
       {/* Footer responsive */}
-      <footer className="bg-white border-t border-gray-100 mt-8 sm:mt-12 lg:mt-16 py-6 sm:py-8">
-        <div className="max-w-6xl mx-auto mobile-container text-center text-gray-600">
-          <p className="mobile-text-hierarchy">
+      <footer className="bg-white border-t border-gray-100 mt-8 sm:mt-12 lg:mt-16 py-6 sm:py-8 mobile-no-overflow">
+        <div className="max-w-6xl mx-auto mobile-adaptive-container text-center text-gray-600">
+          <p className="mobile-text-hierarchy mobile-prevent-overflow">
             RunTracker Pro - Votre compagnon de course personnalisé
           </p>
-          <p className="text-xs mt-2 text-gray-500">
+          <p className="text-xs mt-2 text-gray-500 mobile-prevent-overflow">
             Visualisez vos performances • Suivez vos progrès • Atteignez vos objectifs
           </p>
         </div>
