@@ -99,36 +99,41 @@ const LastSessionTypeSelector: React.FC<LastSessionTypeSelectorProps> = ({
   };
 
   return (
-    <div>
-      <h3 className="text-base font-medium mb-3">Type de votre dernière séance :</h3>
+    <div className="space-y-3">
+      <h3 className="text-base font-medium text-gray-900">Type de votre dernière séance :</h3>
       
       <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
         {sessionTypes.map((type) => {
           const isSelected = normalizedCurrentType === type.id;
           
           return (
-            <Button
-              key={type.id}
-              variant={isSelected ? "default" : "outline"}
-              className={`h-auto py-2 px-3 justify-start gap-2 ${
-                isSelected ? 'bg-primary text-primary-foreground' : ''
-              }`}
-              onClick={() => handleTypeSelect(type.id)}
-            >
-              <div className="flex items-center gap-2">
-                <div className={`p-1 rounded-full ${
-                  isSelected ? 'bg-primary-foreground/20' : type.color
+            <div key={type.id} className="relative">
+              <Button
+                variant="outline"
+                className={`h-auto py-3 px-3 w-full justify-center flex-col gap-2 transition-all duration-200 hover:shadow-md ${
+                  isSelected 
+                    ? 'bg-primary text-primary-foreground border-primary shadow-lg ring-2 ring-primary/20' 
+                    : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => handleTypeSelect(type.id)}
+              >
+                <div className={`p-2 rounded-full transition-colors ${
+                  isSelected 
+                    ? 'bg-primary-foreground/20' 
+                    : type.color
                 }`}>
                   {type.icon}
                 </div>
-                <span className="text-sm">{type.label}</span>
-              </div>
-              {isSelected && (
-                <Badge variant="outline" className="ml-auto bg-primary-foreground/20 border-0">
-                  <Check className="h-3 w-3" />
-                </Badge>
-              )}
-            </Button>
+                <span className="text-sm font-medium">{type.label}</span>
+                {isSelected && (
+                  <div className="absolute -top-1 -right-1">
+                    <div className="bg-primary text-primary-foreground rounded-full p-1">
+                      <Check className="h-3 w-3" />
+                    </div>
+                  </div>
+                )}
+              </Button>
+            </div>
           );
         })}
       </div>
