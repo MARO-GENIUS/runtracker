@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,6 +11,8 @@ import { NextSessionSuggestion } from './NextSessionSuggestion';
 import { ActivityMap } from './ActivityMap';
 import { useEffortRating } from '@/hooks/useEffortRating';
 import { formatDate, formatDateTime } from '@/utils/activityHelpers';
+import { TruncatedText } from '@/components/ui/truncated-text';
+import { Eye, Map, Heart, BarChart3, Info, Brain } from 'lucide-react';
 
 interface HeartRateDataPoint {
   time: number;
@@ -117,7 +118,15 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
     <div className="space-y-6">
       {/* Header Info */}
       <div className="border-b pb-4">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">{activity.name}</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+          <TruncatedText 
+            text={activity.name}
+            maxLength={40}
+            useFallbackAt={20}
+            fallbackIcon={<Eye size={20} className="text-running-blue" />}
+            className="inline-block"
+          />
+        </h2>
         <div className="flex flex-wrap gap-4 text-sm text-gray-600">
           <span>{formatDateTime(activity.start_date_local)}</span>
           {(activity.location_city || activity.location_state) && (
@@ -131,13 +140,73 @@ export const ActivityDetailView: React.FC<ActivityDetailViewProps> = ({ activity
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
-          <TabsTrigger value="map">Parcours</TabsTrigger>
-          <TabsTrigger value="effort">Ressenti</TabsTrigger>
-          <TabsTrigger value="charts">Graphiques</TabsTrigger>
-          <TabsTrigger value="details">Détails</TabsTrigger>
-          <TabsTrigger value="ai-analysis">Prochaine séance</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-6 mobile-adaptive-container">
+          <TabsTrigger value="overview" className="mobile-text-responsive-sm mobile-touch-target-sm">
+            <span className="hidden sm:inline">Vue d'ensemble</span>
+            <TruncatedText
+              text="Vue d'ensemble"
+              maxLength={8}
+              useFallbackAt={6}
+              fallbackIcon={<Eye size={14} />}
+              className="sm:hidden mobile-text-responsive"
+              showTooltip={true}
+            />
+          </TabsTrigger>
+          <TabsTrigger value="map" className="mobile-text-responsive-sm mobile-touch-target-sm">
+            <span className="hidden sm:inline">Parcours</span>
+            <TruncatedText
+              text="Parcours"
+              maxLength={8}
+              useFallbackAt={6}
+              fallbackIcon={<Map size={14} />}
+              className="sm:hidden mobile-text-responsive"
+              showTooltip={true}
+            />
+          </TabsTrigger>
+          <TabsTrigger value="effort" className="mobile-text-responsive-sm mobile-touch-target-sm">
+            <span className="hidden sm:inline">Ressenti</span>
+            <TruncatedText
+              text="Ressenti"
+              maxLength={8}
+              useFallbackAt={6}
+              fallbackIcon={<Heart size={14} />}
+              className="sm:hidden mobile-text-responsive"
+              showTooltip={true}
+            />
+          </TabsTrigger>
+          <TabsTrigger value="charts" className="mobile-text-responsive-sm mobile-touch-target-sm">
+            <span className="hidden sm:inline">Graphiques</span>
+            <TruncatedText
+              text="Graphiques"
+              maxLength={8}
+              useFallbackAt={6}
+              fallbackIcon={<BarChart3 size={14} />}
+              className="sm:hidden mobile-text-responsive"
+              showTooltip={true}
+            />
+          </TabsTrigger>
+          <TabsTrigger value="details" className="mobile-text-responsive-sm mobile-touch-target-sm">
+            <span className="hidden sm:inline">Détails</span>
+            <TruncatedText
+              text="Détails"
+              maxLength={8}
+              useFallbackAt={6}
+              fallbackIcon={<Info size={14} />}
+              className="sm:hidden mobile-text-responsive"
+              showTooltip={true}
+            />
+          </TabsTrigger>
+          <TabsTrigger value="ai-analysis" className="mobile-text-responsive-sm mobile-touch-target-sm">
+            <span className="hidden sm:inline">Prochaine séance</span>
+            <TruncatedText
+              text="Prochaine séance"
+              maxLength={8}
+              useFallbackAt={6}
+              fallbackIcon={<Brain size={14} />}
+              className="sm:hidden mobile-text-responsive"
+              showTooltip={true}
+            />
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
