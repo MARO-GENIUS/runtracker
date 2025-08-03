@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,13 +18,13 @@ import {
   ChevronUp,
   Activity,
   Trophy,
-  AlertCircle
+  AlertCircle,
+  Info
 } from 'lucide-react';
 import { useStravaLast30Days } from '@/hooks/useStravaLast30Days';
 import { useAIWorkoutGenerator } from '@/hooks/useAIWorkoutGenerator';
 import { usePersonalRecords } from '@/hooks/usePersonalRecords';
 import { calculateTrainingZones } from '@/utils/trainingZones';
-import LastSessionTypeSelector from './LastSessionTypeSelector';
 
 const AIWorkoutGenerator: React.FC = () => {
   const [selectedVariant, setSelectedVariant] = useState<'normal' | 'facile' | 'difficile'>('normal');
@@ -32,7 +33,7 @@ const AIWorkoutGenerator: React.FC = () => {
   
   const stravaData = useStravaLast30Days();
   const { records: personalRecords, loading: recordsLoading, error: recordsError } = usePersonalRecords();
-  const { workout, loading, error, generateWorkout, markAsCompleted, generateNewWorkout } = useAIWorkoutGenerator();
+  const { workout, loading, error, generateWorkout, markAsCompleted, generateNewWorkout, lastSessionType } = useAIWorkoutGenerator();
 
   // Calculer les zones d'entraînement
   const trainingZones = personalRecords ? calculateTrainingZones(personalRecords) : null;
@@ -50,7 +51,6 @@ const AIWorkoutGenerator: React.FC = () => {
   };
 
   const handleMarkAsCompleted = () => {
-    // Only clear the workout when user explicitly clicks "Mark as completed"
     markAsCompleted();
   };
 
@@ -138,6 +138,21 @@ const AIWorkoutGenerator: React.FC = () => {
               <p className="text-lg font-semibold text-orange-600">{personalRecords.length}</p>
             </div>
           </div>
+
+          {/* Indicateur de dernière séance */}
+          {lastSessionType && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-1">
+                <Info className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">Dernière séance détectée automatiquement</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {getTypeIcon(lastSessionType)}
+                <span className="text-blue-700 font-medium">{lastSessionType}</span>
+                <span className="text-xs text-blue-600">(prise en compte pour la génération)</span>
+              </div>
+            </div>
+          )}
 
           {/* Affichage des zones d'entraînement personnalisées */}
           {trainingZones && (
@@ -254,14 +269,6 @@ const AIWorkoutGenerator: React.FC = () => {
           </CardHeader>
           
           <CardContent className="space-y-6">
-            {/* Sélecteur de type de dernière séance intégré */}
-            <div className="border-t pt-4">
-              <LastSessionTypeSelector
-                currentType={stravaData.lastSessionType}
-                onTypeChange={stravaData.updateLastSessionType}
-              />
-            </div>
-
             {/* Variantes */}
             <Tabs value={selectedVariant} onValueChange={(v) => setSelectedVariant(v as any)}>
               <TabsList className="grid w-full grid-cols-3">

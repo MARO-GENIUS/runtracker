@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { usePersonalRecords } from '@/hooks/usePersonalRecords';
+import { useAuth } from '@/hooks/useAuth';
 import { calculateTrainingZones, formatTrainingZonesForAI } from '@/utils/trainingZones';
 
 interface GeneratedWorkout {
@@ -22,6 +24,7 @@ interface UseAIWorkoutGeneratorReturn {
   markAsCompleted: () => void;
   generateNewWorkout: (stravaData: any) => Promise<void>;
   lastGeneratedSessions: string[];
+  lastSessionType: string | null;
 }
 
 export const useAIWorkoutGenerator = (): UseAIWorkoutGeneratorReturn => {
@@ -36,8 +39,33 @@ export const useAIWorkoutGenerator = (): UseAIWorkoutGeneratorReturn => {
     const saved = localStorage.getItem('ai-last-sessions');
     return saved ? JSON.parse(saved) : [];
   });
+  const [lastSessionType, setLastSessionType] = useState<string | null>(null);
 
   const { records: personalRecords, loading: recordsLoading } = usePersonalRecords();
+  const { user } = useAuth();
+
+  // Fetch last session type from training_settings
+  useEffect(() => {
+    const fetchLastSessionType = async () => {
+      if (!user) return;
+
+      try {
+        const { data: trainingSettings } = await supabase
+          .from('training_settings')
+          .select('last_session_type')
+          .eq('user_id', user.id)
+          .single();
+
+        if (trainingSettings?.last_session_type) {
+          setLastSessionType(trainingSettings.last_session_type);
+        }
+      } catch (error) {
+        console.error('Error fetching last session type:', error);
+      }
+    };
+
+    fetchLastSessionType();
+  }, [user]);
 
   // Persist workout to localStorage whenever it changes
   useEffect(() => {
@@ -120,6 +148,7 @@ Objectif associé: ${stravaData.currentGoal ?
 
     try {
       console.log('Génération de séance avec les données:', stravaData);
+      console.log('Type de dernière séance détecté:', lastSessionType);
       
       // Calculer les zones d'entraînement personnalisées
       const trainingZones = calculateTrainingZones(personalRecords);
@@ -143,6 +172,9 @@ RÈGLES CRITIQUES POUR LES ALLURES :
 4. Ne propose JAMAIS d'allures génériques ou approximatives
 5. Justifie toujours tes choix d'allure en référence aux zones calculées
 
+INFORMATION IMPORTANTE SUR LA DERNIÈRE SÉANCE :
+${lastSessionType ? `La dernière séance effectuée était de type "${lastSessionType}". Prends cette information en compte pour éviter la répétition et proposer une séance complémentaire appropriée selon les principes d'alternance d'entraînement.` : 'Type de dernière séance non disponible.'}
+
 Ta réponse doit être claire, bien structurée, exploitable par une application, et adaptée aux séances passées, à la fatigue récente et aux capacités maximales du coureur.`;
       
       const userMessage = `Voici mes données d'entraînement des 30 derniers jours :
@@ -151,6 +183,9 @@ RECORDS PERSONNELS :
 ${formatPersonalRecords()}
 
 ${zonesText}
+
+DERNIÈRE SÉANCE EFFECTUÉE :
+${lastSessionType ? `Type : ${lastSessionType}` : 'Information non disponible'}
 
 HISTORIQUE D'ENTRAÎNEMENT (30 derniers jours) :
 ${formatTrainingData(stravaData)}
@@ -165,6 +200,7 @@ CONSIGNES IMPORTANTES :
 - Pour une séance seuil, utilise la zone SEUIL (pas plus lent !)
 - Pour du VMA, utilise la zone VMA
 - Adapte selon ma fatigue et mes séances récentes
+- Prends en compte ma dernière séance (${lastSessionType || 'non définie'}) pour proposer une séance complémentaire
 - Justifie tes choix d'allure en référence à mes zones personnalisées
 
 Format de sortie requis :
@@ -176,11 +212,11 @@ Format de sortie requis :
     "fc_cible": "Zone de FC adaptée",
     "kilométrage_total": "Distance totale",
     "durée_estimée": "Durée estimée",
-    "justification": "Justification incluant pourquoi cette allure correspond à ma zone d'intensité"
+    "justification": "Justification incluant pourquoi cette allure correspond à ma zone d'intensité et comment elle complète ma dernière séance"
   }
 }`;
 
-      console.log('Messages créés avec zones personnalisées, appel de la fonction Edge...');
+      console.log('Messages créés avec zones personnalisées et type de dernière séance, appel de la fonction Edge...');
       
       const { data, error: functionError } = await supabase.functions.invoke('generate-ai-workout', {
         body: { 
@@ -251,6 +287,7 @@ Format de sortie requis :
     generateWorkout,
     markAsCompleted,
     generateNewWorkout,
-    lastGeneratedSessions
+    lastGeneratedSessions,
+    lastSessionType
   };
 };
