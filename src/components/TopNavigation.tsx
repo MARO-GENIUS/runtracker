@@ -16,26 +16,26 @@ const TopNavigation = ({ currentView, user, onSignOut }: TopNavigationProps) => 
   return (
     <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto mobile-container">
-        <div className="flex justify-between items-center h-12 sm:h-14">
-          {/* Logo à gauche - optimisé mobile */}
+        <div className="flex justify-between items-center h-10 sm:h-11">
+          {/* Logo à gauche - plus compact */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center mobile-touch-target-sm mobile-smooth-transition hover:scale-105">
               <img 
                 src="/lovable-uploads/734bc265-5a79-4eb5-abe6-747a6f0b6e12.png" 
                 alt="RunTracker Pro Logo" 
-                className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7"
+                className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6"
               />
-              <span className="ml-2 text-sm sm:text-base lg:text-lg font-bold text-gray-900 hidden sm:block">
+              <span className="ml-1.5 text-xs sm:text-sm lg:text-base font-bold text-gray-900 hidden sm:block">
                 RunTracker Pro
               </span>
             </Link>
           </div>
 
-          {/* Navigation centrale - Cachée sur mobile, optimisée pour tablette/desktop */}
-          <div className="hidden md:flex space-x-1 lg:space-x-3">
+          {/* Navigation centrale - Compacte */}
+          <div className="hidden md:flex space-x-0.5 lg:space-x-1">
             <Link
               to="/"
-              className={`px-3 py-1.5 mobile-smooth-transition rounded-lg text-sm font-medium ${
+              className={`px-2 py-1 mobile-smooth-transition rounded-lg text-xs font-medium ${
                 currentView === 'dashboard'
                   ? 'text-running-blue bg-running-blue/10 shadow-sm'
                   : 'text-gray-700 hover:text-running-blue hover:bg-gray-50 active:bg-gray-100'
@@ -46,7 +46,7 @@ const TopNavigation = ({ currentView, user, onSignOut }: TopNavigationProps) => 
             
             <Link
               to="/activities"
-              className={`px-3 py-1.5 mobile-smooth-transition rounded-lg text-sm font-medium flex items-center gap-2 ${
+              className={`px-2 py-1 mobile-smooth-transition rounded-lg text-xs font-medium flex items-center gap-1.5 ${
                 currentView === 'activities'
                   ? 'text-running-blue bg-running-blue/10 shadow-sm'
                   : 'text-gray-700 hover:text-running-blue hover:bg-gray-50 active:bg-gray-100'
@@ -55,7 +55,7 @@ const TopNavigation = ({ currentView, user, onSignOut }: TopNavigationProps) => 
               <img 
                 src="/lovable-uploads/a2cee3cb-da89-44da-abe5-71ec896d51a9.png" 
                 alt="Mes performances" 
-                className="h-3.5 w-3.5"
+                className="h-3 w-3"
               />
               <span className="hidden lg:inline">Mes performances</span>
               <span className="lg:hidden">Perf.</span>
@@ -63,7 +63,7 @@ const TopNavigation = ({ currentView, user, onSignOut }: TopNavigationProps) => 
 
             <Link
               to="/records"
-              className={`px-3 py-1.5 mobile-smooth-transition rounded-lg text-sm font-medium ${
+              className={`px-2 py-1 mobile-smooth-transition rounded-lg text-xs font-medium ${
                 currentView === 'records'
                   ? 'text-running-blue bg-running-blue/10 shadow-sm'
                   : 'text-gray-700 hover:text-running-blue hover:bg-gray-50 active:bg-gray-100'
@@ -74,20 +74,20 @@ const TopNavigation = ({ currentView, user, onSignOut }: TopNavigationProps) => 
 
             <Link
               to="/coach"
-              className={`px-3 py-1.5 mobile-smooth-transition rounded-lg text-sm font-medium flex items-center gap-2 ${
+              className={`px-2 py-1 mobile-smooth-transition rounded-lg text-xs font-medium flex items-center gap-1.5 ${
                 currentView === 'coach'
                   ? 'text-running-blue bg-running-blue/10 shadow-sm'
                   : 'text-gray-700 hover:text-running-blue hover:bg-gray-50 active:bg-gray-100'
               }`}
             >
-              <Brain className="h-3.5 w-3.5" />
+              <Brain className="h-3 w-3" />
               <span className="hidden lg:inline">Coach IA</span>
               <span className="lg:hidden">Coach</span>
             </Link>
           </div>
 
-          {/* Section droite - optimisée mobile */}
-          <div className="flex items-center gap-1 sm:gap-2">
+          {/* Section droite - compacte */}
+          <div className="flex items-center gap-1">
             {/* Menu hamburger mobile */}
             <MobileMenu 
               currentView={currentView}
@@ -95,17 +95,17 @@ const TopNavigation = ({ currentView, user, onSignOut }: TopNavigationProps) => 
               onSignOut={onSignOut}
             />
 
-            {/* Menu profil desktop */}
+            {/* Menu profil desktop - plus compact */}
             <div className="hidden md:block">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    className="px-3 py-1.5 mobile-smooth-transition text-gray-700 hover:text-gray-900 hover:bg-gray-50 active:bg-gray-100 text-sm"
+                    className="px-2 py-1 mobile-smooth-transition text-gray-700 hover:text-gray-900 hover:bg-gray-50 active:bg-gray-100 text-xs"
                   >
-                    <User size={16} />
-                    <span className="hidden lg:block font-medium">Profil</span>
+                    <User size={14} />
+                    <span className="hidden lg:block font-medium ml-1">Profil</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-white shadow-lg border border-gray-200 z-[60]">
