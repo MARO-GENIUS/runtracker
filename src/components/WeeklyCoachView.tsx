@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { DaySessionDetail } from './DaySessionDetail';
-import AutoDetectedLastSession from './AutoDetectedLastSession';
+import LastSessionTypeSelector from './LastSessionTypeSelector';
 import { useStravaLast30Days } from '@/hooks/useStravaLast30Days';
 
 interface WeeklyActivity {
@@ -166,11 +166,13 @@ const WeeklyCoachView: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Affichage automatique de la dernière séance */}
-      <AutoDetectedLastSession 
-        lastSession={stravaData.lastSession}
-        loading={stravaData.loading}
-      />
+      {/* Sélecteur de type de dernière séance en haut */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <LastSessionTypeSelector
+          currentType={stravaData.lastSessionType}
+          onTypeChange={stravaData.updateLastSessionType}
+        />
+      </div>
 
       {/* Week Navigation */}
       <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg">
