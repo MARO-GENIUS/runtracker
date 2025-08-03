@@ -95,13 +95,13 @@ const TopNavigation = ({ currentView, user, onSignOut }: TopNavigationProps) => 
               onSignOut={onSignOut}
             />
 
-            {/* Menu profil desktop avec petit logo Strava */}
+            {/* Menu profil desktop avec votre logo */}
             <div className="hidden md:flex items-center gap-1">
-              {/* Petit logo Strava */}
+              {/* Votre logo */}
               <div className="flex items-center">
                 <img 
-                  src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Strava_Logo.svg" 
-                  alt="Strava" 
+                  src="/lovable-uploads/baf1ac1e-0e2b-4364-ad7e-8519a3628fab.png" 
+                  alt="Logo" 
                   className="h-4 w-4 opacity-60"
                 />
               </div>
