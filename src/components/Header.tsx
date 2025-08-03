@@ -28,7 +28,7 @@ const Header = ({ currentView }: HeaderProps) => {
 
         {/* Vue activities - Layout ultra compact */}
         {currentView === 'activities' && (
-          <div className="mobile-flex-container items-center justify-between gap-2 py-1 sm:py-1.5">
+          <div className="mobile-flex-container items-center justify-between gap-2 py-0.5">
             <Link 
               to="/"
               className="flex items-center gap-1.5 text-white/80 hover:text-white mobile-smooth-transition hover:scale-105 mobile-touch-target-sm rounded-lg px-1.5 py-0.5 flex-shrink-0"
