@@ -31,14 +31,24 @@ interface CurrentGoal {
   target_date: string;
 }
 
+interface LastSessionData {
+  id: number;
+  name: string;
+  distance: number;
+  moving_time: number;
+  start_date_local: string;
+  average_heartrate: number | null;
+  session_type: string | null;
+  location_city: string | null;
+}
+
 interface Last30DaysData {
   activities: StravaData30Days[];
   personalRecords: PersonalRecordsData;
   currentGoal: CurrentGoal | null;
-  lastSessionType: string | null;
+  lastSession: LastSessionData | null;
   loading: boolean;
   error: string | null;
-  updateLastSessionType: (newType: string) => Promise<void>;
 }
 
 export const useStravaLast30Days = (): Last30DaysData => {
@@ -46,10 +56,9 @@ export const useStravaLast30Days = (): Last30DaysData => {
     activities: [],
     personalRecords: { '400m': null, '800m': null, '1km': null, '5K': null, '10K': null, 'Semi': null, 'Marathon': null },
     currentGoal: null,
-    lastSessionType: null,
+    lastSession: null,
     loading: true,
-    error: null,
-    updateLastSessionType: async () => {}
+    error: null
   });
   
   const { user } = useAuth();
@@ -63,7 +72,6 @@ export const useStravaLast30Days = (): Last30DaysData => {
   };
 
   const determineEffortType = (activity: any): string => {
-    // Logique améliorée basée sur allure, durée, FC et distance
     const paceSeconds = activity.moving_time / (activity.distance / 1000);
     const avgPaceMinPerKm = paceSeconds / 60;
     const distanceKm = activity.distance / 1000;
@@ -87,43 +95,6 @@ export const useStravaLast30Days = (): Last30DaysData => {
     
     // Footing d'endurance par défaut
     return 'footing endurance';
-  };
-
-  const updateLastSessionType = async (newType: string) => {
-    if (!user) {
-      throw new Error('Utilisateur non connecté');
-    }
-
-    try {
-      console.log('Mise à jour du type de séance:', newType);
-      
-      // Stocker le type dans les paramètres d'entraînement
-      const { error } = await supabase
-        .from('training_settings')
-        .upsert({
-          user_id: user.id,
-          last_session_type: newType,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
-        });
-
-      if (error) {
-        console.error('Erreur Supabase:', error);
-        throw error;
-      }
-
-      // Mettre à jour immédiatement l'état local
-      setData(prev => ({
-        ...prev,
-        lastSessionType: newType
-      }));
-
-      console.log('Type de séance mis à jour avec succès:', newType);
-    } catch (error: any) {
-      console.error('Erreur lors de la mise à jour du type de séance:', error);
-      throw error;
-    }
   };
 
   const fetchLast30DaysData = async () => {
@@ -157,6 +128,18 @@ export const useStravaLast30Days = (): Last30DaysData => {
         rpe: activity.effort_rating
       }));
 
+      // Récupération de la dernière séance (plus récente)
+      const lastSession: LastSessionData | null = activities && activities.length > 0 ? {
+        id: activities[0].id,
+        name: activities[0].name,
+        distance: activities[0].distance,
+        moving_time: activities[0].moving_time,
+        start_date_local: activities[0].start_date_local,
+        average_heartrate: activities[0].average_heartrate,
+        session_type: activities[0].session_type,
+        location_city: activities[0].location_city
+      } : null;
+
       const { data: records } = await supabase
         .from('personal_records')
         .select('*')
@@ -185,7 +168,6 @@ export const useStravaLast30Days = (): Last30DaysData => {
         .single();
 
       let currentGoal: CurrentGoal | null = null;
-      let lastSessionType: string | null = null;
 
       if (trainingSettings) {
         const raceLabels = {
@@ -205,24 +187,15 @@ export const useStravaLast30Days = (): Last30DaysData => {
             new Date(trainingSettings.target_date).toLocaleDateString('fr-FR') : 
             'Non définie'
         };
-
-        // Récupérer le type de dernière séance stocké
-        lastSessionType = (trainingSettings as any).last_session_type || null;
-      }
-
-      // Si pas de type stocké, utiliser le type de la dernière activité
-      if (!lastSessionType && formattedActivities.length > 0) {
-        lastSessionType = formattedActivities[0].effort_type;
       }
 
       setData({
         activities: formattedActivities,
         personalRecords,
         currentGoal,
-        lastSessionType,
+        lastSession,
         loading: false,
-        error: null,
-        updateLastSessionType
+        error: null
       });
 
     } catch (error: any) {
@@ -230,8 +203,7 @@ export const useStravaLast30Days = (): Last30DaysData => {
       setData(prev => ({
         ...prev,
         loading: false,
-        error: error.message || 'Erreur lors de la récupération des données',
-        updateLastSessionType
+        error: error.message || 'Erreur lors de la récupération des données'
       }));
     }
   };
