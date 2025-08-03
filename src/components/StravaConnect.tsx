@@ -84,34 +84,7 @@ const StravaConnect = () => {
   );
 
   if (isStravaConnected) {
-    return (
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 text-sm">
-          <div className="flex items-center gap-1">
-            <StravaIcon />
-            <span className="font-medium text-gray-700">Strava</span>
-          </div>
-          
-          {isAutoSyncing ? (
-            <div className="flex items-center gap-1 text-orange-600">
-              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-orange-600"></div>
-              <span className="text-xs">Synchronisation...</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 text-green-600">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-xs">Synchronisé</span>
-            </div>
-          )}
-        </div>
-        
-        {stats && (
-          <div className="text-xs text-gray-500">
-            <span>{stats.monthly.distance.toFixed(1)} km ce mois</span>
-          </div>
-        )}
-      </div>
-    );
+    return null; // Masquer complètement quand connecté
   }
 
   return (
