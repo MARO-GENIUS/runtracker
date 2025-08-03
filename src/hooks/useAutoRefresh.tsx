@@ -55,7 +55,7 @@ export const useAutoRefresh = ({
         isRefreshingRef.current = false;
       }
     }, 300); // Débounce de 300ms
-  }, [enabled]);
+  }, []); // Enlever 'enabled' des dépendances pour éviter la boucle
 
   // Écouter les événements de synchronisation
   useEffect(() => {
@@ -74,7 +74,7 @@ export const useAutoRefresh = ({
         clearTimeout(debounceTimeoutRef.current);
       }
     };
-  }, [handleRefresh, enabled]);
+  }, [enabled]); // Enlever handleRefresh des dépendances
 
   // Rafraîchir quand les dépendances changent (mais pas au premier rendu)
   const isFirstRenderRef = useRef(true);
