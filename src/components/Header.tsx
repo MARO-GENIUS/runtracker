@@ -92,15 +92,10 @@ const Header = ({ currentView }: HeaderProps) => {
           </div>
         )}
 
-        {/* Vue dashboard */}
+        {/* Vue dashboard - Suppression du contenu */}
         {currentView === 'dashboard' && (
-          <div className="text-center mobile-content-container">
-            <h1 className="mobile-text-responsive-base sm:text-2xl lg:text-4xl font-bold mb-2 text-white drop-shadow-lg mobile-text-readable mobile-prevent-overflow">
-              RunTracker Pro
-            </h1>
-            <p className="text-white/90 mobile-text-hierarchy font-medium mobile-prevent-overflow">
-              Votre compagnon de course personnalisé
-            </p>
+          <div className="mobile-content-container py-2">
+            {/* Bandeau supprimé - header vide mais conserve l'espacement minimal */}
           </div>
         )}
       </div>
