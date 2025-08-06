@@ -47,6 +47,9 @@ verify_jwt = true
 enabled = true
 port = 54325
 site_url = "https://pueyxlqqmuupvlrzogfb.supabase.co"
+jwt_expiry = 2592000
+refresh_token_rotation_enabled = true
+security_refresh_token_reuse_interval = 10
 
 [auth.email]
 enable_signup = true
