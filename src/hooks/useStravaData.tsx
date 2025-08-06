@@ -54,7 +54,7 @@ export const useStravaData = (): UseStravaDataReturn => {
   const [isAutoSyncing, setIsAutoSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const { user } = useAuth();
-  const { getCachedStats, updateCachedStats } = useStatsCache();
+  const { getCachedStats, updateCachedStats, clearCache } = useStatsCache();
   const { 
     requestsUsed, 
     canMakeRequest, 
@@ -87,26 +87,21 @@ export const useStravaData = (): UseStravaDataReturn => {
     }
   };
 
-  const loadCachedStatsInitial = async () => {
+  const initializeStats = async () => {
     if (!user || isInitialized) return;
 
-    console.log('Chargement initial des stats depuis le cache...');
+    console.log('Initialisation: nettoyage du cache et recalcul depuis la base...');
     
     try {
-      const cachedStats = await getCachedStats();
-
-      if (cachedStats) {
-        console.log('Stats trouvées dans le cache:', cachedStats);
-        setStats(cachedStats);
-        setIsInitialized(true);
-        return;
-      }
-
-      console.log('Pas de cache, calcul initial depuis les activités...');
+      // Nettoyer le cache au démarrage pour éviter les données obsolètes
+      await clearCache();
+      console.log('Cache nettoyé, calcul des stats depuis la base...');
+      
+      // Toujours recalculer depuis la base au premier chargement
       await loadStats();
     } catch (error) {
-      console.error('Error loading cached stats:', error);
-      await loadStats();
+      console.error('Error during initialization:', error);
+      setError('Erreur lors de l\'initialisation des données');
     }
   };
 
@@ -124,12 +119,15 @@ export const useStravaData = (): UseStravaDataReturn => {
     console.log('Calcul des stats depuis les activités...');
     
     try {
+      // Utiliser UTC pour éviter les problèmes de timezone
       const now = new Date();
       const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth() + 1;
+      const currentMonth = now.getMonth();
 
-      const startOfMonth = new Date(currentYear, currentMonth - 1, 1).toISOString();
-      const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59).toISOString();
+      // Début du mois (1er jour à 00:00:00 UTC)
+      const startOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1)).toISOString();
+      // Fin du mois (dernier jour à 23:59:59 UTC)
+      const endOfMonth = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59)).toISOString();
 
       const { data: monthActivities } = await supabase
         .from('strava_activities')
@@ -139,8 +137,10 @@ export const useStravaData = (): UseStravaDataReturn => {
         .lte('start_date', endOfMonth)
         .order('start_date', { ascending: false });
 
-      const startOfYear = new Date(currentYear, 0, 1).toISOString();
-      const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59).toISOString();
+      // Début de l'année (1er janvier à 00:00:00 UTC)
+      const startOfYear = new Date(Date.UTC(currentYear, 0, 1)).toISOString();
+      // Fin de l'année (31 décembre à 23:59:59 UTC)
+      const endOfYear = new Date(Date.UTC(currentYear, 11, 31, 23, 59, 59)).toISOString();
 
       const { data: yearActivities } = await supabase
         .from('strava_activities')
@@ -306,9 +306,8 @@ export const useStravaData = (): UseStravaDataReturn => {
       console.log('Utilisateur connecté, initialisation...');
       checkStravaConnection().then(async (connected) => {
         if (connected) {
-          // Force le recalcul des stats depuis la base pour avoir les données à jour
-          console.log('Connexion Strava détectée, recalcul des stats depuis la base...');
-          await loadStats();
+          console.log('Connexion Strava détectée, initialisation avec nettoyage...');
+          await initializeStats();
         }
       });
     } else if (!user) {
@@ -317,6 +316,7 @@ export const useStravaData = (): UseStravaDataReturn => {
       setIsInitialized(false);
       setIsAutoSyncing(false);
       setLastSyncTime(null);
+      setError(null);
     }
   }, [user, isInitialized]);
 
