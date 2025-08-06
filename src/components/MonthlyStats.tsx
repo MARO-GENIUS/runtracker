@@ -18,9 +18,9 @@ const MonthlyStats = () => {
   const monthlyActivities = stats?.monthly.activitiesCount || 0;
   const yearlyActivities = stats?.yearly.activitiesCount || 0;
 
-  // Calculs dynamiques
-  const monthlyGrowth = ((currentMonthKm - monthlyStats.previousMonth.km) / monthlyStats.previousMonth.km * 100);
-  const yearlyGrowth = ((yearlyTotal - monthlyStats.previousYear) / monthlyStats.previousYear * 100);
+  // Calculs dynamiques - utilise les vraies données si Strava connecté, sinon les mockées
+  const monthlyGrowth = isStravaConnected ? 0 : ((currentMonthKm - monthlyStats.previousMonth.km) / monthlyStats.previousMonth.km * 100);
+  const yearlyGrowth = isStravaConnected ? 0 : ((yearlyTotal - monthlyStats.previousYear) / monthlyStats.previousYear * 100);
 
   if (loading) {
     return <MonthlyStatsLoading />;
