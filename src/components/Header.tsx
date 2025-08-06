@@ -28,34 +28,20 @@ const Header = ({ currentView }: HeaderProps) => {
 
         {/* Vue activities - Layout ultra compact */}
         {currentView === 'activities' && (
-          <div className="mobile-flex-container items-center justify-between gap-2 py-0.5">
-            <Link 
-              to="/"
-              className="flex items-center gap-1.5 text-white/80 hover:text-white mobile-smooth-transition hover:scale-105 mobile-touch-target-sm rounded-lg px-1.5 py-0.5 flex-shrink-0"
-              aria-label="Retour au dashboard"
-            >
-              <ArrowLeft size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
-              <TruncatedText
-                text="Retour"
-                maxLength={6}
-                useFallbackAt={4}
-                fallbackIcon={null}
-                className="font-medium text-xs mobile-text-responsive hidden xs:inline mobile-prevent-overflow"
-                showTooltip={false}
-              />
-            </Link>
-            
-            <h1 className="text-sm sm:text-base lg:text-lg font-bold text-white drop-shadow-lg mobile-text-readable text-center mobile-flex-item min-w-0">
-              <TruncatedText
-                text="ACTIVITÉS"
-                maxLength={12}
-                className="block mobile-prevent-overflow"
-                showTooltip={false}
-              />
-            </h1>
-            
-            {/* Espace équilibré */}
-            <div className="mobile-touch-target-sm flex-shrink-0 w-10"></div>
+          <div className="flex items-center justify-center py-1">
+            <div className="flex items-center gap-2 bg-slate-600/50 backdrop-blur-sm rounded-lg px-3 py-1.5">
+              <Link 
+                to="/"
+                className="flex items-center text-white/80 hover:text-white mobile-smooth-transition hover:scale-105 rounded-md p-1"
+                aria-label="Retour au dashboard"
+              >
+                <ArrowLeft size={16} className="flex-shrink-0" />
+              </Link>
+              
+              <h1 className="text-sm font-bold text-white drop-shadow-lg">
+                ACTIVITÉS
+              </h1>
+            </div>
           </div>
         )}
 
