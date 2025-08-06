@@ -71,37 +71,9 @@ export const useStatsCache = () => {
     if (!user) return;
 
     try {
-      const existingStats = await getCachedStats();
-      
-      if (existingStats) {
-        // Mise à jour incrémentale : préservation des données existantes
-        const updatedStats: StravaStats = {
-          monthly: {
-            distance: Math.max(existingStats.monthly.distance, newStats.monthly.distance),
-            activitiesCount: Math.max(existingStats.monthly.activitiesCount, newStats.monthly.activitiesCount),
-            duration: Math.max(existingStats.monthly.duration, newStats.monthly.duration),
-            longestActivity: newStats.monthly.longestActivity && 
-              (!existingStats.monthly.longestActivity || 
-               newStats.monthly.longestActivity.distance > existingStats.monthly.longestActivity.distance)
-              ? newStats.monthly.longestActivity
-              : existingStats.monthly.longestActivity
-          },
-          yearly: {
-            distance: Math.max(existingStats.yearly.distance, newStats.yearly.distance),
-            activitiesCount: Math.max(existingStats.yearly.activitiesCount, newStats.yearly.activitiesCount)
-          },
-          latest: newStats.latest && 
-            (!existingStats.latest || 
-             new Date(newStats.latest.date) > new Date(existingStats.latest.date))
-            ? newStats.latest
-            : existingStats.latest
-        };
-
-        await setCachedStats(updatedStats);
-      } else {
-        // Première mise en cache
-        await setCachedStats(newStats);
-      }
+      // Remplace directement par les nouvelles stats (plus de mise à jour incrémentale)
+      await setCachedStats(newStats);
+      console.log('Stats mises à jour dans le cache:', newStats);
     } catch (error) {
       console.error('Error updating cached stats:', error);
     }

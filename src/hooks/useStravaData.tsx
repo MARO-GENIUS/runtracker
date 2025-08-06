@@ -304,9 +304,10 @@ export const useStravaData = (): UseStravaDataReturn => {
   useEffect(() => {
     if (user && !isInitialized) {
       console.log('Utilisateur connecté, initialisation...');
-      checkStravaConnection().then((connected) => {
+      checkStravaConnection().then(async (connected) => {
         if (connected) {
-          loadCachedStatsInitial();
+          // Force le recalcul des stats depuis la base
+          await loadStats();
         }
       });
     } else if (!user) {
