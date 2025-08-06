@@ -37,7 +37,7 @@ export const useStatsCache = () => {
         .eq('user_id', user.id)
         .single();
 
-      if (cachedStats) {
+      if (cachedStats && cachedStats.stats_data) {
         console.log('Stats trouvées dans le cache:', cachedStats);
         return cachedStats.stats_data as unknown as StravaStats;
       }
