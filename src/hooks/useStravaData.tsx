@@ -306,9 +306,9 @@ export const useStravaData = (): UseStravaDataReturn => {
       console.log('Utilisateur connecté, initialisation...');
       checkStravaConnection().then(async (connected) => {
         if (connected) {
-          // Force le recalcul des stats pour corriger les données
-          console.log('Connexion Strava détectée, calcul des stats...');
-          await loadStats();
+          // Charge d'abord le cache pour affichage immédiat, puis met à jour en arrière-plan
+          console.log('Connexion Strava détectée, chargement du cache...');
+          await loadCachedStatsInitial();
         }
       });
     } else if (!user) {
