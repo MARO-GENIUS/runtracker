@@ -90,18 +90,127 @@ export const useStravaData = (): UseStravaDataReturn => {
   const initializeStats = async () => {
     if (!user || isInitialized) return;
 
-    console.log('Initialisation: nettoyage du cache et recalcul depuis la base...');
+    console.log('Initialisation: chargement du cache puis recalcul...');
     
     try {
-      // Nettoyer le cache au démarrage pour éviter les données obsolètes
-      await clearCache();
-      console.log('Cache nettoyé, calcul des stats depuis la base...');
+      // D'abord charger le cache pour affichage immédiat
+      const cachedStats = await getCachedStats();
       
-      // Toujours recalculer depuis la base au premier chargement
-      await loadStats();
+      if (cachedStats) {
+        console.log('Stats trouvées dans le cache, affichage immédiat:', cachedStats);
+        setStats(cachedStats);
+        setIsInitialized(true);
+      }
+      
+      // Vérifier si le cache est récent (moins de 10 minutes)
+      const shouldRecalculate = true; // Pour l'instant, toujours recalculer en arrière-plan
+      
+      if (shouldRecalculate) {
+        console.log('Recalcul des stats en arrière-plan...');
+        // Recalculer en arrière-plan sans affecter l'affichage immédiat
+        setTimeout(async () => {
+          await loadStatsBackground();
+        }, 100);
+      }
+      
+      // Si pas de cache, recalcul immédiat
+      if (!cachedStats) {
+        console.log('Pas de cache, calcul immédiat...');
+        await loadStats();
+      }
     } catch (error) {
       console.error('Error during initialization:', error);
       setError('Erreur lors de l\'initialisation des données');
+    }
+  };
+
+  const loadStatsBackground = async () => {
+    if (!user || !isStravaConnected) return;
+
+    console.log('Recalcul en arrière-plan des stats...');
+    
+    try {
+      // Même logique que loadStats mais sans affecter le loading state
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+
+      const startOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1)).toISOString();
+      const endOfMonth = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59)).toISOString();
+
+      const { data: monthActivities } = await supabase
+        .from('strava_activities')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('start_date', startOfMonth)
+        .lte('start_date', endOfMonth)
+        .order('start_date', { ascending: false });
+
+      const startOfYear = new Date(Date.UTC(currentYear, 0, 1)).toISOString();
+      const endOfYear = new Date(Date.UTC(currentYear, 11, 31, 23, 59, 59)).toISOString();
+
+      const { data: yearActivities } = await supabase
+        .from('strava_activities')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('start_date', startOfYear)
+        .lte('start_date', endOfYear)
+        .order('start_date', { ascending: false });
+
+      const { data: latestActivity } = await supabase
+        .from('strava_activities')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('start_date', { ascending: false })
+        .limit(1);
+
+      const monthlyDistance = monthActivities?.reduce((sum, activity) => sum + (activity.distance / 1000), 0) || 0;
+      const monthlyActivitiesCount = monthActivities?.length || 0;
+      const monthlyDuration = monthActivities?.reduce((sum, activity) => sum + (activity.moving_time || 0), 0) || 0;
+      const longestMonthlyActivity = monthActivities?.reduce((longest, activity) => 
+        activity.distance > (longest?.distance || 0) ? activity : longest, null);
+
+      const yearlyDistance = yearActivities?.reduce((sum, activity) => sum + (activity.distance / 1000), 0) || 0;
+      const yearlyActivitiesCount = yearActivities?.length || 0;
+
+      const newStats: StravaStats = {
+        monthly: {
+          distance: Math.round(monthlyDistance * 10) / 10,
+          activitiesCount: monthlyActivitiesCount,
+          duration: monthlyDuration,
+          longestActivity: longestMonthlyActivity ? {
+            name: longestMonthlyActivity.name,
+            distance: Math.round((longestMonthlyActivity.distance / 1000) * 10) / 10,
+            date: longestMonthlyActivity.start_date_local
+          } : null
+        },
+        yearly: {
+          distance: Math.round(yearlyDistance * 10) / 10,
+          activitiesCount: yearlyActivitiesCount
+        },
+        latest: latestActivity?.[0] ? {
+          name: latestActivity[0].name,
+          distance: Math.round((latestActivity[0].distance / 1000) * 10) / 10,
+          date: latestActivity[0].start_date_local
+        } : null
+      };
+
+      // Comparer avec les stats actuelles
+      const currentStats = stats;
+      const hasChanged = !currentStats || 
+        currentStats.monthly.distance !== newStats.monthly.distance ||
+        currentStats.yearly.distance !== newStats.yearly.distance;
+
+      if (hasChanged) {
+        console.log('Nouvelles stats détectées, mise à jour:', newStats);
+        await updateCachedStats(newStats);
+        setStats(newStats);
+      } else {
+        console.log('Pas de changement dans les stats');
+      }
+      
+    } catch (error) {
+      console.error('Error in background stats calculation:', error);
     }
   };
 
