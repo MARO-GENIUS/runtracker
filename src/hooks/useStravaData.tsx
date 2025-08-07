@@ -131,39 +131,47 @@ export const useStravaData = (): UseStravaDataReturn => {
     console.log('Recalcul en arrière-plan des stats...');
     
     try {
-      // Même logique que loadStats mais sans affecter le loading state
+      // Utiliser start_date_local comme dans loadStats() pour cohérence
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
 
-      const startOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1)).toISOString();
-      const endOfMonth = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59)).toISOString();
+      // Format pour start_date_local : YYYY-MM-DD (date locale seulement)
+      const startOfMonth = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+      const endOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const endOfMonthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(endOfMonth).padStart(2, '0')}`;
+
+      console.log(`Recherche activités du mois: ${startOfMonth} à ${endOfMonthStr}`);
 
       const { data: monthActivities } = await supabase
         .from('strava_activities')
         .select('*')
         .eq('user_id', user.id)
-        .gte('start_date', startOfMonth)
-        .lte('start_date', endOfMonth)
-        .order('start_date', { ascending: false });
+        .gte('start_date_local', startOfMonth)
+        .lte('start_date_local', endOfMonthStr)
+        .order('start_date_local', { ascending: false });
 
-      const startOfYear = new Date(Date.UTC(currentYear, 0, 1)).toISOString();
-      const endOfYear = new Date(Date.UTC(currentYear, 11, 31, 23, 59, 59)).toISOString();
+      const startOfYear = `${currentYear}-01-01`;
+      const endOfYear = `${currentYear}-12-31`;
+
+      console.log(`Recherche activités de l'année: ${startOfYear} à ${endOfYear}`);
 
       const { data: yearActivities } = await supabase
         .from('strava_activities')
         .select('*')
         .eq('user_id', user.id)
-        .gte('start_date', startOfYear)
-        .lte('start_date', endOfYear)
-        .order('start_date', { ascending: false });
+        .gte('start_date_local', startOfYear)
+        .lte('start_date_local', endOfYear)
+        .order('start_date_local', { ascending: false });
 
       const { data: latestActivity } = await supabase
         .from('strava_activities')
         .select('*')
         .eq('user_id', user.id)
-        .order('start_date', { ascending: false })
+        .order('start_date_local', { ascending: false })
         .limit(1);
+
+      console.log(`Activités trouvées - Mois: ${monthActivities?.length || 0}, Année: ${yearActivities?.length || 0}`);
 
       const monthlyDistance = monthActivities?.reduce((sum, activity) => sum + (activity.distance / 1000), 0) || 0;
       const monthlyActivitiesCount = monthActivities?.length || 0;
@@ -196,23 +204,42 @@ export const useStravaData = (): UseStravaDataReturn => {
         } : null
       };
 
-      // Comparer avec les stats actuelles
+      console.log('Stats recalculées en arrière-plan:', {
+        monthly: `${newStats.monthly.distance}km (${newStats.monthly.activitiesCount} activités)`,
+        yearly: `${newStats.yearly.distance}km (${newStats.yearly.activitiesCount} activités)`
+      });
+
+      // Comparer avec les stats actuelles (plus de critères de comparaison)
       const currentStats = stats;
       const hasChanged = !currentStats || 
         currentStats.monthly.distance !== newStats.monthly.distance ||
-        currentStats.yearly.distance !== newStats.yearly.distance;
+        currentStats.monthly.activitiesCount !== newStats.monthly.activitiesCount ||
+        currentStats.yearly.distance !== newStats.yearly.distance ||
+        currentStats.yearly.activitiesCount !== newStats.yearly.activitiesCount;
 
       if (hasChanged && !isUpdatingCacheRef.current) {
-        console.log('Nouvelles stats détectées, mise à jour:', newStats);
+        console.log('Nouvelles stats détectées, mise à jour:', {
+          anciennes: currentStats ? {
+            monthly: `${currentStats.monthly.distance}km (${currentStats.monthly.activitiesCount})`,
+            yearly: `${currentStats.yearly.distance}km (${currentStats.yearly.activitiesCount})`
+          } : 'aucune',
+          nouvelles: {
+            monthly: `${newStats.monthly.distance}km (${newStats.monthly.activitiesCount})`,
+            yearly: `${newStats.yearly.distance}km (${newStats.yearly.activitiesCount})`
+          }
+        });
+        
         isUpdatingCacheRef.current = true;
         try {
           await updateCachedStats(newStats);
           setStats(newStats);
+          // Dispatch event pour informer les autres composants
+          window.dispatchEvent(new CustomEvent('strava-stats-updated', { detail: newStats }));
         } finally {
           isUpdatingCacheRef.current = false;
         }
       } else {
-        console.log('Pas de changement dans les stats ou mise à jour en cours');
+        console.log(hasChanged ? 'Mise à jour en cours, ignorée' : 'Aucun changement détecté dans les stats');
       }
       
     } catch (error) {
@@ -234,42 +261,44 @@ export const useStravaData = (): UseStravaDataReturn => {
     console.log('Calcul des stats depuis les activités...');
     
     try {
-      // Utiliser UTC pour éviter les problèmes de timezone
+      // Utiliser start_date_local pour correspondre aux dates réelles des activités
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
 
-      // Début du mois (1er jour à 00:00:00 UTC)
-      const startOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1)).toISOString();
-      // Fin du mois (dernier jour à 23:59:59 UTC)
-      const endOfMonth = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59)).toISOString();
+      // Format pour start_date_local : YYYY-MM-DD (date locale seulement)
+      const startOfMonth = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+      const endOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const endOfMonthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(endOfMonth).padStart(2, '0')}`;
+
+      console.log(`Recherche activités du mois: ${startOfMonth} à ${endOfMonthStr}`);
 
       const { data: monthActivities } = await supabase
         .from('strava_activities')
         .select('*')
         .eq('user_id', user.id)
-        .gte('start_date', startOfMonth)
-        .lte('start_date', endOfMonth)
-        .order('start_date', { ascending: false });
+        .gte('start_date_local', startOfMonth)
+        .lte('start_date_local', endOfMonthStr)
+        .order('start_date_local', { ascending: false });
 
-      // Début de l'année (1er janvier à 00:00:00 UTC)
-      const startOfYear = new Date(Date.UTC(currentYear, 0, 1)).toISOString();
-      // Fin de l'année (31 décembre à 23:59:59 UTC)
-      const endOfYear = new Date(Date.UTC(currentYear, 11, 31, 23, 59, 59)).toISOString();
+      const startOfYear = `${currentYear}-01-01`;
+      const endOfYear = `${currentYear}-12-31`;
+
+      console.log(`Recherche activités de l'année: ${startOfYear} à ${endOfYear}`);
 
       const { data: yearActivities } = await supabase
         .from('strava_activities')
         .select('*')
         .eq('user_id', user.id)
-        .gte('start_date', startOfYear)
-        .lte('start_date', endOfYear)
-        .order('start_date', { ascending: false });
+        .gte('start_date_local', startOfYear)
+        .lte('start_date_local', endOfYear)
+        .order('start_date_local', { ascending: false });
 
       const { data: latestActivity } = await supabase
         .from('strava_activities')
         .select('*')
         .eq('user_id', user.id)
-        .order('start_date', { ascending: false })
+        .order('start_date_local', { ascending: false })
         .limit(1);
 
       console.log('Activités du mois trouvées:', monthActivities?.length || 0);
