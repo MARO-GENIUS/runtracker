@@ -5,9 +5,10 @@ import { Skeleton } from './ui/skeleton';
 
 interface MiniRecordChartProps {
   distance: number;
+  fullHeight?: boolean;
 }
 
-const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance }) => {
+const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance, fullHeight = false }) => {
   const { history, loading } = useDistanceHistory(distance);
 
   if (loading) {
@@ -31,7 +32,7 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance }) => {
   }));
 
   return (
-    <div className="h-24 w-full">
+    <div className={fullHeight ? "h-full w-full" : "h-24 w-full"}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
           <defs>
