@@ -65,6 +65,7 @@ export const useStravaData = (): UseStravaDataReturn => {
 
   const isLoadingRef = useRef(false);
   const lastLoadTimeRef = useRef<number>(0);
+  const isUpdatingCacheRef = useRef(false);
 
   const checkStravaConnection = async () => {
     if (!user) return;
@@ -201,12 +202,17 @@ export const useStravaData = (): UseStravaDataReturn => {
         currentStats.monthly.distance !== newStats.monthly.distance ||
         currentStats.yearly.distance !== newStats.yearly.distance;
 
-      if (hasChanged) {
+      if (hasChanged && !isUpdatingCacheRef.current) {
         console.log('Nouvelles stats détectées, mise à jour:', newStats);
-        await updateCachedStats(newStats);
-        setStats(newStats);
+        isUpdatingCacheRef.current = true;
+        try {
+          await updateCachedStats(newStats);
+          setStats(newStats);
+        } finally {
+          isUpdatingCacheRef.current = false;
+        }
       } else {
-        console.log('Pas de changement dans les stats');
+        console.log('Pas de changement dans les stats ou mise à jour en cours');
       }
       
     } catch (error) {
