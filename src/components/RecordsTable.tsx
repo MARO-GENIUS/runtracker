@@ -132,29 +132,29 @@ const RecordsTable = () => {
                   
                   {/* Contenu en deux colonnes: infos à gauche, graphique à droite */}
                   <div className="flex flex-col md:flex-row gap-0 md:gap-0 items-stretch">
-                    <div className="shrink-0 w-full md:w-[360px] lg:w-[380px]">
+                    <div className="shrink-0 w-full md:w-fit md:max-w-[220px] lg:max-w-[240px]">
                       {/* Distance */}
                       <div className="mb-4 mt-2">
-                        <h3 className="text-2xl font-bold text-primary">{record.distance}</h3>
+                        <h3 className="text-2xl font-bold text-primary whitespace-nowrap">{record.distance}</h3>
                       </div>
 
                       {/* Temps principal */}
                       <div className="mb-3">
-                        <div className="text-3xl font-bold text-card-foreground">{record.time}</div>
+                        <div className="text-3xl font-bold text-card-foreground whitespace-nowrap">{record.time}</div>
                       </div>
 
                       {/* Allure */}
                       <div className="flex items-center gap-2 mb-3 text-muted-foreground">
                         <Clock className="h-4 w-4" />
-                        <span className="font-medium">{record.pace}</span>
+                        <span className="font-medium whitespace-nowrap">{record.pace}</span>
                       </div>
 
                       {/* Date et lieu */}
                       <div className="space-y-1">
-                        <div className="font-medium text-sm text-card-foreground">{record.date}</div>
+                        <div className="font-medium text-sm text-card-foreground whitespace-nowrap">{record.date}</div>
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <MapPin className="h-3 w-3" />
-                          <span className="truncate">{record.location}</span>
+                          <span className="truncate max-w-[200px] inline-block whitespace-nowrap">{record.location}</span>
                         </div>
                       </div>
                     </div>
