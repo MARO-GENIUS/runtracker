@@ -46,12 +46,16 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance, fullHeight 
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+            padding={{ left: 0, right: 0 }}
+            tickMargin={0}
           />
-          <YAxis 
+          <YAxis
+            orientation="right"
             domain={['dataMin - 0.1', 'dataMax + 0.1']}
             tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
             axisLine={false}
             tickLine={false}
+            width={28}
             tickFormatter={(value) => `${Math.floor(value)}:${(Math.round((value % 1) * 60)).toString().padStart(2, '0')}`}
           />
           <Tooltip

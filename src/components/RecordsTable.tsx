@@ -131,7 +131,7 @@ const RecordsTable = () => {
                   </div>
                   
                   {/* Contenu en deux colonnes: infos à gauche, graphique à droite */}
-                  <div className="flex flex-col md:flex-row gap-2 md:gap-2 items-stretch">
+                  <div className="flex flex-col md:flex-row gap-0 md:gap-0 items-stretch">
                     <div className="flex-1">
                       {/* Distance */}
                       <div className="mb-4 mt-2">
@@ -159,8 +159,7 @@ const RecordsTable = () => {
                       </div>
                     </div>
 
-                    {/* Graphique à droite, pleine hauteur */}
-                    <div className="md:w-1/2 lg:w-2/3 pl-2 pr-2">
+                    <div className="md:w-1/2 lg:w-2/3 pl-0 pr-0">
                       <div className="h-full min-h-[140px]">
                         <MiniRecordChart distance={record.distanceMeters} fullHeight />
                       </div>
