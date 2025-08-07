@@ -76,14 +76,7 @@ export const useDistanceHistory = (targetDistance: number) => {
           return records;
         }, []);
 
-        // Filtrer sur les 3 dernières années
-        const cutoffDate = new Date();
-        cutoffDate.setFullYear(cutoffDate.getFullYear() - 3);
-        const filteredRecords = progressiveRecords.filter((item) =>
-          new Date(item.start_date_local).getTime() >= cutoffDate.getTime()
-        );
-
-        setHistory(filteredRecords.reverse()); // Plus récent en premier
+        setHistory(progressiveRecords.reverse()); // Plus récent en premier
       }
 
     } catch (error: any) {
