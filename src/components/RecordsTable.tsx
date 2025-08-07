@@ -159,8 +159,11 @@ const RecordsTable = () => {
                       </div>
                     </div>
 
+                    {/* Barre violette séparatrice */}
+                    <div className="hidden md:block w-2 bg-primary rounded-sm self-stretch" aria-hidden="true" />
+
                     {/* Graphique à droite, pleine hauteur */}
-                    <div className="md:w-1/2 lg:w-2/3">
+                    <div className="md:w-1/2 lg:w-2/3 pl-2 pr-6">
                       <div className="h-full min-h-[140px]">
                         <MiniRecordChart distance={record.distanceMeters} fullHeight />
                       </div>
