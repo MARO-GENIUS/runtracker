@@ -42,12 +42,15 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance, fullHeight 
             </linearGradient>
           </defs>
           <XAxis 
-            dataKey="date" 
+            dataKey="index"
+            type="number"
+            domain={[0, chartData.length - 1]}
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
             padding={{ left: 0, right: 0 }}
             tickMargin={0}
+            tickFormatter={(value) => chartData[value]?.date || ''}
           />
           <YAxis
             orientation="right"
