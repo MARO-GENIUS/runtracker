@@ -46,7 +46,7 @@ export const useDistanceHistory = (targetDistance: number) => {
       }
 
       if (bestEfforts) {
-        // Calculer les améliorations entre les performances
+        // Trier par date chronologique
         const sortedHistory = bestEfforts
           .map((effort: any) => ({
             id: effort.id,
@@ -58,21 +58,25 @@ export const useDistanceHistory = (targetDistance: number) => {
           }))
           .sort((a, b) => new Date(a.start_date_local).getTime() - new Date(b.start_date_local).getTime());
 
-        // Calculer les améliorations
-        const historyWithImprovements = sortedHistory.map((item, index) => {
-          if (index === 0) return { ...item, improvement: 0 };
+        // Ne garder que les vrais records progressifs
+        const progressiveRecords = sortedHistory.reduce((records: any[], current) => {
+          if (records.length === 0) {
+            // Premier record
+            return [{ ...current, improvement: 0 }];
+          }
           
-          const previousBest = sortedHistory
-            .slice(0, index)
-            .reduce((best, current) => 
-              current.moving_time < best.moving_time ? current : best
-            );
+          const currentBest = records[records.length - 1];
+          if (current.moving_time < currentBest.moving_time) {
+            // Nouveau record ! Calculer l'amélioration
+            const improvement = currentBest.moving_time - current.moving_time;
+            records.push({ ...current, improvement });
+          }
+          // Sinon on ignore cette performance (pas un record)
           
-          const improvement = previousBest.moving_time - item.moving_time;
-          return { ...item, improvement };
-        });
+          return records;
+        }, []);
 
-        setHistory(historyWithImprovements.reverse()); // Plus récent en premier
+        setHistory(progressiveRecords.reverse()); // Plus récent en premier
       }
 
     } catch (error: any) {
