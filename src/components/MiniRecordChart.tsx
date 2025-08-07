@@ -1,5 +1,5 @@
 import React from 'react';
-import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { ComposedChart, Area, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useDistanceHistory } from '../hooks/useDistanceHistory';
 import { Skeleton } from './ui/skeleton';
 
@@ -34,11 +34,15 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance, fullHeight 
   return (
     <div className={fullHeight ? "h-full w-full" : "h-24 w-full"}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 12 }}>
+        <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 12 }}>
           <defs>
             <linearGradient id="recordGradient" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
               <stop offset="100%" stopColor="hsl(var(--chart-1))" stopOpacity={0.6} />
+            </linearGradient>
+            <linearGradient id="recordArea" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.18} />
+              <stop offset="100%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.04} />
             </linearGradient>
           </defs>
           <XAxis 
@@ -75,6 +79,13 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance, fullHeight 
               );
             }}
           />
+          <Area
+            type="monotone"
+            dataKey="pace"
+            stroke="transparent"
+            fill="url(#recordArea)"
+            fillOpacity={1}
+          />
           <Line
             type="monotone"
             dataKey="pace"
@@ -83,7 +94,7 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance, fullHeight 
             dot={{ fill: "hsl(var(--primary))", r: 3 }}
             activeDot={{ r: 4, fill: "hsl(var(--primary))" }}
           />
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );
