@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { MapPin, Clock, TrendingUp, BarChart3 } from 'lucide-react';
 import { usePersonalRecords } from '@/hooks/usePersonalRecords';
 import DistanceHistoryPanel from './DistanceHistoryPanel';
+import MiniRecordChart from './MiniRecordChart';
 import { Badge } from './ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
@@ -143,6 +144,11 @@ const RecordsTable = () => {
                   <div className="flex items-center gap-2 mb-3 text-muted-foreground">
                     <Clock className="h-4 w-4" />
                     <span className="font-medium">{record.pace}</span>
+                  </div>
+                  
+                  {/* Mini graphique d'évolution */}
+                  <div className="mb-3">
+                    <MiniRecordChart distance={record.distanceMeters} />
                   </div>
                   
                   {/* Date et lieu */}
