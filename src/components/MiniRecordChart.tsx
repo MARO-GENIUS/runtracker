@@ -1,5 +1,5 @@
 import React from 'react';
-import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts';
+import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useDistanceHistory } from '../hooks/useDistanceHistory';
 import { Skeleton } from './ui/skeleton';
 
@@ -11,7 +11,7 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance }) => {
   const { history, loading } = useDistanceHistory(distance);
 
   if (loading) {
-    return <Skeleton className="h-16 w-full rounded-md" />;
+    return <Skeleton className="h-24 w-full rounded-md" />;
   }
 
   if (!history || history.length <= 1) {
@@ -31,15 +31,28 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance }) => {
   }));
 
   return (
-    <div className="h-16 w-full">
+    <div className="h-24 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData}>
+        <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
           <defs>
             <linearGradient id="recordGradient" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
               <stop offset="100%" stopColor="hsl(var(--chart-1))" stopOpacity={0.6} />
             </linearGradient>
           </defs>
+          <XAxis 
+            dataKey="date" 
+            axisLine={false}
+            tickLine={false}
+            tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+          />
+          <YAxis 
+            domain={['dataMin - 0.1', 'dataMax + 0.1']}
+            tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(value) => `${Math.floor(value)}:${(Math.round((value % 1) * 60)).toString().padStart(2, '0')}`}
+          />
           <Tooltip
             content={({ active, payload, label }) => {
               if (!active || !payload || !payload.length) return null;
@@ -59,8 +72,8 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance }) => {
             dataKey="pace"
             stroke="url(#recordGradient)"
             strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 3, fill: "hsl(var(--primary))" }}
+            dot={{ fill: "hsl(var(--primary))", r: 3 }}
+            activeDot={{ r: 4, fill: "hsl(var(--primary))" }}
           />
         </LineChart>
       </ResponsiveContainer>
