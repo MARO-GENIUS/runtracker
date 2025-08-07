@@ -34,7 +34,7 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance, fullHeight 
   return (
     <div className={fullHeight ? "h-full w-full" : "h-24 w-full"}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+        <LineChart data={chartData} margin={{ top: 8, right: 28, left: 8, bottom: 8 }}>
           <defs>
             <linearGradient id="recordGradient" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />

@@ -130,9 +130,10 @@ const RecordsTable = () => {
                     <TrendingUp className="h-4 w-4 text-primary" />
                   </div>
                   
-                  {/* Contenu en deux colonnes: infos à gauche, graphique à droite */}
+                  {/* Contenu en deux colonnes: infos à gauche, barre violette, graphique à droite */}
                   <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-stretch">
-                    <div className="flex-1">
+                    {/* Colonne infos */}
+                    <div className="flex-1 md:max-w-[40%]">
                       {/* Distance */}
                       <div className="mb-4 mt-2">
                         <h3 className="text-2xl font-bold text-primary">{record.distance}</h3>
@@ -159,9 +160,12 @@ const RecordsTable = () => {
                       </div>
                     </div>
 
-                    {/* Graphique à droite, pleine hauteur */}
-                    <div className="md:w-1/2 lg:w-2/3">
-                      <div className="h-full min-h-[140px]">
+                    {/* Barre violette de séparation */}
+                    <div className="w-2 bg-primary rounded-md self-stretch mx-2 md:mx-4" aria-hidden="true" />
+
+                    {/* Graphique à droite, pleine hauteur, arrêt avant le bord droit */}
+                    <div className="md:flex-1 lg:flex-[2]">
+                      <div className="h-full min-h-[180px] pl-2 md:pl-4 pr-6">
                         <MiniRecordChart distance={record.distanceMeters} fullHeight />
                       </div>
                     </div>
