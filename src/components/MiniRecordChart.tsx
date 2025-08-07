@@ -27,7 +27,7 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance }) => {
     index,
     time: record.moving_time,
     pace: (record.moving_time / (record.distance / 1000)) / 60, // pace in min/km
-    date: new Date(record.start_date_local).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+    date: new Date(record.start_date_local).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
   }));
 
   return (
