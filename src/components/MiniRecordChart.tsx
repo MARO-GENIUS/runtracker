@@ -34,7 +34,7 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance, fullHeight 
   return (
     <div className={fullHeight ? "h-full w-full" : "h-24 w-full"}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+        <LineChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 12 }}>
           <defs>
             <linearGradient id="recordGradient" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
@@ -45,19 +45,19 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance, fullHeight 
             dataKey="index"
             type="number"
             domain={[0, chartData.length - 1]}
-            axisLine={false}
-            tickLine={false}
+            axisLine={true}
+            tickLine={true}
             tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
             padding={{ left: 0, right: 0 }}
-            tickMargin={0}
+            tickMargin={6}
             tickFormatter={(value) => chartData[value]?.date || ''}
           />
           <YAxis
-            orientation="right"
+            orientation="left"
             domain={['dataMin - 0.1', 'dataMax + 0.1']}
             tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-            axisLine={false}
-            tickLine={false}
+            axisLine={true}
+            tickLine={true}
             width={28}
             tickFormatter={(value) => `${Math.floor(value)}:${(Math.round((value % 1) * 60)).toString().padStart(2, '0')}`}
           />
