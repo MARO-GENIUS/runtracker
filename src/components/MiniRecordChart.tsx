@@ -1,6 +1,7 @@
 import React from 'react';
 import { ComposedChart, Area, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useDistanceHistory } from '../hooks/useDistanceHistory';
+import { useIsMobile } from '../hooks/use-mobile';
 import { Skeleton } from './ui/skeleton';
 
 interface MiniRecordChartProps {
@@ -31,10 +32,19 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance, fullHeight 
     date: new Date(record.start_date_local).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
   }));
 
+  const isMobile = useIsMobile();
+  const axisTickFontSize = isMobile ? 9 : 10;
+  const xTickMargin = isMobile ? 4 : 6;
+  const yAxisWidth = isMobile ? 24 : 28;
+  const margin = isMobile ? { top: 4, right: 4, left: 6, bottom: 8 } : { top: 8, right: 8, left: 8, bottom: 12 };
+  const dotR = isMobile ? 2 : 3;
+  const activeDotR = isMobile ? 3 : 4;
+  const xTickCount = isMobile ? Math.min(5, chartData.length) : Math.min(8, chartData.length);
+
   return (
     <div className={fullHeight ? "h-full w-full" : "h-24 w-full"}>
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 12 }}>
+        <ComposedChart data={chartData} margin={margin}>
           <defs>
             <linearGradient id="recordGradient" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
@@ -49,20 +59,21 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance, fullHeight 
             dataKey="index"
             type="number"
             domain={[0, chartData.length - 1]}
+            tickCount={xTickCount}
             axisLine={true}
             tickLine={true}
-            tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+            tick={{ fontSize: axisTickFontSize, fill: "hsl(var(--muted-foreground))" }}
             padding={{ left: 0, right: 0 }}
-            tickMargin={6}
+            tickMargin={xTickMargin}
             tickFormatter={(value) => chartData[value]?.date || ''}
           />
           <YAxis
             orientation="left"
             domain={['dataMin - 0.1', 'dataMax + 0.1']}
-            tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+            tick={{ fontSize: axisTickFontSize, fill: "hsl(var(--muted-foreground))" }}
             axisLine={true}
             tickLine={true}
-            width={28}
+            width={yAxisWidth}
             tickFormatter={(value) => `${Math.floor(value)}:${(Math.round((value % 1) * 60)).toString().padStart(2, '0')}`}
           />
           <Tooltip
@@ -91,8 +102,8 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance, fullHeight 
             dataKey="pace"
             stroke="url(#recordGradient)"
             strokeWidth={2}
-            dot={{ fill: "hsl(var(--primary))", r: 3 }}
-            activeDot={{ r: 4, fill: "hsl(var(--primary))" }}
+            dot={{ fill: "hsl(var(--primary))", r: dotR }}
+            activeDot={{ r: activeDotR, fill: "hsl(var(--primary))" }}
           />
         </ComposedChart>
       </ResponsiveContainer>
