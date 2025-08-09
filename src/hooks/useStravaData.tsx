@@ -506,6 +506,12 @@ export const useStravaData = (): UseStravaDataReturn => {
   useEffect(() => {
     if (!user || !isStravaConnected) return;
 
+    // Toujours nettoyer un ancien canal avant d'en créer un nouveau
+    if (activitiesChannelRef.current) {
+      try { supabase.removeChannel(activitiesChannelRef.current); } catch {}
+      activitiesChannelRef.current = null;
+    }
+
     let timeoutId: number | undefined;
     const schedule = () => {
       if (timeoutId) window.clearTimeout(timeoutId);
@@ -514,7 +520,10 @@ export const useStravaData = (): UseStravaDataReturn => {
       }, 300);
     };
 
-    const channelName = `strava-activities-${user.id}-${Date.now()}`;
+    const channelName = `strava-activities-${user.id}-${channelIdRef.current}-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}`;
+
     const channel = supabase
       .channel(channelName)
       .on(
@@ -534,9 +543,14 @@ export const useStravaData = (): UseStravaDataReturn => {
       )
       .subscribe();
 
+    activitiesChannelRef.current = channel;
+
     return () => {
       if (timeoutId) window.clearTimeout(timeoutId);
-      supabase.removeChannel(channel);
+      if (activitiesChannelRef.current === channel) {
+        try { supabase.removeChannel(channel); } catch {}
+        activitiesChannelRef.current = null;
+      }
     };
   }, [user?.id, isStravaConnected]);
 
