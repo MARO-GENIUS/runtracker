@@ -139,6 +139,7 @@ export const useStravaLast30Days = (): Last30DaysData => {
         .from('strava_activities')
         .select('*')
         .eq('user_id', user.id)
+        .in('type', ['Run','VirtualRun'])
         .gte('start_date_local', thirtyDaysAgo.toISOString())
         .order('start_date_local', { ascending: false });
 

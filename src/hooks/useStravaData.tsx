@@ -151,6 +151,7 @@ export const useStravaData = (): UseStravaDataReturn => {
         .from('strava_activities')
         .select('distance,moving_time,name,start_date_local')
         .eq('user_id', user.id)
+        .in('type', ['Run','VirtualRun'])
         .gte('start_date_local', startOfMonthStr)
         .lt('start_date_local', startOfNextMonthStr)
         .order('start_date_local', { ascending: false });
@@ -165,6 +166,7 @@ export const useStravaData = (): UseStravaDataReturn => {
         .from('strava_activities')
         .select('distance,moving_time,start_date_local')
         .eq('user_id', user.id)
+        .in('type', ['Run','VirtualRun'])
         .gte('start_date_local', startOfYearStr)
         .lt('start_date_local', startOfNextYearStr)
         .order('start_date_local', { ascending: false });
@@ -173,6 +175,7 @@ export const useStravaData = (): UseStravaDataReturn => {
         .from('strava_activities')
         .select('name,distance,start_date_local')
         .eq('user_id', user.id)
+        .in('type', ['Run','VirtualRun'])
         .order('start_date_local', { ascending: false })
         .limit(1);
 
@@ -283,6 +286,7 @@ export const useStravaData = (): UseStravaDataReturn => {
         .from('strava_activities')
         .select('distance,moving_time,name,start_date_local')
         .eq('user_id', user.id)
+        .in('type', ['Run','VirtualRun'])
         .gte('start_date_local', startOfMonthStr)
         .lt('start_date_local', startOfNextMonthStr)
         .order('start_date_local', { ascending: false });
@@ -297,6 +301,7 @@ export const useStravaData = (): UseStravaDataReturn => {
         .from('strava_activities')
         .select('distance,moving_time,start_date_local')
         .eq('user_id', user.id)
+        .in('type', ['Run','VirtualRun'])
         .gte('start_date_local', startOfYearStr)
         .lt('start_date_local', startOfNextYearStr)
         .order('start_date_local', { ascending: false });
@@ -305,6 +310,7 @@ export const useStravaData = (): UseStravaDataReturn => {
         .from('strava_activities')
         .select('name,distance,start_date_local')
         .eq('user_id', user.id)
+        .in('type', ['Run','VirtualRun'])
         .order('start_date_local', { ascending: false })
         .limit(1);
 
