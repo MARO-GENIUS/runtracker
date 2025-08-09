@@ -11,6 +11,7 @@ interface MiniRecordChartProps {
 
 const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance, fullHeight = false }) => {
   const { history, loading } = useDistanceHistory(distance);
+  const isMobile = useIsMobile();
 
   if (loading) {
     return <Skeleton className="h-24 w-full rounded-md" />;
@@ -32,7 +33,6 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance, fullHeight 
     date: new Date(record.start_date_local).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
   }));
 
-  const isMobile = useIsMobile();
   const axisTickFontSize = isMobile ? 9 : 10;
   const xTickMargin = isMobile ? 4 : 6;
   const yAxisWidth = isMobile ? 24 : 28;
