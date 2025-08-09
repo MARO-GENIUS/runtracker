@@ -76,11 +76,11 @@ export const useStravaData = (): UseStravaDataReturn => {
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('strava_access_token')
+        .select('strava_user_id, strava_expires_at')
         .eq('id', user.id)
         .single();
 
-      const connected = !!profile?.strava_access_token;
+      const connected = !!profile?.strava_user_id;
       setIsStravaConnected(connected);
       
       return connected;
