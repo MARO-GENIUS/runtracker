@@ -139,11 +139,12 @@ export const useStravaData = (): UseStravaDataReturn => {
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
 
-      // Bornes correctes: [début du mois, début du mois suivant)
+      // Bornes correctes en LOCAL: [début du mois, début du mois suivant)
       const startOfMonth = new Date(currentYear, currentMonth, 1);
       const startOfNextMonth = new Date(currentYear, currentMonth + 1, 1);
-      const startOfMonthStr = startOfMonth.toISOString().slice(0, 10);
-      const startOfNextMonthStr = startOfNextMonth.toISOString().slice(0, 10);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const startOfMonthStr = `${startOfMonth.getFullYear()}-${pad(startOfMonth.getMonth() + 1)}-01`;
+      const startOfNextMonthStr = `${startOfNextMonth.getFullYear()}-${pad(startOfNextMonth.getMonth() + 1)}-01`;
 
       console.log(`Recherche activités du mois: ${startOfMonthStr} à ${startOfNextMonthStr} (exclu)`);
 
@@ -157,8 +158,8 @@ export const useStravaData = (): UseStravaDataReturn => {
         .order('start_date_local', { ascending: false });
 
       // Bornes correctes: [début de l'année, début de l'année suivante)
-      const startOfYearStr = new Date(currentYear, 0, 1).toISOString().slice(0, 10);
-      const startOfNextYearStr = new Date(currentYear + 1, 0, 1).toISOString().slice(0, 10);
+      const startOfYearStr = `${currentYear}-01-01`;
+      const startOfNextYearStr = `${currentYear + 1}-01-01`;
 
       console.log(`Recherche activités de l'année: ${startOfYearStr} à ${startOfNextYearStr} (exclu)`);
 
@@ -274,11 +275,12 @@ export const useStravaData = (): UseStravaDataReturn => {
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
 
-      // Bornes correctes: [début du mois, début du mois suivant)
+      // Bornes correctes en LOCAL: [début du mois, début du mois suivant)
       const startOfMonth = new Date(currentYear, currentMonth, 1);
       const startOfNextMonth = new Date(currentYear, currentMonth + 1, 1);
-      const startOfMonthStr = startOfMonth.toISOString().slice(0, 10);
-      const startOfNextMonthStr = startOfNextMonth.toISOString().slice(0, 10);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const startOfMonthStr = `${startOfMonth.getFullYear()}-${pad(startOfMonth.getMonth() + 1)}-01`;
+      const startOfNextMonthStr = `${startOfNextMonth.getFullYear()}-${pad(startOfNextMonth.getMonth() + 1)}-01`;
 
       console.log(`Recherche activités du mois: ${startOfMonthStr} à ${startOfNextMonthStr} (exclu)`);
 
@@ -292,8 +294,8 @@ export const useStravaData = (): UseStravaDataReturn => {
         .order('start_date_local', { ascending: false });
 
       // Bornes correctes: [début de l'année, début de l'année suivante)
-      const startOfYearStr = new Date(currentYear, 0, 1).toISOString().slice(0, 10);
-      const startOfNextYearStr = new Date(currentYear + 1, 0, 1).toISOString().slice(0, 10);
+      const startOfYearStr = `${currentYear}-01-01`;
+      const startOfNextYearStr = `${currentYear + 1}-01-01`;
 
       console.log(`Recherche activités de l'année: ${startOfYearStr} à ${startOfNextYearStr} (exclu)`);
 
