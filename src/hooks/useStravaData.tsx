@@ -136,37 +136,39 @@ export const useStravaData = (): UseStravaDataReturn => {
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
 
-      // Format pour start_date_local : YYYY-MM-DD (date locale seulement)
-      const startOfMonth = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
-      const endOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-      const endOfMonthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(endOfMonth).padStart(2, '0')}`;
+      // Bornes correctes: [début du mois, début du mois suivant)
+      const startOfMonth = new Date(currentYear, currentMonth, 1);
+      const startOfNextMonth = new Date(currentYear, currentMonth + 1, 1);
+      const startOfMonthStr = startOfMonth.toISOString().slice(0, 10);
+      const startOfNextMonthStr = startOfNextMonth.toISOString().slice(0, 10);
 
-      console.log(`Recherche activités du mois: ${startOfMonth} à ${endOfMonthStr}`);
+      console.log(`Recherche activités du mois: ${startOfMonthStr} à ${startOfNextMonthStr} (exclu)`);
 
       const { data: monthActivities } = await supabase
         .from('strava_activities')
-        .select('*')
+        .select('distance,moving_time,name,start_date_local')
         .eq('user_id', user.id)
-        .gte('start_date_local', startOfMonth)
-        .lte('start_date_local', endOfMonthStr)
+        .gte('start_date_local', startOfMonthStr)
+        .lt('start_date_local', startOfNextMonthStr)
         .order('start_date_local', { ascending: false });
 
-      const startOfYear = `${currentYear}-01-01`;
-      const endOfYear = `${currentYear}-12-31`;
+      // Bornes correctes: [début de l'année, début de l'année suivante)
+      const startOfYearStr = new Date(currentYear, 0, 1).toISOString().slice(0, 10);
+      const startOfNextYearStr = new Date(currentYear + 1, 0, 1).toISOString().slice(0, 10);
 
-      console.log(`Recherche activités de l'année: ${startOfYear} à ${endOfYear}`);
+      console.log(`Recherche activités de l'année: ${startOfYearStr} à ${startOfNextYearStr} (exclu)`);
 
       const { data: yearActivities } = await supabase
         .from('strava_activities')
-        .select('*')
+        .select('distance,moving_time,start_date_local')
         .eq('user_id', user.id)
-        .gte('start_date_local', startOfYear)
-        .lte('start_date_local', endOfYear)
+        .gte('start_date_local', startOfYearStr)
+        .lt('start_date_local', startOfNextYearStr)
         .order('start_date_local', { ascending: false });
 
       const { data: latestActivity } = await supabase
         .from('strava_activities')
-        .select('*')
+        .select('name,distance,start_date_local')
         .eq('user_id', user.id)
         .order('start_date_local', { ascending: false })
         .limit(1);
@@ -266,37 +268,39 @@ export const useStravaData = (): UseStravaDataReturn => {
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
 
-      // Format pour start_date_local : YYYY-MM-DD (date locale seulement)
-      const startOfMonth = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
-      const endOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-      const endOfMonthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(endOfMonth).padStart(2, '0')}`;
+      // Bornes correctes: [début du mois, début du mois suivant)
+      const startOfMonth = new Date(currentYear, currentMonth, 1);
+      const startOfNextMonth = new Date(currentYear, currentMonth + 1, 1);
+      const startOfMonthStr = startOfMonth.toISOString().slice(0, 10);
+      const startOfNextMonthStr = startOfNextMonth.toISOString().slice(0, 10);
 
-      console.log(`Recherche activités du mois: ${startOfMonth} à ${endOfMonthStr}`);
+      console.log(`Recherche activités du mois: ${startOfMonthStr} à ${startOfNextMonthStr} (exclu)`);
 
       const { data: monthActivities } = await supabase
         .from('strava_activities')
-        .select('*')
+        .select('distance,moving_time,name,start_date_local')
         .eq('user_id', user.id)
-        .gte('start_date_local', startOfMonth)
-        .lte('start_date_local', endOfMonthStr)
+        .gte('start_date_local', startOfMonthStr)
+        .lt('start_date_local', startOfNextMonthStr)
         .order('start_date_local', { ascending: false });
 
-      const startOfYear = `${currentYear}-01-01`;
-      const endOfYear = `${currentYear}-12-31`;
+      // Bornes correctes: [début de l'année, début de l'année suivante)
+      const startOfYearStr = new Date(currentYear, 0, 1).toISOString().slice(0, 10);
+      const startOfNextYearStr = new Date(currentYear + 1, 0, 1).toISOString().slice(0, 10);
 
-      console.log(`Recherche activités de l'année: ${startOfYear} à ${endOfYear}`);
+      console.log(`Recherche activités de l'année: ${startOfYearStr} à ${startOfNextYearStr} (exclu)`);
 
       const { data: yearActivities } = await supabase
         .from('strava_activities')
-        .select('*')
+        .select('distance,moving_time,start_date_local')
         .eq('user_id', user.id)
-        .gte('start_date_local', startOfYear)
-        .lte('start_date_local', endOfYear)
+        .gte('start_date_local', startOfYearStr)
+        .lt('start_date_local', startOfNextYearStr)
         .order('start_date_local', { ascending: false });
 
       const { data: latestActivity } = await supabase
         .from('strava_activities')
-        .select('*')
+        .select('name,distance,start_date_local')
         .eq('user_id', user.id)
         .order('start_date_local', { ascending: false })
         .limit(1);
@@ -480,6 +484,8 @@ export const useStravaData = (): UseStravaDataReturn => {
       setIsAutoSyncing(false);
       const now = new Date();
       setLastSyncTime(now);
+      // Forcer un recalcul après une sync globale
+      loadStatsBackground();
     };
     const handleError = () => setIsAutoSyncing(false);
 
@@ -493,6 +499,43 @@ export const useStravaData = (): UseStravaDataReturn => {
       window.removeEventListener('strava-sync-error', handleError as EventListener);
     };
   }, [user?.id]);
+
+  // Realtime: recalculer dès qu'une activité change (INSERT/UPDATE/DELETE)
+  useEffect(() => {
+    if (!user || !isStravaConnected) return;
+
+    let timeoutId: number | undefined;
+    const schedule = () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(() => {
+        loadStatsBackground();
+      }, 300);
+    };
+
+    const channel = supabase
+      .channel('strava-activities-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'strava_activities', filter: `user_id=eq.${user.id}` },
+        schedule
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'strava_activities', filter: `user_id=eq.${user.id}` },
+        schedule
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'strava_activities', filter: `user_id=eq.${user.id}` },
+        schedule
+      )
+      .subscribe();
+
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, isStravaConnected]);
 
   return {
     stats,
