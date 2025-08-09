@@ -68,6 +68,7 @@ export const useStravaData = (): UseStravaDataReturn => {
   const isUpdatingCacheRef = useRef(false);
   const activitiesChannelRef = useRef<ReturnType<typeof supabase['channel']> | null>(null);
   const channelIdRef = useRef<string>(Math.random().toString(36).slice(2));
+  const subscribedRef = useRef(false);
 
   const checkStravaConnection = async () => {
     if (!user) return;
@@ -541,17 +542,31 @@ export const useStravaData = (): UseStravaDataReturn => {
         { event: 'DELETE', schema: 'public', table: 'strava_activities', filter: `user_id=eq.${user.id}` },
         schedule
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          subscribedRef.current = true;
+        }
+      });
 
     activitiesChannelRef.current = channel;
 
     return () => {
       if (timeoutId) window.clearTimeout(timeoutId);
+      subscribedRef.current = false;
       if (activitiesChannelRef.current === channel) {
         try { supabase.removeChannel(channel); } catch {}
         activitiesChannelRef.current = null;
       }
     };
+  }, [user?.id, isStravaConnected]);
+
+  // Fallback: recalcul périodique pour garantir la fraîcheur des données
+  useEffect(() => {
+    if (!user || !isStravaConnected) return;
+    const id = window.setInterval(() => {
+      loadStatsBackground();
+    }, 2 * 60 * 1000); // toutes les 2 minutes
+    return () => window.clearInterval(id);
   }, [user?.id, isStravaConnected]);
 
   return {
