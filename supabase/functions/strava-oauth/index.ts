@@ -42,12 +42,36 @@ serve(async (req) => {
         )
       }
 
+      const stateSecret = Deno.env.get('STRAVA_STATE_SECRET')
+      if (!stateSecret) {
+        return new Response(
+          JSON.stringify({ error: 'Missing STRAVA_STATE_SECRET' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
       // Use the new callback function URL
       const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/strava-callback`
       const scope = 'read,activity:read_all'
-      const authUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=force&scope=${scope}&state=${user.id}`
 
-      console.log('Generated auth URL with redirect:', redirectUri)
+      // Create a signed, expiring state: userId.timestamp.signature
+      const enc = new TextEncoder()
+      const key = await crypto.subtle.importKey(
+        'raw',
+        enc.encode(stateSecret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      )
+      const timestamp = Date.now().toString()
+      const payload = `${user.id}:${timestamp}`
+      const sigBuf = await crypto.subtle.sign('HMAC', key, enc.encode(payload))
+      const sigHex = Array.from(new Uint8Array(sigBuf)).map(b => b.toString(16).padStart(2, '0')).join('')
+      const state = `${user.id}.${timestamp}.${sigHex}`
+
+      const authUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=force&scope=${scope}&state=${state}`
+
+      console.log('Generated auth URL with redirect and signed state:', { redirectUri, userId: user.id })
 
       return new Response(
         JSON.stringify({ auth_url: authUrl }),

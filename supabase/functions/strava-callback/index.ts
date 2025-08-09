@@ -38,6 +38,62 @@ serve(async (req) => {
       return Response.redirect(`${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/?error=missing_params`)
     }
 
+    // Verify signed state (userId.timestamp.signature)
+    const stateSecret = Deno.env.get('STRAVA_STATE_SECRET')
+    if (!stateSecret) {
+      console.error('Missing STRAVA_STATE_SECRET')
+      return Response.redirect(`${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/?error=server_config`)
+    }
+
+    const parts = state.split('.')
+    if (parts.length !== 3) {
+      console.error('Invalid state format')
+      return Response.redirect(`${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/?error=invalid_state`)
+    }
+
+    const [stateUserId, tsStr, sig] = parts
+    const ts = parseInt(tsStr, 10)
+    if (!Number.isFinite(ts)) {
+      console.error('Invalid state timestamp')
+      return Response.redirect(`${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/?error=invalid_state_ts`)
+    }
+
+    // 10 minutes max age
+    const maxAgeMs = 10 * 60 * 1000
+    if (Math.abs(Date.now() - ts) > maxAgeMs) {
+      console.error('State expired')
+      return Response.redirect(`${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/?error=state_expired`)
+    }
+
+    const enc = new TextEncoder()
+    const key = await crypto.subtle.importKey(
+      'raw',
+      enc.encode(stateSecret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    )
+    const payload = `${stateUserId}:${tsStr}`
+    const sigBuf = await crypto.subtle.sign('HMAC', key, enc.encode(payload))
+    const expectedSig = Array.from(new Uint8Array(sigBuf)).map(b => b.toString(16).padStart(2, '0')).join('')
+
+    // Constant-time compare
+    const safeEqual = (a: string, b: string) => {
+      if (a.length !== b.length) return false
+      let result = 0
+      for (let i = 0; i < a.length; i++) {
+        result |= a.charCodeAt(i) ^ b.charCodeAt(i)
+      }
+      return result === 0
+    }
+
+    if (!safeEqual(sig, expectedSig)) {
+      console.error('Invalid state signature')
+      return Response.redirect(`${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/?error=invalid_state_sig`)
+    }
+
+    const verifiedUserId = stateUserId
+
     const clientId = Deno.env.get('STRAVA_CLIENT_ID')
     const clientSecret = Deno.env.get('STRAVA_CLIENT_SECRET')
     
@@ -70,11 +126,11 @@ serve(async (req) => {
       return Response.redirect(`${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/?error=token_exchange_failed`)
     }
 
-    // Store tokens in profiles table using the user ID from state
+    // Store tokens in profiles table using the verified user ID
     const { error: updateError } = await supabaseAdmin
       .from('profiles')
       .upsert({
-        id: state, // User ID from state parameter
+        id: verifiedUserId,
         strava_user_id: tokenData.athlete.id,
         strava_access_token: tokenData.access_token,
         strava_refresh_token: tokenData.refresh_token,
@@ -89,7 +145,7 @@ serve(async (req) => {
       return Response.redirect(`${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/?error=storage_failed`)
     }
 
-    console.log('Tokens stored successfully for user:', state)
+    console.log('Tokens stored successfully for user:', verifiedUserId)
 
     // Redirect to app with success message
     const appUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')
