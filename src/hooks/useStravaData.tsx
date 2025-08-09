@@ -512,8 +512,9 @@ export const useStravaData = (): UseStravaDataReturn => {
       }, 300);
     };
 
+    const channelName = `strava-activities-${user.id}-${Date.now()}`;
     const channel = supabase
-      .channel('strava-activities-realtime')
+      .channel(channelName)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'strava_activities', filter: `user_id=eq.${user.id}` },
