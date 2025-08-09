@@ -66,6 +66,8 @@ export const useStravaData = (): UseStravaDataReturn => {
   const isLoadingRef = useRef(false);
   const lastLoadTimeRef = useRef<number>(0);
   const isUpdatingCacheRef = useRef(false);
+  const activitiesChannelRef = useRef<ReturnType<typeof supabase['channel']> | null>(null);
+  const channelIdRef = useRef<string>(Math.random().toString(36).slice(2));
 
   const checkStravaConnection = async () => {
     if (!user) return;
