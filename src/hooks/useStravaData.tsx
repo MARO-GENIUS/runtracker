@@ -490,15 +490,23 @@ export const useStravaData = (): UseStravaDataReturn => {
       }
     } catch {}
 
-    const handleStart = () => setIsAutoSyncing(true);
-    const handleComplete = () => {
-      setIsAutoSyncing(false);
+    const handleStart = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail?.isAutomatic) return; // silencieux pour les sync auto
+      setIsAutoSyncing(true);
+    };
+    const handleComplete = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (!detail?.isAutomatic) setIsAutoSyncing(false);
       const now = new Date();
       setLastSyncTime(now);
-      // Forcer un recalcul après une sync globale
+      // Recalcul en arrière-plan après toute sync
       loadStatsBackground();
     };
-    const handleError = () => setIsAutoSyncing(false);
+    const handleError = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (!detail?.isAutomatic) setIsAutoSyncing(false);
+    };
 
     window.addEventListener('strava-sync-start', handleStart as EventListener);
     window.addEventListener('strava-sync-complete', handleComplete as EventListener);

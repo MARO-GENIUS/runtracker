@@ -165,7 +165,7 @@ const StravaMonthlyDashboard = () => {
       {/* Informations de synchronisation */}
       <div className="mt-4 pt-3 border-t border-gray-100">
         <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>Mise à jour automatique toutes les 30 min</span>
+          <span>Mise à jour automatique toutes les 60 min</span>
           <div className="flex items-center gap-1">
             <Clock size={12} />
             <span>Dernière sync: {formatLastSync(lastSyncTime)}</span>

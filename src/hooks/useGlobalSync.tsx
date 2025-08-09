@@ -24,6 +24,7 @@ export const useGlobalSync = () => {
   const { canMakeRequest, incrementRequests } = useStravaRateLimit();
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastSyncRef = useRef<Date | null>(null);
+  const autoSyncingRef = useRef(false);
 
   // Événements personnalisés pour la synchronisation
   const dispatchSyncEvent = useCallback((type: 'start' | 'progress' | 'complete' | 'error', data?: any) => {
@@ -33,8 +34,8 @@ export const useGlobalSync = () => {
 
   // Fonction de synchronisation globale
   const performGlobalSync = useCallback(async (isAutomatic = false) => {
-    if (!user || syncState.isGlobalSyncing || !canMakeRequest) {
-      if (!canMakeRequest) {
+    if (!user || (!isAutomatic && syncState.isGlobalSyncing) || (isAutomatic && autoSyncingRef.current) || !canMakeRequest) {
+      if (!canMakeRequest && !isAutomatic) {
         toast.error('Limite API Strava atteinte - Synchronisation reportée');
       }
       return;
@@ -42,10 +43,14 @@ export const useGlobalSync = () => {
 
     console.log(`Début de synchronisation ${isAutomatic ? 'automatique' : 'manuelle'}`);
     
+    if (isAutomatic) {
+      autoSyncingRef.current = true;
+    }
+    
     setSyncState(prev => ({
       ...prev,
-      isGlobalSyncing: true,
-      syncProgress: 'Initialisation...'
+      isGlobalSyncing: isAutomatic ? prev.isGlobalSyncing : true,
+      syncProgress: isAutomatic ? prev.syncProgress : 'Initialisation...'
     }));
 
     dispatchSyncEvent('start', { isAutomatic });
@@ -118,13 +123,27 @@ export const useGlobalSync = () => {
       setSyncState(prev => ({ ...prev, syncProgress: null }));
       dispatchSyncEvent('error', { error: errorMessage, isAutomatic });
     } finally {
+      if (isAutomatic) {
+        autoSyncingRef.current = false;
+      }
       setSyncState(prev => ({ ...prev, isGlobalSyncing: false }));
     }
   }, [user, syncState.isGlobalSyncing, canMakeRequest, updateCachedStats, incrementRequests, dispatchSyncEvent]);
 
-  // Synchronisation automatique périodique (toutes les 30 minutes)
+  // Synchronisation automatique périodique (toutes les 60 minutes, silencieuse)
   useEffect(() => {
     if (!user) return;
+
+    // Initialiser depuis le stockage local pour éviter une sync inutile au démarrage
+    try {
+      const saved = localStorage.getItem('last_strava_sync');
+      if (saved) {
+        const d = new Date(saved);
+        if (!isNaN(d.getTime())) {
+          lastSyncRef.current = d;
+        }
+      }
+    } catch {}
 
     const startPeriodicSync = () => {
       if (syncIntervalRef.current) {
@@ -135,18 +154,22 @@ export const useGlobalSync = () => {
         const now = new Date();
         const lastSync = lastSyncRef.current;
         
-        // Vérifier qu'au moins 30 minutes se sont écoulées
-        if (!lastSync || (now.getTime() - lastSync.getTime()) >= 30 * 60 * 1000) {
+        // Vérifier qu'au moins 60 minutes se sont écoulées
+        if (!lastSync || (now.getTime() - lastSync.getTime()) >= 60 * 60 * 1000) {
           console.log('Déclenchement de la synchronisation automatique périodique');
           performGlobalSync(true);
         }
-      }, 30 * 60 * 1000); // 30 minutes
+      }, 60 * 60 * 1000); // 60 minutes
     };
 
-    // Synchronisation initiale au démarrage (avec délai)
+    // Synchronisation initiale au démarrage (avec délai et seuil 60 min)
     const initialTimer = setTimeout(() => {
-      console.log('Synchronisation initiale au démarrage');
-      performGlobalSync(true);
+      const now = new Date();
+      const lastSync = lastSyncRef.current;
+      if (!lastSync || (now.getTime() - lastSync.getTime()) >= 60 * 60 * 1000) {
+        console.log('Synchronisation initiale au démarrage');
+        performGlobalSync(true);
+      }
       startPeriodicSync();
     }, 3000);
 
@@ -158,34 +181,10 @@ export const useGlobalSync = () => {
     };
   }, [user, performGlobalSync]);
 
-  // Synchronisation sur focus de la fenêtre
+  // Synchronisation sur focus désactivée pour réduire l'animation inutile
   useEffect(() => {
     if (!user) return;
-
-    const handleFocus = () => {
-      const now = new Date();
-      const lastSync = lastSyncRef.current;
-      
-      // Synchroniser seulement si plus de 15 minutes depuis la dernière sync
-      if (!lastSync || (now.getTime() - lastSync.getTime()) >= 15 * 60 * 1000) {
-        console.log('Synchronisation sur retour de focus');
-        setTimeout(() => performGlobalSync(true), 2000);
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        handleFocus();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+    // Intentionnellement désactivé
   }, [user, performGlobalSync]);
 
   return {
