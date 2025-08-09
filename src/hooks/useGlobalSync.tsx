@@ -71,6 +71,10 @@ export const useGlobalSync = () => {
 
       const syncTime = new Date();
       lastSyncRef.current = syncTime;
+      // Persist last sync time for cross-hook UI updates
+      try {
+        localStorage.setItem('last_strava_sync', syncTime.toISOString());
+      } catch {}
       
       setSyncState(prev => ({
         ...prev,

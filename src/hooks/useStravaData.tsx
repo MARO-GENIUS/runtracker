@@ -464,6 +464,36 @@ export const useStravaData = (): UseStravaDataReturn => {
     }
   }, [user, isInitialized]);
 
+  // Listen to global sync events and initialize last sync time
+  useEffect(() => {
+    // Initialize from localStorage if available
+    try {
+      const saved = localStorage.getItem('last_strava_sync');
+      if (saved) {
+        const d = new Date(saved);
+        if (!isNaN(d.getTime())) setLastSyncTime(d);
+      }
+    } catch {}
+
+    const handleStart = () => setIsAutoSyncing(true);
+    const handleComplete = () => {
+      setIsAutoSyncing(false);
+      const now = new Date();
+      setLastSyncTime(now);
+    };
+    const handleError = () => setIsAutoSyncing(false);
+
+    window.addEventListener('strava-sync-start', handleStart as EventListener);
+    window.addEventListener('strava-sync-complete', handleComplete as EventListener);
+    window.addEventListener('strava-sync-error', handleError as EventListener);
+
+    return () => {
+      window.removeEventListener('strava-sync-start', handleStart as EventListener);
+      window.removeEventListener('strava-sync-complete', handleComplete as EventListener);
+      window.removeEventListener('strava-sync-error', handleError as EventListener);
+    };
+  }, [user?.id]);
+
   return {
     stats,
     loading: loading && !stats,

@@ -1,10 +1,13 @@
 
-import { Clock, Calendar } from 'lucide-react';
+import { Clock, Calendar, RefreshCw } from 'lucide-react';
 import { useStravaData } from '@/hooks/useStravaData';
 import { getCurrentMonthName } from '@/utils/dateHelpers';
+import { Button } from '@/components/ui/button';
+import { useGlobalSync } from '@/hooks/useGlobalSync';
 
 const StravaMonthlyDashboard = () => {
   const { stats, loading, isStravaConnected, isAutoSyncing, lastSyncTime } = useStravaData();
+  const { performGlobalSync, isGlobalSyncing } = useGlobalSync();
 
   // Conversion de la durée en heures et minutes
   const formatDuration = (seconds: number) => {
@@ -63,19 +66,25 @@ const StravaMonthlyDashboard = () => {
           </h3>
         </div>
         
-        {/* Indicateur de synchronisation automatique */}
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          {isAutoSyncing ? (
-            <div className="flex items-center gap-1">
-              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-strava-orange"></div>
-              <span>Synchronisation...</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>Données à jour</span>
-            </div>
-          )}
+        {/* Indicateur + bouton de synchronisation */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            {isAutoSyncing || isGlobalSyncing ? (
+              <div className="flex items-center gap-1">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-strava-orange"></div>
+                <span>Synchronisation...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Données à jour</span>
+              </div>
+            )}
+          </div>
+          <Button variant="secondary" size="sm" onClick={() => performGlobalSync()} disabled={isGlobalSyncing}>
+            <RefreshCw className={`mr-1 h-3.5 w-3.5 ${isGlobalSyncing ? 'animate-spin' : ''}`} />
+            Synchroniser maintenant
+          </Button>
         </div>
       </div>
 
@@ -156,7 +165,7 @@ const StravaMonthlyDashboard = () => {
       {/* Informations de synchronisation */}
       <div className="mt-4 pt-3 border-t border-gray-100">
         <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>Mise à jour automatique toutes les 6h</span>
+          <span>Mise à jour automatique toutes les 30 min</span>
           <div className="flex items-center gap-1">
             <Clock size={12} />
             <span>Dernière sync: {formatLastSync(lastSyncTime)}</span>
