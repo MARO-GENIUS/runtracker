@@ -27,7 +27,7 @@ const MonthlyStats = () => {
   }
 
   // Détermine si on a une dernière activité pour adapter le nombre de colonnes
-  const hasLatestActivity = isStravaConnected && stats?.latest;
+  const hasLatestActivity = isStravaConnected;
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -55,8 +55,8 @@ const MonthlyStats = () => {
         />
 
         {/* Dernière activité - Affiché seulement si Strava connecté */}
-        {hasLatestActivity && (
-          <LatestActivity latestActivity={stats.latest} />
+        {isStravaConnected && (
+          <LatestActivity latestActivity={stats?.latest || null} />
         )}
       </div>
     </div>

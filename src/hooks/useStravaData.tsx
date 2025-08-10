@@ -172,13 +172,30 @@ export const useStravaData = (): UseStravaDataReturn => {
         .lt('start_date_local', startOfNextYearStr)
         .order('start_date_local', { ascending: false });
 
-      const { data: latestActivity } = await supabase
+      // Récupère la dernière course (Run/VirtualRun), puis fallback sur toute activité
+      const { data: latestRunActivity } = await supabase
         .from('strava_activities')
         .select('name,distance,start_date_local')
         .eq('user_id', user.id)
         .in('type', ['Run','VirtualRun'])
         .order('start_date_local', { ascending: false })
         .limit(1);
+
+      let latestAnyActivity = null as { name: string; distance: number; start_date_local: string }[] | null;
+      if (!latestRunActivity || latestRunActivity.length === 0) {
+        const { data: latestFallback } = await supabase
+          .from('strava_activities')
+          .select('name,distance,start_date_local')
+          .eq('user_id', user.id)
+          .order('start_date_local', { ascending: false })
+          .limit(1);
+        latestAnyActivity = latestFallback;
+        if (!latestFallback || latestFallback.length === 0) {
+          console.warn('Aucune activité trouvée pour latest (même avec fallback)');
+        } else {
+          console.warn('Aucune course récente, utilisation du fallback toute activité:', latestFallback[0]?.name);
+        }
+      }
 
       console.log(`Activités trouvées - Mois: ${monthActivities?.length || 0}, Année: ${yearActivities?.length || 0}`);
 
@@ -206,16 +223,17 @@ export const useStravaData = (): UseStravaDataReturn => {
           distance: Math.round(yearlyDistance * 10) / 10,
           activitiesCount: yearlyActivitiesCount
         },
-        latest: latestActivity?.[0] ? {
-          name: latestActivity[0].name,
-          distance: Math.round((latestActivity[0].distance / 1000) * 10) / 10,
-          date: latestActivity[0].start_date_local
+        latest: (latestRunActivity?.[0] || latestAnyActivity?.[0]) ? {
+          name: (latestRunActivity?.[0] || latestAnyActivity?.[0]).name,
+          distance: Math.round((((latestRunActivity?.[0] || latestAnyActivity?.[0]).distance / 1000)) * 10) / 10,
+          date: (latestRunActivity?.[0] || latestAnyActivity?.[0]).start_date_local
         } : null
       };
 
       console.log('Stats recalculées en arrière-plan:', {
         monthly: `${newStats.monthly.distance}km (${newStats.monthly.activitiesCount} activités)`,
-        yearly: `${newStats.yearly.distance}km (${newStats.yearly.activitiesCount} activités)`
+        yearly: `${newStats.yearly.distance}km (${newStats.yearly.activitiesCount} activités)`,
+        latest: newStats.latest ? `${newStats.latest.name} (${newStats.latest.distance}km)` : 'aucune (fallback peut-être utilisé)'
       });
 
       // Comparer avec les stats actuelles (plus de critères de comparaison)
@@ -308,13 +326,30 @@ export const useStravaData = (): UseStravaDataReturn => {
         .lt('start_date_local', startOfNextYearStr)
         .order('start_date_local', { ascending: false });
 
-      const { data: latestActivity } = await supabase
+      // Récupère la dernière course (Run/VirtualRun), puis fallback sur toute activité
+      const { data: latestRunActivity } = await supabase
         .from('strava_activities')
         .select('name,distance,start_date_local')
         .eq('user_id', user.id)
         .in('type', ['Run','VirtualRun'])
         .order('start_date_local', { ascending: false })
         .limit(1);
+
+      let latestAnyActivity = null as { name: string; distance: number; start_date_local: string }[] | null;
+      if (!latestRunActivity || latestRunActivity.length === 0) {
+        const { data: latestFallback } = await supabase
+          .from('strava_activities')
+          .select('name,distance,start_date_local')
+          .eq('user_id', user.id)
+          .order('start_date_local', { ascending: false })
+          .limit(1);
+        latestAnyActivity = latestFallback;
+        if (!latestFallback || latestFallback.length === 0) {
+          console.warn('Aucune activité trouvée pour latest (même avec fallback)');
+        } else {
+          console.warn('Aucune course récente, utilisation du fallback toute activité:', latestFallback[0]?.name);
+        }
+      }
 
       console.log('Activités du mois trouvées:', monthActivities?.length || 0);
       console.log('Activités de l\'année trouvées:', yearActivities?.length || 0);
@@ -343,10 +378,10 @@ export const useStravaData = (): UseStravaDataReturn => {
           distance: Math.round(yearlyDistance * 10) / 10,
           activitiesCount: yearlyActivitiesCount
         },
-        latest: latestActivity?.[0] ? {
-          name: latestActivity[0].name,
-          distance: Math.round((latestActivity[0].distance / 1000) * 10) / 10,
-          date: latestActivity[0].start_date_local
+        latest: (latestRunActivity?.[0] || latestAnyActivity?.[0]) ? {
+          name: (latestRunActivity?.[0] || latestAnyActivity?.[0]).name,
+          distance: Math.round((((latestRunActivity?.[0] || latestAnyActivity?.[0]).distance / 1000)) * 10) / 10,
+          date: (latestRunActivity?.[0] || latestAnyActivity?.[0]).start_date_local
         } : null
       };
 

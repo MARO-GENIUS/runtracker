@@ -8,7 +8,7 @@ interface LatestActivityData {
 }
 
 interface LatestActivityProps {
-  latestActivity: LatestActivityData;
+  latestActivity: LatestActivityData | null;
 }
 
 export const LatestActivity = ({ latestActivity }: LatestActivityProps) => {
@@ -20,13 +20,15 @@ export const LatestActivity = ({ latestActivity }: LatestActivityProps) => {
         </div>
         <div>
           <h3 className="font-bold text-gray-900">Dernière Activité</h3>
-          <p className="text-sm text-gray-600">{new Date(latestActivity.date).toLocaleDateString('fr-FR')}</p>
+          <p className="text-sm text-gray-600">
+            {latestActivity?.date ? new Date(latestActivity.date).toLocaleDateString('fr-FR') : '—'}
+          </p>
         </div>
       </div>
       
       <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-xl">
-        <div className="text-2xl font-bold">{latestActivity.distance} km</div>
-        <div className="text-sm opacity-90 truncate mt-1">{latestActivity.name}</div>
+        <div className="text-2xl font-bold">{latestActivity ? `${latestActivity.distance} km` : '—'}</div>
+        <div className="text-sm opacity-90 truncate mt-1">{latestActivity ? latestActivity.name : 'Aucune course récente'}</div>
       </div>
     </div>
   );
