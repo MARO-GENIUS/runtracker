@@ -21,6 +21,16 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance, fullHeight 
     return null;
   }
 
+  // Custom date formatting function
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const months = ["Janv.", "Févr.", "Mars", "Avr.", "Mai", "Juin", "Juil.", "Août", "Sept.", "Oct.", "Nov.", "Déc."];
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = months[date.getMonth()];
+    const year = date.getFullYear().toString().slice(-2);
+    return `${day} ${month} ${year}`;
+  };
+
   // Sort by date and take last 10 records
   const sortedHistory = [...history]
     .sort((a, b) => new Date(a.start_date_local).getTime() - new Date(b.start_date_local).getTime())
@@ -30,7 +40,7 @@ const MiniRecordChart: React.FC<MiniRecordChartProps> = ({ distance, fullHeight 
     index,
     time: record.moving_time,
     pace: (record.moving_time / (record.distance / 1000)) / 60, // pace in min/km
-    date: new Date(record.start_date_local).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+    date: formatDate(record.start_date_local)
   }));
 
   const axisTickFontSize = isMobile ? 9 : 10;
