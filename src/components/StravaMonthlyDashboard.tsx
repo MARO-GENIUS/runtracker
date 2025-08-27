@@ -133,7 +133,7 @@ const StravaMonthlyDashboard = () => {
             </div>
           </div>
 
-          {/* Durée totale */}
+          {/* Distance annuelle */}
           <div className="text-center">
             <div className="bg-gradient-to-br from-running-purple to-purple-400 p-4 rounded-xl text-white mb-3 relative">
               {isAutoSyncing && (
@@ -142,9 +142,9 @@ const StravaMonthlyDashboard = () => {
                 </div>
               )}
               <div className="text-2xl font-bold">
-                {stats.monthly.duration ? formatDuration(stats.monthly.duration) : '0h 0min'}
+                {stats.yearly?.distance || 0} km
               </div>
-              <div className="text-sm opacity-90">Temps total</div>
+              <div className="text-sm opacity-90">Cette année</div>
             </div>
           </div>
         </div>
