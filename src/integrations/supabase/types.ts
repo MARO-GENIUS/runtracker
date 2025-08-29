@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -48,6 +48,39 @@ export type Database = {
           matching_activity_id?: number | null
           recommendation_data?: Json
           status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      encrypted_tokens: {
+        Row: {
+          created_at: string
+          encrypted_access_token: string | null
+          encrypted_refresh_token: string | null
+          encryption_version: number
+          id: string
+          token_expires_at: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_access_token?: string | null
+          encrypted_refresh_token?: string | null
+          encryption_version?: number
+          id?: string
+          token_expires_at?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_access_token?: string | null
+          encrypted_refresh_token?: string | null
+          encryption_version?: number
+          id?: string
+          token_expires_at?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -137,9 +170,7 @@ export type Database = {
           id: string
           last_name: string | null
           profile_picture: string | null
-          strava_access_token: string | null
           strava_expires_at: number | null
-          strava_refresh_token: string | null
           strava_user_id: number | null
           updated_at: string
         }
@@ -149,9 +180,7 @@ export type Database = {
           id: string
           last_name?: string | null
           profile_picture?: string | null
-          strava_access_token?: string | null
           strava_expires_at?: number | null
-          strava_refresh_token?: string | null
           strava_user_id?: number | null
           updated_at?: string
         }
@@ -161,9 +190,7 @@ export type Database = {
           id?: string
           last_name?: string | null
           profile_picture?: string | null
-          strava_access_token?: string | null
           strava_expires_at?: number | null
-          strava_refresh_token?: string | null
           strava_user_id?: number | null
           updated_at?: string
         }
