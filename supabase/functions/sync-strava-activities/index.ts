@@ -73,25 +73,34 @@ serve(async (req) => {
       )
     }
 
-    // Get user's Strava tokens
-    const { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
+    // Get user's Strava tokens securely
+    const { data: tokenData, error: tokenError } = await supabaseClient.functions.invoke('secure-token-manager', {
+      body: {
+        action: 'get_tokens',
+        userId: user.id,
+      }
+    })
 
-    if (!profile?.strava_access_token) {
+    if (tokenError || !tokenData) {
+      console.error('Failed to retrieve secure tokens:', tokenError)
       return new Response(
-        JSON.stringify({ error: 'Strava not connected' }),
+        JSON.stringify({ error: 'Strava not connected or tokens unavailable' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    // Also get profile info for expiry check
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('strava_expires_at')
+      .eq('id', user.id)
+      .single()
+
     // Check if token needs refresh
     const now = Math.floor(Date.now() / 1000)
-    let accessToken = profile.strava_access_token
+    let accessToken = tokenData.access_token
 
-    if (profile.strava_expires_at && profile.strava_expires_at < now) {
+    if (profile?.strava_expires_at && profile.strava_expires_at < now) {
       console.log('Token expired, refreshing...')
       try {
         const refreshResponse = await fetch('https://www.strava.com/oauth/token', {
@@ -102,7 +111,7 @@ serve(async (req) => {
           body: JSON.stringify({
             client_id: Deno.env.get('STRAVA_CLIENT_ID'),
             client_secret: Deno.env.get('STRAVA_CLIENT_SECRET'),
-            refresh_token: profile.strava_refresh_token,
+            refresh_token: tokenData.refresh_token,
             grant_type: 'refresh_token',
           }),
         })
@@ -111,16 +120,30 @@ serve(async (req) => {
         if (refreshData.access_token) {
           accessToken = refreshData.access_token
           
+          // Store refreshed tokens securely
+          const { error: refreshStoreError } = await supabaseClient.functions.invoke('secure-token-manager', {
+            body: {
+              action: 'store_tokens',
+              userId: user.id,
+              accessToken: refreshData.access_token,
+              refreshToken: refreshData.refresh_token,
+              expiresAt: refreshData.expires_at,
+            }
+          })
+
+          if (refreshStoreError) {
+            console.error('Failed to store refreshed tokens:', refreshStoreError)
+          }
+
+          // Update profile expiry
           await supabaseClient
             .from('profiles')
             .update({
-              strava_access_token: refreshData.access_token,
-              strava_refresh_token: refreshData.refresh_token,
               strava_expires_at: refreshData.expires_at,
             })
             .eq('id', user.id)
           
-          console.log('Token refreshed successfully')
+          console.log('Token refreshed and stored securely')
         }
       } catch (error) {
         console.error('Token refresh failed:', error)

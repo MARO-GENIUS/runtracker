@@ -126,14 +126,28 @@ serve(async (req) => {
       return Response.redirect(`${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/?error=token_exchange_failed`)
     }
 
-    // Store tokens in profiles table using the verified user ID
+    // Store tokens securely using the secure token manager
+    const { error: tokenStoreError } = await supabaseAdmin.functions.invoke('secure-token-manager', {
+      body: {
+        action: 'store_tokens',
+        userId: verifiedUserId,
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token,
+        expiresAt: tokenData.expires_at,
+      }
+    })
+
+    if (tokenStoreError) {
+      console.error('Failed to store tokens securely:', tokenStoreError)
+      return Response.redirect(`${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/?error=secure_storage_failed`)
+    }
+
+    // Update profiles table with user info (NO TOKENS STORED HERE)
     const { error: updateError } = await supabaseAdmin
       .from('profiles')
       .upsert({
         id: verifiedUserId,
         strava_user_id: tokenData.athlete.id,
-        strava_access_token: tokenData.access_token,
-        strava_refresh_token: tokenData.refresh_token,
         strava_expires_at: tokenData.expires_at,
         first_name: tokenData.athlete.firstname,
         last_name: tokenData.athlete.lastname,
@@ -141,11 +155,11 @@ serve(async (req) => {
       })
 
     if (updateError) {
-      console.error('Failed to store tokens:', updateError)
-      return Response.redirect(`${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/?error=storage_failed`)
+      console.error('Failed to update profile:', updateError)
+      return Response.redirect(`${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/?error=profile_update_failed`)
     }
 
-    console.log('Tokens stored successfully for user:', verifiedUserId)
+    console.log('Tokens stored securely and profile updated for user:', verifiedUserId)
 
     // Redirect to app with success message
     const appUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')
