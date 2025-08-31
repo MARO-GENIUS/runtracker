@@ -381,6 +381,69 @@ export type Database = {
         }
         Relationships: []
       }
+      user_statistics: {
+        Row: {
+          created_at: string
+          id: string
+          latest_activity_date: string | null
+          latest_activity_distance: number | null
+          latest_activity_id: number | null
+          latest_activity_name: string | null
+          longest_activity_date: string | null
+          longest_activity_distance: number | null
+          longest_activity_id: number | null
+          longest_activity_name: string | null
+          period_month: number | null
+          period_type: string
+          period_year: number
+          total_activities: number
+          total_distance: number
+          total_time: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          latest_activity_date?: string | null
+          latest_activity_distance?: number | null
+          latest_activity_id?: number | null
+          latest_activity_name?: string | null
+          longest_activity_date?: string | null
+          longest_activity_distance?: number | null
+          longest_activity_id?: number | null
+          longest_activity_name?: string | null
+          period_month?: number | null
+          period_type: string
+          period_year: number
+          total_activities?: number
+          total_distance?: number
+          total_time?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          latest_activity_date?: string | null
+          latest_activity_distance?: number | null
+          latest_activity_id?: number | null
+          latest_activity_name?: string | null
+          longest_activity_date?: string | null
+          longest_activity_distance?: number | null
+          longest_activity_id?: number | null
+          longest_activity_name?: string | null
+          period_month?: number | null
+          period_type?: string
+          period_year?: number
+          total_activities?: number
+          total_distance?: number
+          total_time?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_stats_cache: {
         Row: {
           id: string
@@ -437,7 +500,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      recalculate_user_statistics: {
+        Args: { p_activity_date: string; p_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
