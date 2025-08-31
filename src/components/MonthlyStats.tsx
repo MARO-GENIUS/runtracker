@@ -1,5 +1,5 @@
 
-import { useStravaData } from '@/hooks/useStravaData';
+import { useOptimizedStravaData } from '@/hooks/useOptimizedStravaData';
 import { useMonthlyGoals } from '@/hooks/useMonthlyGoals';
 import { monthlyStats } from '../data/mockData';
 import StravaMonthlyDashboard from './StravaMonthlyDashboard';
@@ -9,7 +9,7 @@ import { LatestActivity } from './monthly-stats/LatestActivity';
 import { MonthlyStatsLoading } from './monthly-stats/MonthlyStatsLoading';
 
 const MonthlyStats = () => {
-  const { stats, loading, isStravaConnected } = useStravaData();
+  const { stats, loading, isStravaConnected } = useOptimizedStravaData();
   const { currentGoal, updateGoal } = useMonthlyGoals();
 
   // Utilise les données Strava si disponibles, sinon les données mockées

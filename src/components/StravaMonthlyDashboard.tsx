@@ -1,12 +1,12 @@
 
 import { Clock, Calendar, RefreshCw } from 'lucide-react';
-import { useStravaData } from '@/hooks/useStravaData';
+import { useOptimizedStravaData } from '@/hooks/useOptimizedStravaData';
 import { getCurrentMonthName } from '@/utils/dateHelpers';
 import { Button } from '@/components/ui/button';
 import { useGlobalSync } from '@/hooks/useGlobalSync';
 
 const StravaMonthlyDashboard = () => {
-  const { stats, loading, isStravaConnected, isAutoSyncing, lastSyncTime } = useStravaData();
+  const { stats, loading, isStravaConnected, isAutoSyncing, lastSyncTime } = useOptimizedStravaData();
   const { performGlobalSync, isGlobalSyncing } = useGlobalSync();
 
   // Conversion de la durée en heures et minutes

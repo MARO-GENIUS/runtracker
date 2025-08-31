@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, Clock, MapPin } from 'lucide-react';
-import { useStravaData } from '@/hooks/useStravaData';
+import { useOptimizedStravaData } from '@/hooks/useOptimizedStravaData';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import ActivitiesTable from './ActivitiesTable';
 
 const ActivitiesView = () => {
-  const { stats, error, isStravaConnected } = useStravaData();
+  const { stats, error, isStravaConnected } = useOptimizedStravaData();
 
   // Auto-refresh du composant quand les données changent
   useAutoRefresh({

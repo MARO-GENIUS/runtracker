@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { weeklyData } from '../data/mockData';
-import { useStravaData } from '@/hooks/useStravaData';
+import { useOptimizedStravaData } from '@/hooks/useOptimizedStravaData';
 import { useWeeklyRunningActivities } from '@/hooks/useWeeklyRunningActivities';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import WeekSelector from './WeekSelector';
 
 const WeeklySummary = () => {
   const [selectedWeek, setSelectedWeek] = useState(new Date());
-  const { isStravaConnected } = useStravaData();
+  const { isStravaConnected } = useOptimizedStravaData();
   const { stats: weeklyStats, loading: weeklyLoading, error: weeklyError, refetch } = useWeeklyRunningActivities({ 
     weekDate: selectedWeek 
   });
