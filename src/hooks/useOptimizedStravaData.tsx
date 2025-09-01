@@ -103,6 +103,13 @@ export const useOptimizedStravaData = (): UseOptimizedStravaDataReturn => {
         .eq('period_year', currentYear)
         .maybeSingle();
 
+      // If user_statistics is empty, fallback to direct calculation
+      if (!monthlyStats && !yearlyStats) {
+        console.log('user_statistics table is empty, falling back to direct calculation');
+        await loadStatsDirectly();
+        return;
+      }
+
       // Format the stats to match the existing interface
       const formattedStats: StravaStats = {
         monthly: {
@@ -129,6 +136,78 @@ export const useOptimizedStravaData = (): UseOptimizedStravaDataReturn => {
       setStats(formattedStats);
     } catch (error) {
       console.error('Error loading stats from database:', error);
+      setError('Erreur lors du chargement des statistiques');
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const loadStatsDirectly = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const currentYear = new Date().getFullYear();
+      const currentMonth = new Date().getMonth() + 1;
+
+      // Get current month activities
+      const { data: monthlyActivities } = await supabase
+        .from('strava_activities')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('start_date_local', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
+        .lt('start_date_local', currentMonth === 12 
+          ? `${currentYear + 1}-01-01` 
+          : `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-01`)
+        .in('type', ['Run', 'VirtualRun'])
+        .order('start_date_local', { ascending: false });
+
+      // Get current year activities
+      const { data: yearlyActivities } = await supabase
+        .from('strava_activities')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('start_date_local', `${currentYear}-01-01`)
+        .lt('start_date_local', `${currentYear + 1}-01-01`)
+        .in('type', ['Run', 'VirtualRun']);
+
+      // Calculate monthly stats
+      const monthlyDistance = monthlyActivities?.reduce((sum, activity) => sum + (activity.distance || 0), 0) || 0;
+      const monthlyDuration = monthlyActivities?.reduce((sum, activity) => sum + (activity.moving_time || 0), 0) || 0;
+      const longestMonthlyActivity = monthlyActivities?.reduce((longest, current) => 
+        (current.distance || 0) > (longest?.distance || 0) ? current : longest, null);
+      
+      // Calculate yearly stats
+      const yearlyDistance = yearlyActivities?.reduce((sum, activity) => sum + (activity.distance || 0), 0) || 0;
+
+      // Format the stats
+      const formattedStats: StravaStats = {
+        monthly: {
+          distance: monthlyDistance / 1000, // Convert to km
+          activitiesCount: monthlyActivities?.length || 0,
+          duration: monthlyDuration,
+          longestActivity: longestMonthlyActivity ? {
+            name: longestMonthlyActivity.name,
+            distance: longestMonthlyActivity.distance / 1000,
+            date: longestMonthlyActivity.start_date_local
+          } : null
+        },
+        yearly: {
+          distance: yearlyDistance / 1000, // Convert to km
+          activitiesCount: yearlyActivities?.length || 0
+        },
+        latest: monthlyActivities?.[0] ? {
+          name: monthlyActivities[0].name,
+          distance: monthlyActivities[0].distance / 1000,
+          date: monthlyActivities[0].start_date_local
+        } : null
+      };
+
+      setStats(formattedStats);
+    } catch (error) {
+      console.error('Error loading stats directly:', error);
       setError('Erreur lors du chargement des statistiques');
     } finally {
       setLoading(false);
