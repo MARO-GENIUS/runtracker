@@ -1,5 +1,5 @@
 
-import { User, LogOut, Brain } from 'lucide-react';
+import { User, LogOut, Brain, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { User as SupabaseUser } from '@supabase/supabase-js';
@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import MobileMenu from './MobileMenu';
 
 interface TopNavigationProps {
-  currentView: 'dashboard' | 'records' | 'activities' | 'coach';
+  currentView: 'dashboard' | 'records' | 'activities' | 'coach' | 'settings';
   user: SupabaseUser;
   onSignOut: () => void;
 }
@@ -121,6 +121,15 @@ const TopNavigation = ({ currentView, user, onSignOut }: TopNavigationProps) => 
                   <div className="px-3 py-2 border-b border-gray-100">
                     <p className="text-sm text-gray-600 truncate mobile-text-hierarchy font-medium">{user.email}</p>
                   </div>
+                  <DropdownMenuItem asChild>
+                    <Link 
+                      to="/settings" 
+                      className="flex items-center cursor-pointer mobile-touch-target mobile-smooth-transition hover:bg-gray-50"
+                    >
+                      <Settings className="mr-2" size={16} />
+                      Paramètres
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={onSignOut} 
                     className="text-red-600 hover:text-red-700 hover:bg-red-50 mobile-touch-target cursor-pointer mobile-smooth-transition"

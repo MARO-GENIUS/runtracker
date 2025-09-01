@@ -1,13 +1,13 @@
 
-import { useState } from 'react';
-import { Menu, X, User, LogOut, Brain } from 'lucide-react';
+import React, { useState } from 'react';
+import { Menu, X, User, LogOut, Brain, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Link } from 'react-router-dom';
-import { TruncatedText } from '@/components/ui/truncated-text';
 
 interface MobileMenuProps {
-  currentView: 'dashboard' | 'records' | 'activities' | 'coach';
+  currentView: 'dashboard' | 'records' | 'activities' | 'coach' | 'settings';
   user: SupabaseUser;
   onSignOut: () => void;
 }
@@ -21,161 +21,128 @@ const MobileMenu = ({ currentView, user, onSignOut }: MobileMenuProps) => {
 
   return (
     <div className="md:hidden">
-      {/* Menu Toggle Button - Optimisé pour le touch */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setIsOpen(!isOpen)}
-        className="mobile-touch-target mobile-smooth-transition p-2 hover:bg-gray-100 active:bg-gray-200 rounded-lg"
-        aria-label={isOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
-      >
-        {isOpen ? <X size={20} className="text-gray-700" /> : <Menu size={20} className="text-gray-700" />}
-      </Button>
-
-      {/* Mobile Menu Overlay - Enhanced pour mobile */}
-      {isOpen && (
-        <>
-          {/* Backdrop avec animation */}
-          <div 
-            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm animate-fade-in" 
-            onClick={() => setIsOpen(false)}
-            aria-hidden="true"
-          />
-          
-          {/* Menu Panel avec animations améliorées */}
-          <div className="fixed right-0 top-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl z-50 mobile-scroll-smooth animate-slide-in-right mobile-adaptive-container">
-            {/* Header avec design amélioré */}
-            <div className="mobile-section-spacing border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <img 
-                    src="/lovable-uploads/734bc265-5a79-4eb5-abe6-747a6f0b6e12.png" 
-                    alt="RunTracker Pro Logo" 
-                    className="h-8 w-8 flex-shrink-0"
-                  />
-                  <span className="mobile-text-responsive-base font-bold text-gray-900 truncate">Menu</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsOpen(false)}
-                  className="mobile-touch-target-sm mobile-smooth-transition p-2 hover:bg-gray-200 active:bg-gray-300 rounded-full flex-shrink-0"
-                  aria-label="Fermer le menu"
-                >
-                  <X size={20} />
-                </Button>
-              </div>
-            </div>
-
-            {/* Navigation Items avec design amélioré */}
-            <div className="mobile-section-spacing space-y-1">
-              <Link
-                to="/"
-                onClick={handleLinkClick}
-                className={`mobile-touch-target w-full text-left px-4 py-4 rounded-xl mobile-text-responsive font-medium mobile-smooth-transition flex items-center gap-3 ${
-                  currentView === 'dashboard'
-                    ? 'text-running-blue bg-running-blue/10 shadow-sm border border-running-blue/20'
-                    : 'text-gray-700 hover:text-running-blue hover:bg-gray-50 active:bg-gray-100'
-                }`}
-              >
-                <div className="w-6 h-6 flex items-center justify-center text-xl flex-shrink-0">
-                  📊
-                </div>
-                <span className="truncate">Dashboard</span>
-                {currentView === 'dashboard' && (
-                  <div className="ml-auto w-2 h-2 rounded-full bg-running-blue flex-shrink-0"></div>
-                )}
-              </Link>
-
-              <Link
-                to="/activities"
-                onClick={handleLinkClick}
-                className={`mobile-touch-target w-full text-left px-4 py-4 rounded-xl mobile-text-responsive font-medium mobile-smooth-transition flex items-center gap-3 ${
-                  currentView === 'activities'
-                    ? 'text-running-blue bg-running-blue/10 shadow-sm border border-running-blue/20'
-                    : 'text-gray-700 hover:text-running-blue hover:bg-gray-50 active:bg-gray-100'
-                }`}
-              >
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetTrigger asChild>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="px-1.5 py-0.5 mobile-touch-target mobile-smooth-transition"
+          >
+            <Menu size={16} />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="right" className="w-80 bg-white">
+          <div className="flex flex-col h-full">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+              <div className="flex items-center gap-2">
                 <img 
-                  src="/lovable-uploads/a2cee3cb-da89-44da-abe5-71ec896d51a9.png" 
-                  alt="Mes performances" 
-                  className="h-6 w-6 flex-shrink-0"
+                  src="/lovable-uploads/734bc265-5a79-4eb5-abe6-747a6f0b6e12.png" 
+                  alt="RunTracker Pro" 
+                  className="h-6 w-6"
                 />
-                <span className="truncate">Mes performances</span>
-                {currentView === 'activities' && (
-                  <div className="ml-auto w-2 h-2 rounded-full bg-running-blue flex-shrink-0"></div>
-                )}
-              </Link>
-
-              <Link
-                to="/records"
-                onClick={handleLinkClick}
-                className={`mobile-touch-target w-full text-left px-4 py-4 rounded-xl mobile-text-responsive font-medium mobile-smooth-transition flex items-center gap-3 ${
-                  currentView === 'records'
-                    ? 'text-running-blue bg-running-blue/10 shadow-sm border border-running-blue/20'
-                    : 'text-gray-700 hover:text-running-blue hover:bg-gray-50 active:bg-gray-100'
-                }`}
-              >
-                <div className="w-6 h-6 flex items-center justify-center text-xl flex-shrink-0">
-                  🏆
-                </div>
-                <span className="truncate">Records</span>
-                {currentView === 'records' && (
-                  <div className="ml-auto w-2 h-2 rounded-full bg-running-blue flex-shrink-0"></div>
-                )}
-              </Link>
-
-              <Link
-                to="/coach"
-                onClick={handleLinkClick}
-                className={`mobile-touch-target w-full text-left px-4 py-4 rounded-xl mobile-text-responsive font-medium mobile-smooth-transition flex items-center gap-3 ${
-                  currentView === 'coach'
-                    ? 'text-running-blue bg-running-blue/10 shadow-sm border border-running-blue/20'
-                    : 'text-gray-700 hover:text-running-blue hover:bg-gray-50 active:bg-gray-100'
-                }`}
-              >
-                <Brain className="h-6 w-6 flex-shrink-0" />
-                <span className="truncate">Coach IA</span>
-                {currentView === 'coach' && (
-                  <div className="ml-auto w-2 h-2 rounded-full bg-running-blue flex-shrink-0"></div>
-                )}
-              </Link>
+                <span className="font-bold text-gray-900">RunTracker Pro</span>
+              </div>
             </div>
 
-            {/* User Section avec design premium et troncature intelligente */}
-            <div className="absolute bottom-0 left-0 right-0 mobile-section-spacing border-t border-gray-200 bg-gradient-to-t from-gray-50 to-white">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl shadow-sm border border-gray-200">
-                  <div className="w-10 h-10 bg-running-blue/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    <User size={20} className="text-running-blue" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <TruncatedText
-                      text={user.email || 'Utilisateur'}
-                      maxLength={20}
-                      useFallbackAt={12}
-                      fallbackIcon={<User size={14} className="text-running-blue" />}
-                      className="mobile-text-responsive font-semibold text-gray-900 block"
-                      showTooltip={true}
-                    />
-                    <span className="mobile-text-responsive text-gray-500 font-medium">Connecté</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    onSignOut();
-                    setIsOpen(false);
-                  }}
-                  className="mobile-touch-target w-full flex items-center gap-3 px-4 py-4 mobile-text-responsive text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100 rounded-xl mobile-smooth-transition font-medium border border-red-200 hover:border-red-300"
+            {/* Navigation */}
+            <nav className="flex-1 py-6">
+              <div className="space-y-2">
+                <Link
+                  to="/"
+                  onClick={handleLinkClick}
+                  className={`flex items-center gap-3 px-3 py-3 rounded-lg mobile-touch-target mobile-smooth-transition ${
+                    currentView === 'dashboard'
+                      ? 'text-running-blue bg-running-blue/10 font-medium'
+                      : 'text-gray-700 hover:text-running-blue hover:bg-gray-50'
+                  }`}
                 >
-                  <LogOut size={20} className="flex-shrink-0" />
-                  <span className="truncate">Déconnexion</span>
-                </button>
+                  <div className="w-5 h-5 flex items-center justify-center">
+                    📊
+                  </div>
+                  Dashboard
+                </Link>
+
+                <Link
+                  to="/activities"
+                  onClick={handleLinkClick}
+                  className={`flex items-center gap-3 px-3 py-3 rounded-lg mobile-touch-target mobile-smooth-transition ${
+                    currentView === 'activities'
+                      ? 'text-running-blue bg-running-blue/10 font-medium'
+                      : 'text-gray-700 hover:text-running-blue hover:bg-gray-50'
+                  }`}
+                >
+                  <img 
+                    src="/lovable-uploads/a2cee3cb-da89-44da-abe5-71ec896d51a9.png" 
+                    alt="Mes performances" 
+                    className="h-5 w-5"
+                  />
+                  Mes performances
+                </Link>
+
+                <Link
+                  to="/records"
+                  onClick={handleLinkClick}
+                  className={`flex items-center gap-3 px-3 py-3 rounded-lg mobile-touch-target mobile-smooth-transition ${
+                    currentView === 'records'
+                      ? 'text-running-blue bg-running-blue/10 font-medium'
+                      : 'text-gray-700 hover:text-running-blue hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="w-5 h-5 flex items-center justify-center">
+                    🏆
+                  </div>
+                  Records
+                </Link>
+
+                <Link
+                  to="/coach"
+                  onClick={handleLinkClick}
+                  className={`flex items-center gap-3 px-3 py-3 rounded-lg mobile-touch-target mobile-smooth-transition ${
+                    currentView === 'coach'
+                      ? 'text-running-blue bg-running-blue/10 font-medium'
+                      : 'text-gray-700 hover:text-running-blue hover:bg-gray-50'
+                  }`}
+                >
+                  <Brain className="w-5 h-5" />
+                  Coach IA
+                </Link>
               </div>
+            </nav>
+
+            {/* Profile section */}
+            <div className="border-t border-gray-200 pt-4 space-y-2">
+              <div className="px-3 py-2">
+                <p className="text-sm font-medium text-gray-900 truncate">{user.email}</p>
+              </div>
+              
+              <Link
+                to="/settings"
+                onClick={handleLinkClick}
+                className={`flex items-center gap-3 px-3 py-3 rounded-lg mobile-touch-target mobile-smooth-transition ${
+                  currentView === 'settings'
+                    ? 'text-running-blue bg-running-blue/10 font-medium'
+                    : 'text-gray-700 hover:text-running-blue hover:bg-gray-50'
+                }`}
+              >
+                <Settings className="w-5 h-5" />
+                Paramètres
+              </Link>
+
+              <button
+                onClick={() => {
+                  handleLinkClick();
+                  onSignOut();
+                }}
+                className="flex items-center gap-3 px-3 py-3 rounded-lg mobile-touch-target mobile-smooth-transition text-red-600 hover:text-red-700 hover:bg-red-50 w-full text-left"
+              >
+                <LogOut className="w-5 h-5" />
+                Déconnexion
+              </button>
             </div>
           </div>
-        </>
-      )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

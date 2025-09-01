@@ -22,6 +22,7 @@ const Layout = ({ children }: LayoutProps) => {
     if (path === '/activities') return 'activities';
     if (path === '/records') return 'records';
     if (path === '/coach') return 'coach';
+    if (path === '/settings') return 'settings';
     return 'dashboard';
   };
 
@@ -53,14 +54,16 @@ const Layout = ({ children }: LayoutProps) => {
         />
       </div>
       
-      {/* Header principal responsive */}
-      <div className="mobile-no-overflow">
-        <Header 
-          currentView={currentView} 
-          user={user}
-          onSignOut={signOut}
-        />
-      </div>
+      {/* Header principal responsive - sauf sur la page settings */}
+      {currentView !== 'settings' && (
+        <div className="mobile-no-overflow">
+          <Header 
+            currentView={currentView} 
+            user={user}
+            onSignOut={signOut}
+          />
+        </div>
+      )}
       
       {/* Barre d'informations responsive - uniquement sur le dashboard */}
       {currentView === 'dashboard' && (
@@ -72,23 +75,31 @@ const Layout = ({ children }: LayoutProps) => {
       )}
       
       {/* Contenu principal responsive avec espacement mobile optimisé */}
-      <main className="max-w-6xl mx-auto mobile-adaptive-container mobile-section-spacing space-y-4 sm:space-y-6 lg:space-y-8">
+      {currentView === 'settings' ? (
         <div className="mobile-content-container">
           {children}
         </div>
-      </main>
+      ) : (
+        <main className="max-w-6xl mx-auto mobile-adaptive-container mobile-section-spacing space-y-4 sm:space-y-6 lg:space-y-8">
+          <div className="mobile-content-container">
+            {children}
+          </div>
+        </main>
+      )}
       
-      {/* Footer responsive */}
-      <footer className="bg-white border-t border-gray-100 mt-8 sm:mt-12 lg:mt-16 py-6 sm:py-8 mobile-no-overflow">
-        <div className="max-w-6xl mx-auto mobile-adaptive-container text-center text-gray-600">
-          <p className="mobile-text-hierarchy mobile-prevent-overflow">
-            RunTracker Pro - Votre compagnon de course personnalisé
-          </p>
-          <p className="text-xs mt-2 text-gray-500 mobile-prevent-overflow">
-            Visualisez vos performances • Suivez vos progrès • Atteignez vos objectifs
-          </p>
-        </div>
-      </footer>
+      {/* Footer responsive - sauf sur la page settings */}
+      {currentView !== 'settings' && (
+        <footer className="bg-white border-t border-gray-100 mt-8 sm:mt-12 lg:mt-16 py-6 sm:py-8 mobile-no-overflow">
+          <div className="max-w-6xl mx-auto mobile-adaptive-container text-center text-gray-600">
+            <p className="mobile-text-hierarchy mobile-prevent-overflow">
+              RunTracker Pro - Votre compagnon de course personnalisé
+            </p>
+            <p className="text-xs mt-2 text-gray-500 mobile-prevent-overflow">
+              Visualisez vos performances • Suivez vos progrès • Atteignez vos objectifs
+            </p>
+          </div>
+        </footer>
+      )}
     </div>
   );
 };

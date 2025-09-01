@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Activities from "./pages/Activities";
 import Records from "./pages/Records";
 import Coach from "./pages/Coach";
+import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Layout from "./components/Layout";
@@ -30,6 +31,7 @@ const AppContent = () => {
       <Route path="/activities" element={<Layout><Activities /></Layout>} />
       <Route path="/records" element={<Layout><Records /></Layout>} />
       <Route path="/coach" element={<Layout><Coach /></Layout>} />
+      <Route path="/settings" element={<Layout><Settings /></Layout>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
