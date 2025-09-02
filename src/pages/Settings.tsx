@@ -1,17 +1,14 @@
 
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useStravaData } from '@/hooks/useStravaData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { ExternalLink, Unlink, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const Settings = () => {
   const { user } = useAuth();
-  const { isStravaConnected, stats } = useStravaData();
 
   const handleStravaConnect = async () => {
     if (!user) {
@@ -100,56 +97,20 @@ const Settings = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isStravaConnected ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-green-600">
-                    <CheckCircle className="w-5 h-5" />
-                    <span className="font-medium">Compte Strava connecté</span>
-                  </div>
-                  
-                  {stats && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 mb-2">Statistiques synchronisées</h4>
-                      <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                        <div>
-                          <span className="font-medium">Ce mois :</span>
-                          <div>{stats.monthly.activitiesCount} activités</div>
-                          <div>{(stats.monthly.distance).toFixed(1)} km</div>
-                        </div>
-                        <div>
-                          <span className="font-medium">Cette année :</span>
-                          <div>{stats.yearly.activitiesCount} activités</div>
-                          <div>{(stats.yearly.distance).toFixed(1)} km</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <Button
-                    onClick={handleStravaDisconnect}
-                    variant="destructive"
-                    className="flex items-center gap-2"
-                  >
-                    <Unlink className="w-4 h-4" />
-                    Déconnecter Strava
-                  </Button>
+              <div className="space-y-4">
+                <div className="text-gray-600">
+                  Connectez votre compte Strava pour synchroniser automatiquement vos activités de course.
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="text-gray-600">
-                    Votre compte Strava n'est pas encore connecté. Connectez-le pour synchroniser automatiquement vos activités de course.
-                  </div>
-                  
-                  <Button
-                    onClick={handleStravaConnect}
-                    className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700"
-                  >
-                    <StravaIcon />
-                    Connecter à Strava
-                    <ExternalLink className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
+                
+                <Button
+                  onClick={handleStravaConnect}
+                  className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700"
+                >
+                  <StravaIcon />
+                  Connecter à Strava
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
