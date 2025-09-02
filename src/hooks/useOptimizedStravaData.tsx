@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -55,6 +55,10 @@ export const useOptimizedStravaData = (): UseOptimizedStravaDataReturn => {
     dailyLimit: number;
     fifteenMinuteLimit: number;
   } | null>(null);
+
+  // Use refs to prevent multiple subscriptions
+  const channelRef = useRef<any>(null);
+  const isInitializedRef = useRef(false);
 
   const checkStravaConnection = useCallback(async () => {
     if (!user) return false;
@@ -256,7 +260,8 @@ export const useOptimizedStravaData = (): UseOptimizedStravaDataReturn => {
 
   // Initialize data when user changes
   useEffect(() => {
-    if (user) {
+    if (user && !isInitializedRef.current) {
+      isInitializedRef.current = true;
       checkStravaConnection().then(async (connected) => {
         if (connected) {
           await loadStatsFromDatabase();
@@ -264,19 +269,33 @@ export const useOptimizedStravaData = (): UseOptimizedStravaDataReturn => {
           setLoading(false);
         }
       });
-    } else {
+    } else if (!user) {
+      isInitializedRef.current = false;
       setStats(null);
       setLoading(false);
       setIsStravaConnected(false);
     }
-  }, [user, checkStravaConnection, loadStatsFromDatabase]);
+  }, [user]);
 
   // Listen for real-time updates to user_statistics
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      // Clean up any existing channel
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+      return;
+    }
+
+    // Clean up existing subscription before creating new one
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
 
     const channel = supabase
-      .channel('user-statistics-changes')
+      .channel(`user-statistics-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -293,15 +312,22 @@ export const useOptimizedStravaData = (): UseOptimizedStravaDataReturn => {
       )
       .subscribe();
 
+    channelRef.current = channel;
+
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
-  }, [user, loadStatsFromDatabase]);
+  }, [user?.id]);
 
   // Listen for custom events (like manual sync triggers)
   useEffect(() => {
     const handleRefresh = () => {
-      loadStatsFromDatabase();
+      if (user) {
+        loadStatsFromDatabase();
+      }
     };
 
     const handleSyncUpdate = (event: any) => {
@@ -317,7 +343,7 @@ export const useOptimizedStravaData = (): UseOptimizedStravaDataReturn => {
       window.removeEventListener('strava-stats-refresh', handleRefresh);
       window.removeEventListener('strava-sync-update', handleSyncUpdate);
     };
-  }, [loadStatsFromDatabase]);
+  }, [user]);
 
   return {
     stats,
