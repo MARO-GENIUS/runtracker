@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,41 @@ import { toast } from 'sonner';
 
 const Settings = () => {
   const { user } = useAuth();
+  const [isStravaConnected, setIsStravaConnected] = useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
+
+  // Vérifier l'état de connexion Strava de manière simple
+  useEffect(() => {
+    const checkStravaConnection = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('strava_user_id, strava_expires_at')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error checking Strava connection:', error);
+          setIsStravaConnected(false);
+        } else {
+          // Considérer comme connecté si on a un strava_user_id
+          setIsStravaConnected(!!profile?.strava_user_id);
+        }
+      } catch (error) {
+        console.error('Error checking Strava status:', error);
+        setIsStravaConnected(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkStravaConnection();
+  }, [user]);
 
   const handleStravaConnect = async () => {
     if (!user) {
@@ -97,20 +132,46 @@ const Settings = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="text-gray-600">
-                  Connectez votre compte Strava pour synchroniser automatiquement vos activités de course.
+              {loading ? (
+                <div className="text-gray-600">Vérification de l'état de connexion...</div>
+              ) : isStravaConnected ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-green-600">
+                    <CheckCircle className="w-5 h-5" />
+                    <span className="font-medium">Compte Strava connecté</span>
+                  </div>
+                  
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-600">
+                      Votre compte Strava est connecté et vos activités sont synchronisées automatiquement.
+                    </p>
+                  </div>
+                  
+                  <Button
+                    onClick={handleStravaDisconnect}
+                    variant="destructive"
+                    className="flex items-center gap-2"
+                  >
+                    <Unlink className="w-4 h-4" />
+                    Déconnecter Strava
+                  </Button>
                 </div>
-                
-                <Button
-                  onClick={handleStravaConnect}
-                  className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700"
-                >
-                  <StravaIcon />
-                  Connecter à Strava
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
-              </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="text-gray-600">
+                    Connectez votre compte Strava pour synchroniser automatiquement vos activités de course.
+                  </div>
+                  
+                  <Button
+                    onClick={handleStravaConnect}
+                    className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700"
+                  >
+                    <StravaIcon />
+                    Connecter à Strava
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
