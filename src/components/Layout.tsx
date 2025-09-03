@@ -65,8 +65,8 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       )}
       
-      {/* Barre d'informations responsive - uniquement sur le dashboard */}
-      {currentView === 'dashboard' && (
+      {/* Barre d'informations responsive - sur toutes les pages sauf settings */}
+      {currentView !== 'settings' && (
         <div className="bg-white border-b border-gray-100 py-3 sm:py-4 mobile-no-overflow">
           <div className="max-w-6xl mx-auto mobile-adaptive-container mobile-flex-container justify-end">
             <StravaConnect />

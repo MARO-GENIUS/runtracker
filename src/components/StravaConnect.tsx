@@ -1,26 +1,17 @@
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { ExternalLink } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
-import { useAuth } from '@/hooks/useAuth';
-import { useStravaData } from '@/hooks/useStravaData';
+import StravaStatus from './StravaStatus';
 
 const StravaConnect = () => {
-  const [connecting, setConnecting] = useState(false);
-  const { user } = useAuth();
-  const { isStravaConnected, stats, isAutoSyncing } = useStravaData();
-
+  // Gérer les paramètres d'URL de retour de connexion
   useEffect(() => {
-    // Check URL parameters for connection status
     const urlParams = new URLSearchParams(window.location.search);
     const stravaConnected = urlParams.get('strava_connected');
     const error = urlParams.get('error');
 
     if (stravaConnected === 'true') {
       toast.success('Compte Strava connecté avec succès ! Synchronisation automatique activée.');
-      // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (error) {
       let errorMessage = 'Erreur lors de la connexion à Strava';
@@ -45,63 +36,11 @@ const StravaConnect = () => {
           break;
       }
       toast.error(errorMessage);
-      // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
-  const handleStravaConnect = async () => {
-    if (!user) {
-      toast.error('Vous devez être connecté pour lier votre compte Strava');
-      return;
-    }
-
-    setConnecting(true);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('strava-oauth', {
-        body: { action: 'get_auth_url' }
-      });
-
-      if (error) throw error;
-
-      if (data?.auth_url) {
-        window.location.href = data.auth_url;
-      }
-    } catch (error) {
-      console.error('Erreur lors de la connexion Strava:', error);
-      toast.error('Erreur lors de la connexion à Strava');
-    } finally {
-      setConnecting(false);
-    }
-  };
-
-  // Simple Strava icon SVG
-  const StravaIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-orange-600">
-      <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.172"/>
-    </svg>
-  );
-
-  if (isStravaConnected) {
-    return null; // Masquer complètement quand connecté
-  }
-
-  return (
-    <Button 
-      onClick={handleStravaConnect} 
-      disabled={connecting}
-      variant="ghost"
-      size="sm"
-      className="h-auto p-2 text-gray-600 hover:text-orange-600 hover:bg-orange-50 transition-colors"
-    >
-      <div className="flex items-center gap-2">
-        <StravaIcon />
-        <span className="text-sm font-medium">Connecter Strava</span>
-        <ExternalLink className="w-4 h-4" />
-      </div>
-    </Button>
-  );
+  return <StravaStatus mode="status" size="sm" variant="ghost" />;
 };
 
 export default StravaConnect;
