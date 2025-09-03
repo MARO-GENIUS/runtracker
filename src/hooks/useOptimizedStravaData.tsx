@@ -277,8 +277,9 @@ export const useOptimizedStravaData = (): UseOptimizedStravaDataReturn => {
     }
   }, [user]);
 
+  // Temporairement désactivé - souscription multiple causant des erreurs
   // Listen for real-time updates to user_statistics
-  useEffect(() => {
+  /* useEffect(() => {
     if (!user) {
       // Clean up any existing channel
       if (channelRef.current) {
@@ -320,7 +321,7 @@ export const useOptimizedStravaData = (): UseOptimizedStravaDataReturn => {
         channelRef.current = null;
       }
     };
-  }, [user?.id]);
+  }, [user?.id]); */
 
   // Listen for custom events (like manual sync triggers)
   useEffect(() => {
