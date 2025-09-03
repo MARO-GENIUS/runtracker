@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useGlobalSync } from '@/hooks/useGlobalSync';
 import { Navigate, useLocation } from 'react-router-dom';
 import TopNavigation from './TopNavigation';
 import Header from './Header';
@@ -13,8 +14,7 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const { user, loading, signOut } = useAuth();
   const location = useLocation();
-  // Temporairement désactivé useGlobalSync pour éviter les erreurs 404
-  // const { isGlobalSyncing, syncProgress } = useGlobalSync();
+  const { isGlobalSyncing, syncProgress } = useGlobalSync();
 
   // Détermine la vue actuelle basée sur l'URL
   const getCurrentView = () => {
