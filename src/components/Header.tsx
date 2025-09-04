@@ -4,6 +4,7 @@ import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Link } from 'react-router-dom';
 import { TruncatedText } from '@/components/ui/truncated-text';
 import StravaStatus from './StravaStatus';
+import AuthButton from './AuthButton';
 
 interface HeaderProps {
   currentView: 'dashboard' | 'records' | 'activities' | 'coach';
@@ -79,9 +80,12 @@ const Header = ({ currentView }: HeaderProps) => {
           </div>
         )}
 
-        {/* Vue dashboard - Bandeau minimal avec statut Strava */}
+        {/* Vue dashboard - Bandeau minimal avec statut Strava et bouton auth */}
         {currentView === 'dashboard' && (
-          <div className="py-2 flex justify-end">
+          <div className="py-2 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <AuthButton variant="ghost" size="sm" showText={false} />
+            </div>
             <StravaStatus mode="status" size="sm" />
           </div>
         )}

@@ -5,6 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Link } from 'react-router-dom';
 import MobileMenu from './MobileMenu';
+import AuthButton from './AuthButton';
 
 interface TopNavigationProps {
   currentView: 'dashboard' | 'records' | 'activities' | 'coach' | 'settings';
@@ -94,6 +95,11 @@ const TopNavigation = ({ currentView, user, onSignOut }: TopNavigationProps) => 
               user={user}
               onSignOut={onSignOut}
             />
+
+            {/* Bouton d'authentification visible */}
+            <div className="hidden sm:block mr-2">
+              <AuthButton variant="outline" size="sm" />
+            </div>
 
             {/* Menu profil desktop avec votre logo */}
             <div className="hidden md:flex items-center gap-1">
