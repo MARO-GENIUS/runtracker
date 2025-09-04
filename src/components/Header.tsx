@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Link } from 'react-router-dom';
 import { TruncatedText } from '@/components/ui/truncated-text';
+import StravaStatus from './StravaStatus';
 
 interface HeaderProps {
   currentView: 'dashboard' | 'records' | 'activities' | 'coach';
@@ -78,10 +79,10 @@ const Header = ({ currentView }: HeaderProps) => {
           </div>
         )}
 
-        {/* Vue dashboard - Bandeau minimal supprimé */}
+        {/* Vue dashboard - Bandeau minimal avec statut Strava */}
         {currentView === 'dashboard' && (
-          <div className="py-0">
-            {/* Bandeau complètement supprimé */}
+          <div className="py-2 flex justify-end">
+            <StravaStatus mode="status" size="sm" />
           </div>
         )}
       </div>
