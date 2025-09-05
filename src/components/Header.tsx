@@ -18,31 +18,41 @@ const Header = ({ currentView }: HeaderProps) => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Vue records - Bandeau très compact */}
         {currentView === 'records' && (
-          <div className="text-center py-1.5 sm:py-2">
-            <h1 className="text-base sm:text-lg lg:text-xl font-bold mb-0.5 text-white drop-shadow-lg mobile-text-readable mobile-prevent-overflow">
-              Mes Records Personnels
-            </h1>
-            <p className="text-white/90 text-xs mobile-text-hierarchy font-medium mobile-prevent-overflow">
-              Historique complet de vos meilleures performances
-            </p>
+          <div className="flex items-center justify-between py-1.5 sm:py-2">
+            <div className="text-center flex-1">
+              <h1 className="text-base sm:text-lg lg:text-xl font-bold mb-0.5 text-white drop-shadow-lg mobile-text-readable mobile-prevent-overflow">
+                Mes Records Personnels
+              </h1>
+              <p className="text-white/90 text-xs mobile-text-hierarchy font-medium mobile-prevent-overflow">
+                Historique complet de vos meilleures performances
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <StravaStatus mode="status" size="sm" />
+            </div>
           </div>
         )}
 
         {/* Vue activities - Layout ultra compact */}
         {currentView === 'activities' && (
-          <div className="flex items-center justify-center py-1">
-            <div className="flex items-center gap-2 bg-slate-600/50 backdrop-blur-sm rounded-lg px-3 py-1.5">
-              <Link 
-                to="/"
-                className="flex items-center text-white/80 hover:text-white mobile-smooth-transition hover:scale-105 rounded-md p-1"
-                aria-label="Retour au dashboard"
-              >
-                <ArrowLeft size={16} className="flex-shrink-0" />
-              </Link>
-              
-              <h1 className="text-sm font-bold text-white drop-shadow-lg">
-                ACTIVITÉS
-              </h1>
+          <div className="flex items-center justify-between py-1">
+            <div className="flex items-center justify-center flex-1">
+              <div className="flex items-center gap-2 bg-slate-600/50 backdrop-blur-sm rounded-lg px-3 py-1.5">
+                <Link 
+                  to="/"
+                  className="flex items-center text-white/80 hover:text-white mobile-smooth-transition hover:scale-105 rounded-md p-1"
+                  aria-label="Retour au dashboard"
+                >
+                  <ArrowLeft size={16} className="flex-shrink-0" />
+                </Link>
+                
+                <h1 className="text-sm font-bold text-white drop-shadow-lg">
+                  ACTIVITÉS
+                </h1>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <StravaStatus mode="status" size="sm" />
             </div>
           </div>
         )}
@@ -75,8 +85,9 @@ const Header = ({ currentView }: HeaderProps) => {
               />
             </h1>
             
-            {/* Espace équilibré */}
-            <div className="mobile-touch-target-sm flex-shrink-0 w-10"></div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <StravaStatus mode="status" size="sm" />
+            </div>
           </div>
         )}
 

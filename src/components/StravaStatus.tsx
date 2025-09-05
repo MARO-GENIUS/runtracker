@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ExternalLink, RefreshCw, Unlink, CheckCircle, AlertCircle } from 'lucide-react';
+import { ExternalLink, RefreshCw, Unlink, CheckCircle, AlertCircle, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useStravaData } from '@/hooks/useStravaData';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
 
 interface StravaStatusProps {
   mode?: 'connect' | 'status' | 'full';
@@ -137,20 +139,50 @@ const StravaStatus = ({
     }
 
     return (
-      <div className="flex items-center gap-2">
-        <Badge variant="secondary" className="bg-orange-50 text-orange-700 border-orange-200">
-          <CheckCircle className="w-3 h-3 mr-1" />
-          Strava connecté
-        </Badge>
-        <Button
-          onClick={handleSync}
-          disabled={isAutoSyncing}
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground hover:text-orange-600"
-        >
-          <RefreshCw className={`w-4 h-4 ${isAutoSyncing ? 'animate-spin' : ''}`} />
-        </Button>
+      <div className="flex items-center gap-1">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 hover:text-orange-800 px-3 py-2"
+            >
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-3 h-3" />
+                <span className="text-sm font-medium">Strava connecté</span>
+                <ChevronDown className="w-3 h-3" />
+              </div>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 p-2" align="end">
+            <div className="space-y-1">
+              <div className="px-2 py-1.5 text-sm font-medium text-muted-foreground">
+                Actions Strava
+              </div>
+              <Separator />
+              <Button
+                onClick={handleSync}
+                disabled={isAutoSyncing}
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start hover:bg-orange-50 hover:text-orange-700"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isAutoSyncing ? 'animate-spin' : ''}`} />
+                {isAutoSyncing ? 'Synchronisation...' : 'Synchroniser maintenant'}
+              </Button>
+              <Button
+                onClick={handleStravaDisconnect}
+                disabled={disconnecting}
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Unlink className="w-4 h-4 mr-2" />
+                {disconnecting ? 'Déconnexion...' : 'Déconnecter Strava'}
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
     );
   }
