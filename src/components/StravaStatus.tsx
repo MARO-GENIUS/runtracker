@@ -57,16 +57,21 @@ const StravaStatus = ({
     setDisconnecting(true);
     
     try {
-      const { error } = await supabase.functions.invoke('secure-token-manager', {
+      // Essayer de supprimer les tokens, mais ne pas échouer si ils n'existent pas
+      const tokenResult = await supabase.functions.invoke('secure-token-manager', {
         body: { 
           action: 'delete_tokens',
-          user_id: user.id 
+          userId: user.id 
         }
       });
 
-      if (error) throw error;
+      // Log pour debug mais ne pas arrêter le processus
+      if (tokenResult.error) {
+        console.log('Token deletion result:', tokenResult.error);
+      }
 
-      await supabase
+      // Nettoyer le profil utilisateur dans tous les cas
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
           strava_user_id: null, 
@@ -74,8 +79,18 @@ const StravaStatus = ({
         })
         .eq('id', user.id);
 
+      if (profileError) {
+        console.error('Erreur mise à jour profil:', profileError);
+        // Continuer même si la mise à jour du profil échoue
+      }
+
       toast.success('Compte Strava déconnecté avec succès');
-      window.location.reload();
+      
+      // Recharger la page pour mettre à jour l'état
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      
     } catch (error) {
       console.error('Erreur lors de la déconnexion Strava:', error);
       toast.error('Erreur lors de la déconnexion de Strava');

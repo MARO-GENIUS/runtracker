@@ -179,6 +179,8 @@ serve(async (req) => {
           )
         }
 
+        console.log(`Deleting tokens for user: ${userId}`)
+
         // Delete tokens from database
         const { error } = await supabase
           .from('encrypted_tokens')
@@ -193,6 +195,8 @@ serve(async (req) => {
           )
         }
 
+        // Success even if no tokens were found to delete
+        console.log(`Tokens deleted successfully for user: ${userId}`)
         return new Response(
           JSON.stringify({ success: true }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
