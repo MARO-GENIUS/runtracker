@@ -15,7 +15,7 @@ export const useAutoRefresh = ({
   const onRefreshRef = useRef(onRefresh);
   const isRefreshingRef = useRef(false);
   const scrollPositionRef = useRef(0);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout>();
+  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   
   // Mettre à jour la référence quand la fonction change
   useEffect(() => {

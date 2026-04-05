@@ -16,7 +16,7 @@ export const useAutoSync = (options: AutoSyncOptions = {}) => {
   const { getCachedStats } = useStatsCache();
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [isAutoSyncing, setIsAutoSyncing] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Fonction pour vérifier si une synchronisation est nécessaire
   const needsSync = async (): Promise<boolean> => {

@@ -15,7 +15,7 @@ export const useDeleteActivity = (options: DeleteActivityOptions = {}) => {
   const { toast } = useToast();
   const { clearCache } = useStatsCache();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [undoTimeoutId, setUndoTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [undoTimeoutId, setUndoTimeoutId] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   const deleteActivityCascade = async (activityId: number) => {
     if (!user) {
